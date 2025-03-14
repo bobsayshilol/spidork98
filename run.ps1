@@ -4,11 +4,11 @@
 ""
 "Z:\>X:"
 ""
-"X:\>cd game"
+"X:\>cd example"
 ""
-"X:\GAME>make"
+"X:\EXAMPLE>make"
 ""
-"X:\GAME>game.exe"
+"X:\EXAMPLE>example.exe"
 ""
 Read-Host -Prompt "Press the any key to continue" | Out-Null
 

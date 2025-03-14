@@ -1,6 +1,9 @@
 #include <cstdio>
 #include <cstdlib>
+
+extern "C" {
 #include <libc/pc9800.h>
+}
 
 int main() {
   printf("Example program built and running successfully!\n");

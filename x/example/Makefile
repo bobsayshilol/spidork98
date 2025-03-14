@@ -4,7 +4,7 @@ CFLAGS	= -mcpu=i386 -march=i386 -O3 -Wall
 LIBS	= #-lm
 DEPS	=
 OBJS	= test.o
-EXE	= game.exe
+EXE	= example.exe
 
 %.o: %.cc $(DEPS)
 	$(CC) -x c++ -c -o $@ $< $(CFLAGS)
