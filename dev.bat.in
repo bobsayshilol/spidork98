@@ -1,0 +1,3 @@
+mount X YOUR_X_PATH -nocachedir
+PATH=%PATH%;X:\djgpp\bin
+set DJGPP=X:\djgpp\djgpp.env
