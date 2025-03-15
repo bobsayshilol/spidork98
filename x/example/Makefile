@@ -16,4 +16,4 @@ $(EXE): $(OBJS)
 .PHONY: clean
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	del $(OBJS) $(EXE)

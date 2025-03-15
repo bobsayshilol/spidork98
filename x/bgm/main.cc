@@ -6,25 +6,40 @@
 
 template <typename Funcs>
 static void play() {
-  Funcs::ScreenClear();
+  Funcs::clrscr();
   printf("Running on %s\n", Funcs::name());
+  printf("Press any key to stop\n");
 
-  const int ms_per_beat = 200;
+  const int ms_per_beat = 250;
   int beat = bgm_data[1] - 1; // begin a beat before the start
   int note_idx = 0;
   while (note_idx < num_bgm_notes) {
+    // Read the current note.
     int bgm_freq = bgm_data[2 * note_idx];
     int bgm_beat = bgm_data[2 * note_idx + 1];
+
+    // Wait until it's time to play this note.
     if (bgm_beat <= beat) {
-      Funcs::sound(bgm_freq);
+      if (bgm_freq > 0) {
+        Funcs::sound(bgm_freq);
+      } else {
+        nosound();
+      }
       note_idx++;
     }
+
+    // Move to the next beat.
     beat++;
     Funcs::delay(ms_per_beat);
+
+    // Check for user input.
+    if (Funcs::kbhit()) {
+      break;
+    }
   }
 
   // Silence playback.
-  Funcs::sound(0);
+  nosound();
 }
 
 int main() {
