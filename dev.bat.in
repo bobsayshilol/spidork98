@@ -1,3 +1,18 @@
+@echo off
+
+echo Mounting X drive
 mount X YOUR_X_PATH -nocachedir
+X:
+
+echo Setting up DJGPP
 PATH=%PATH%;X:\djgpp\bin
 set DJGPP=X:\djgpp\djgpp.env
+
+echo Available examples:
+cd EXAMPLES
+ls
+
+echo To build and run an example do the following:
+echo cd basic
+echo make
+echo basic.exe

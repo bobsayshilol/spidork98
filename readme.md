@@ -1,22 +1,30 @@
-# Setup dev environment
+# Development
 
-1. Run [`setup.ps1`](setup.ps1)
+Development uses [`DJGPP`](https://www.delorie.com/djgpp/) in the [`DOSBox-X`](https://dosbox-x.com/) emulator since it Just Works in most cases.
+
+[`Neko Project II`](https://www.yui.ne.jp/np2/) can be used for more accurate testing, but note that it requires a `PC-98` BIOS dump to work.
 
 
-# Use dev environment
+## Setup dev environment
+
+1. Run [`setup.ps1`](setup.ps1) (only needs running once)
+
+
+## Use dev environment
 
 1. Run [`run.ps1`](run.ps1)
 
 
 # Credits and references
 
-https://dosbox-x.com/
+## Emulators
 
-https://www.target-earth.net/wiki/doku.php?id=blog:pc98_devtools
+* [`DOSBox-X`](https://dosbox-x.com/)
+* [`Neko Project II`](https://www.yui.ne.jp/np2/)
 
-https://printf.neocities.org/programming
+## Technical references
 
-https://pc98.ne.jp/devdocs/
-
-https://www.koizuka.jp/~koizuka/master.lib/
-
+* [`DJGPP` setup guide](https://www.target-earth.net/wiki/doku.php?id=blog:pc98_devtools)
+* https://printf.neocities.org/programming
+* https://pc98.ne.jp/devdocs/
+* [`MASTER.LIB`](https://www.koizuka.jp/~koizuka/master.lib/) (incompatible with `DJGPP`)
