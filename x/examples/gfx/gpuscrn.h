@@ -3,7 +3,7 @@
 
 #include <dpmi.h>
 
-#define GPU_WIDTH 600
+#define GPU_WIDTH 640
 #define GPU_HEIGHT 400
 
 namespace gpu {
