@@ -28,3 +28,5 @@ Development uses [`DJGPP`](https://www.delorie.com/djgpp/) in the [`DOSBox-X`](h
 * https://printf.neocities.org/programming
 * https://pc98.ne.jp/devdocs/
 * [`MASTER.LIB`](https://www.koizuka.jp/~koizuka/master.lib/) (incompatible with `DJGPP`)
+* http://hackipedia.org/browse.cgi/Computer/Platform/PC,%20NEC%20PC-98
+* https://web.archive.org/web/20041225164712/http://www2.muroran-it.ac.jp/circle/mpc/program/pc98dos/index.html
