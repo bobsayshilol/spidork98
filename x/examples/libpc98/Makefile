@@ -3,8 +3,8 @@ include ..\\libpc98\\flags.mk
 
 # What we're building
 DEPS	+=
-OBJS	= main.o
-TARGET	= basic.exe
+OBJS	= gpuscrn.o
+TARGET	= libpc98.a
 
 # Build it
-include ..\\libpc98\\exe.mk
+include ..\\libpc98\\lib.mk

@@ -1,19 +1,10 @@
-CC	= gcc.exe
-STRIP	= strip.exe
-CFLAGS	= -mcpu=i386 -march=i386 -O3 -Wall
-LIBS	= #-lm
-DEPS	= funcs.h gpuscrn.h
-OBJS	= main.o gpuscrn.o
-EXE	= gfx.exe
+# Common flags
+include ..\\libpc98\\flags.mk
 
-%.o: %.cc $(DEPS)
-	$(CC) -x c++ -c -o $@ $< $(CFLAGS)
+# What we're building
+DEPS	+=
+OBJS	= main.o
+TARGET	= gfx.exe
 
-$(EXE): $(OBJS) $(LIBS)
-	$(CC) -o $@ $^ $(LIBS)
-	$(STRIP) $@
-
-.PHONY: clean
-
-clean:
-	del $(OBJS) $(EXE)
+# Build it
+include ..\\libpc98\\exe.mk
