@@ -1,4 +1,8 @@
-# Development
+# SPIDORK-98
+
+It stands for the Silly PC-98 Integrated Development On Real hardware Kit. Definitely nothing else.
+
+# How to use
 
 Development uses [`DJGPP`](https://www.delorie.com/djgpp/) in the [`DOSBox-X`](https://dosbox-x.com/) emulator since it Just Works in most cases.
 
@@ -7,12 +11,12 @@ Development uses [`DJGPP`](https://www.delorie.com/djgpp/) in the [`DOSBox-X`](h
 
 ## Setup dev environment
 
-1. Run [`setup.ps1`](setup.ps1) (only needs running once)
+1. Run [`setup.ps1`](setup.ps1) (only needs running once) to download and unzip the required tools.
 
 
-## Use dev environment
+## Launch dev environment
 
-1. Run [`run.ps1`](run.ps1)
+1. Run [`run.ps1`](run.ps1) to launch the dev environment.
 
 
 # Credits and references

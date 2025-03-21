@@ -8,11 +8,8 @@ echo Setting up DJGPP
 PATH=%PATH%;X:\djgpp\bin
 set DJGPP=X:\djgpp\djgpp.env
 
-echo Available examples:
 cd EXAMPLES
+echo Available examples:
 ls
-
-echo To build and run an example do the following:
-echo cd basic
-echo make
-echo basic.exe
+echo To build all examples simply run make
+echo Then to run an example do name/name.exe, eg basic/basic.exe

@@ -10,5 +10,5 @@ Expand-Archive -Path dosbox-x.zip -DestinationPath dosbox-x
 $xpath = Join-Path $PSScriptRoot "x"
 (Get-Content dev.bat.in).Replace('YOUR_X_PATH', $xpath) | Set-Content dosbox-x\mingw-build\mingw\drivez\dev.bat
 
-"All set up!"
-Read-Host -Prompt "Press the any key to close" | Out-Null
+"Development environment ready to go!"
+Read-Host -Prompt "Press the enter key to close" | Out-Null
