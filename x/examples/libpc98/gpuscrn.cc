@@ -240,7 +240,7 @@ namespace {
 template <typename CopyOp, typename T>
 void __inline__ scanline_copy(int line, T *data) {
   // Bind the find bank.
-  u8 volatile *const window0 = g_windows[0];
+  u8 *const window0 = g_windows[0];
   const BankInfo bank = pixel_to_bank(0, line);
   set_bank(Window::Window0, bank.bank);
 
@@ -252,7 +252,7 @@ void __inline__ scanline_copy(int line, T *data) {
 
   } else {
     // Split line needs both banks.
-    u8 volatile *const window1 = g_windows[1];
+    u8 *const window1 = g_windows[1];
     set_bank(Window::Window1, bank.bank + 1);
 
     // Copy from first bank.
@@ -263,7 +263,7 @@ void __inline__ scanline_copy(int line, T *data) {
 }
 
 struct ReadOp {
-  static __inline__ void copy(u8 *local, const u8 volatile *screen, int size) {
+  static __inline__ void copy(u8 *local, const u8 *screen, int size) {
     // Read word size at a time for performance.
     unsigned const *in = (unsigned const*)screen;
     unsigned *out = (unsigned*)local;
@@ -274,7 +274,7 @@ struct ReadOp {
 };
 
 struct WriteOp {
-  static __inline__ void copy(const u8 *local, u8 volatile *screen, int size) {
+  static __inline__ void copy(const u8 *local, u8 *screen, int size) {
     // Read word size at a time for performance.
     unsigned const *in = (unsigned const*)local;
     unsigned *out = (unsigned*)screen;
