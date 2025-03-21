@@ -164,8 +164,8 @@ void enable_text_layer(bool show) {
 
 void set_palette_colour(u8 pal_col, u8 r, u8 g, u8 b) {
 	outportb(PORT_PALETTE_NUM, pal_col);
-	outportb(PORT_PALETTE_GREEN, r);
-	outportb(PORT_PALETTE_RED, g);
+	outportb(PORT_PALETTE_RED, r);
+	outportb(PORT_PALETTE_GREEN, g);
 	outportb(PORT_PALETTE_BLUE, b);
 }
 
