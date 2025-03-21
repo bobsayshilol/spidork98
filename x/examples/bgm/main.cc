@@ -6,7 +6,7 @@
 
 template <typename Funcs>
 static void play() {
-  Funcs::clrscr();
+  Funcs::clear_screen();
   printf("Running on %s\n", Funcs::name());
   printf("Press any key to stop\n");
 
@@ -21,7 +21,7 @@ static void play() {
     // Wait until it's time to play this note.
     if (bgm_beat <= beat) {
       if (bgm_freq > 0) {
-        Funcs::sound(bgm_freq);
+        Funcs::pc_beep(bgm_freq);
       } else {
         nosound();
       }
@@ -30,10 +30,10 @@ static void play() {
 
     // Move to the next beat.
     beat++;
-    Funcs::delay(ms_per_beat);
+    Funcs::delay_ms(ms_per_beat);
 
     // Check for user input.
-    if (Funcs::kbhit()) {
+    if (Funcs::kb_hit()) {
       break;
     }
   }

@@ -8,19 +8,19 @@ extern "C" {
 namespace {
 
 struct FuncsAT {
-  static inline const char *name() { return "PC-AT Compatible"; }
-  static inline void clrscr() { clrscr_at(); }
-  static inline void delay(unsigned msec) { delay_at(msec); }
-  static inline void sound(int freq) { sound_at(freq); }
-  static inline bool kbhit() { return kbhit_at(); }
+  static __inline__ const char *name() { return "PC-AT Compatible"; }
+  static __inline__ void clear_screen() { clrscr_at(); }
+  static __inline__ void delay_ms(unsigned msec) { delay_at(msec); }
+  static __inline__ void pc_beep(int freq) { sound_at(freq); }
+  static __inline__ bool kb_hit() { return kbhit_at(); }
 };
 
 struct Funcs98 {
-  static inline const char *name() { return "PC-98"; }
-  static inline void clrscr() { clrscr_98(); }
-  static inline void delay(unsigned msec) { delay_98(msec); }
-  static inline void sound(int freq) { sound_98(freq); }
-  static inline bool kbhit() { return kbhit_98(); }
+  static __inline__ const char *name() { return "PC-98"; }
+  static __inline__ void clear_screen() { clrscr_98(); }
+  static __inline__ void delay_ms(unsigned msec) { delay_98(msec); }
+  static __inline__ void pc_beep(int freq) { sound_98(freq); }
+  static __inline__ bool kb_hit() { return kbhit_98(); }
 };
 
 } // namespace

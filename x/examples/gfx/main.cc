@@ -15,7 +15,7 @@ void wait_for_any_key() {
 
 template <typename Funcs>
 void play() {
-  Funcs::clrscr();
+  Funcs::clear_screen();
   printf("Running on %s\n", Funcs::name());
 
   if (!gpu::setup()) {
@@ -32,7 +32,7 @@ void play() {
 
   // Random colours.
   for (int i = 0; i < N; i++) {
-    Funcs::clrscr();
+    Funcs::clear_screen();
     printf("Colour test %i/%i\n", i + 1, N);
     const int r = rand() % 255;
     const int g = rand() % 255;
@@ -47,7 +47,7 @@ void play() {
 
   // Random rectangles.
   for (int i = 0; i < N; i++) {
-    Funcs::clrscr();
+    Funcs::clear_screen();
     printf("Quad test %i/%i\n", i + 1, N);
     const int x0 = rand() % GPU_WIDTH;
     const int y0 = rand() % GPU_HEIGHT;
@@ -62,7 +62,7 @@ void play() {
 
   // Cleanup.
   gpu::shutdown();
-  Funcs::clrscr();
+  Funcs::clear_screen();
 }
 
 } // namespace
