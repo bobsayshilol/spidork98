@@ -32,6 +32,10 @@ void draw_line(int x0, int y0, int x1, int y1, u8 pal_col);
 // Draw a quad from corner (x0, y0) -> (x1, y1)
 void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col);
 
+// Read/write a scanline (GPU_WIDTH in size).
+void read_scanline(int line, u8 *data);
+void write_scanline(int line, const u8 *data);
+
 } // namespace gpu
 
 #endif

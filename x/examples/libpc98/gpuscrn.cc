@@ -92,6 +92,20 @@ BankInfo __inline__ pixel_to_bank(int x, int y) {
   return info;
 }
 
+// Determine if a line crosses multiple banks, and where.
+int __inline__ bank_split_for_line(int line) {
+  switch (line) {
+    case 51: return 128;
+    case 102: return 256;
+    case 153: return 384;
+    case 204: return 512;
+    case 255: return 0;
+    case 307: return 128;
+    case 358: return 256;
+    default: return 0;
+  }
+}
+
 } // namespace raw
 
 bool setup() {
@@ -219,6 +233,65 @@ void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
       window0[addr] = pal_col;
     }
   }
+}
+
+namespace {
+
+template <typename CopyOp, typename T>
+void __inline__ scanline_copy(int line, T *data) {
+  // Bind the find bank.
+  u8 volatile *const window0 = g_windows[0];
+  const BankInfo bank = pixel_to_bank(0, line);
+  set_bank(Window::Window0, bank.bank);
+
+  // Determine if we need to split the line.
+  const int bank_split = bank_split_for_line(line);
+  if (bank_split == 0) {
+    // Copy the single line.
+    CopyOp::copy(data, window0 + bank.offset, GPU_WIDTH);
+
+  } else {
+    // Split line needs both banks.
+    u8 volatile *const window1 = g_windows[1];
+    set_bank(Window::Window1, bank.bank + 1);
+
+    // Copy from first bank.
+    CopyOp::copy(data, window0 + bank.offset, bank_split);
+    // Copy from second bank.
+    CopyOp::copy(data + bank_split, window1, GPU_WIDTH - bank_split);
+  }
+}
+
+struct ReadOp {
+  static __inline__ void copy(u8 *local, const u8 volatile *screen, int size) {
+    // Read word size at a time for performance.
+    unsigned const *in = (unsigned const*)screen;
+    unsigned *out = (unsigned*)local;
+    for (int i = 0; i < size / 4; i++) {
+      out[i] = in[i];
+    }
+  }
+};
+
+struct WriteOp {
+  static __inline__ void copy(const u8 *local, u8 volatile *screen, int size) {
+    // Read word size at a time for performance.
+    unsigned const *in = (unsigned const*)local;
+    unsigned *out = (unsigned*)screen;
+    for (int i = 0; i < size / 4; i++) {
+      out[i] = in[i];
+    }
+  }
+};
+
+} // namespace
+
+void read_scanline(int line, u8 *data) {
+  scanline_copy<ReadOp>(line, data);
+}
+
+void write_scanline(int line, const u8 *data) {
+  scanline_copy<WriteOp>(line, data);
 }
 
 } // namespace gpu
