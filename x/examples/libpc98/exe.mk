@@ -5,8 +5,8 @@
 	$(CC) $(CFLAGS) -x c++ -c -o $@ $<
 
 # Make an EXE
-$(TARGET): $(OBJS)
-	$(LD) -o $@ $^ $(LIBPC98)
+$(TARGET): $(OBJS) $(DEPS)
+	$(LD) -o $@ $(OBJS) $(LIBPC98)
 	$(STRIP) $@
 
 # Cleanup

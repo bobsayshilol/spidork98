@@ -5,7 +5,7 @@
 	$(CC) $(CFLAGS) -x c++ -c -o $@ $<
 
 # Make a LIB
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) $(DEPS)
 	$(AR) rcs $@ $(OBJS)
 	$(RANLIB) $@
 
