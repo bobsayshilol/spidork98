@@ -54,7 +54,7 @@
 // TODO: libstdc++ is very broken due to 8.3 filenames
 //#include <utility>
 template <typename T>
-static __inline__ void SWAP(T&l,T&r) {
+FORCEINLINE static void SWAP(T&l,T&r) {
   T t = l;
   l = r;
   r = t;
@@ -75,7 +75,7 @@ struct Window { enum E { Window0, Window1 }; };
 u8 *g_windows[2];
 
 // Map in a new bank to one of the windows.
-void __inline__ set_bank(Window::E window, short bank) {
+FORCEINLINE void set_bank(Window::E window, short bank) {
   _farpokew(_dos_ds, window == Window::Window1 ? MEMORY_MAP_WINDOW1_BANK_ADDR : MEMORY_MAP_WINDOW0_BANK_ADDR, bank);
 }
 
@@ -84,7 +84,7 @@ void __inline__ set_bank(Window::E window, short bank) {
 
 // Convert a pixel location to a bank and offset into that bank.
 struct BankInfo { int bank, offset; };
-BankInfo __inline__ pixel_to_bank(int x, int y) {
+FORCEINLINE BankInfo pixel_to_bank(int x, int y) {
   BankInfo info;
   const unsigned addr = pixel_to_addr(x, y);
   info.bank = addr / WINDOW_BANK_SIZE;
@@ -93,7 +93,7 @@ BankInfo __inline__ pixel_to_bank(int x, int y) {
 }
 
 // Determine if a line crosses multiple banks, and where.
-int __inline__ bank_split_for_line(int line) {
+FORCEINLINE int bank_split_for_line(int line) {
   switch (line) {
     case 51: return 128;
     case 102: return 256;
@@ -108,7 +108,7 @@ int __inline__ bank_split_for_line(int line) {
 
 } // namespace raw
 
-bool setup() {
+FASTCALL bool setup() {
   // Need near pointers to actually access memory.
   if (__djgpp_nearptr_enable() == 0) {
     return false;
@@ -144,7 +144,7 @@ bool setup() {
   return true;
 }
 
-void shutdown() {
+FASTCALL void shutdown() {
   // If we haven't setup a mapping then it's a no-op.
   if (!g_windows[0]) {
     return;
@@ -168,22 +168,22 @@ void shutdown() {
   __djgpp_nearptr_disable();
 }
 
-void swap() {
+FASTCALL void swap() {
   // TODO: double buffering with dual screen
 }
 
-void enable_text_layer(bool show) {
+FASTCALL void enable_text_layer(bool show) {
   outportb(PORT_GDC_TEXT_COMMAND, show ? GDC_COMMAND_START : GDC_COMMAND_STOP);
 }
 
-void set_palette_colour(u8 pal_col, u8 r, u8 g, u8 b) {
+FASTCALL void set_palette_colour(u8 pal_col, u8 r, u8 g, u8 b) {
 	outportb(PORT_PALETTE_NUM, pal_col);
 	outportb(PORT_PALETTE_RED, r);
 	outportb(PORT_PALETTE_GREEN, g);
 	outportb(PORT_PALETTE_BLUE, b);
 }
 
-void clear(u8 pal_col) {
+FASTCALL void clear(u8 pal_col) {
   u8 volatile *const window0 = g_windows[0];
   u8 volatile *const window1 = g_windows[1];
 
@@ -198,12 +198,12 @@ void clear(u8 pal_col) {
 }
 
 #if 0
-void draw_line(int x0, int y0, int x1, int y1, u8 pal_col) {
+FASTCALL void draw_line(int x0, int y0, int x1, int y1, u8 pal_col) {
   // TODO: implement
 }
 #endif
 
-void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
+FASTCALL void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
   // TODO: use both banks
   u8 volatile *const window0 = g_windows[0];
 
@@ -238,7 +238,7 @@ void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
 namespace {
 
 template <typename CopyOp, typename T>
-void __inline__ scanline_copy(int line, T *data) {
+FORCEINLINE void scanline_copy(int line, T *data) {
   // Bind the find bank.
   u8 *const window0 = g_windows[0];
   const BankInfo bank = pixel_to_bank(0, line);
@@ -263,7 +263,7 @@ void __inline__ scanline_copy(int line, T *data) {
 }
 
 struct ReadOp {
-  static __inline__ void copy(u8 *local, const u8 *screen, int size) {
+  FORCEINLINE static void copy(u8 *local, const u8 *screen, int size) {
     // Read word size at a time for performance.
     unsigned const *in = (unsigned const*)screen;
     unsigned *out = (unsigned*)local;
@@ -274,7 +274,7 @@ struct ReadOp {
 };
 
 struct WriteOp {
-  static __inline__ void copy(const u8 *local, u8 *screen, int size) {
+  FORCEINLINE static void copy(const u8 *local, u8 *screen, int size) {
     // Read word size at a time for performance.
     unsigned const *in = (unsigned const*)local;
     unsigned *out = (unsigned*)screen;
@@ -286,11 +286,11 @@ struct WriteOp {
 
 } // namespace
 
-void read_scanline(int line, u8 *data) {
+FASTCALL void read_scanline(int line, u8 *data) {
   scanline_copy<ReadOp>(line, data);
 }
 
-void write_scanline(int line, const u8 *data) {
+FASTCALL void write_scanline(int line, const u8 *data) {
   scanline_copy<WriteOp>(line, data);
 }
 
