@@ -2,7 +2,7 @@
 include ..\\libpc98\\flags.mk
 
 # What we're building
-DEPS	+=
+DEPS	+= $(LIBPC98)
 OBJS	= main.o
 TARGET	= fire.exe
 
