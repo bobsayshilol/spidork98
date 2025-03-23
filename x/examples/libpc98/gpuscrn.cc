@@ -94,6 +94,8 @@ FORCEINLINE BankInfo pixel_to_bank(int x, int y) {
 
 // Determine if a line crosses multiple banks, and where.
 FORCEINLINE int bank_split_for_line(int line) {
+  STATIC_ASSERT(GPU_WIDTH == 640);
+  STATIC_ASSERT(GPU_HEIGHT == 400);
   switch (line) {
     case 51: return 128;
     case 102: return 256;
@@ -239,7 +241,7 @@ namespace {
 
 template <typename CopyOp, typename T>
 FORCEINLINE void scanline_copy(int line, T *data) {
-  // Bind the find bank.
+  // Bind the bank.
   u8 *const window0 = g_windows[0];
   const BankInfo bank = pixel_to_bank(0, line);
   set_bank(Window::Window0, bank.bank);
@@ -262,25 +264,53 @@ FORCEINLINE void scanline_copy(int line, T *data) {
   }
 }
 
+template <typename CopyOp, typename T>
+FORCEINLINE void scanline_part_copy(int line, T *data, int start, int size) {
+  // Bind the bank.
+  u8 *const window0 = g_windows[0];
+  const BankInfo bank = pixel_to_bank(start, line);
+  set_bank(Window::Window0, bank.bank);
+
+  // Bank splits are multiples of 128 (see bank_split_for_line()) so if
+  // the size of the split is big enough we don't have to worry about a
+  // second bank.
+  STATIC_ASSERT((128 % SCANLINE_PART_WIDTH) == 0);
+
+  // Copy the single line.
+  CopyOp::copy(data, window0 + bank.offset, size);
+}
+
+FORCEINLINE void copy_n(const u8 * __restrict__ src, int size, u8 * __restrict__ dst) {
+  // Without the partial copies this would 128 (bank splits).
+#define SMALLEST_COPY_SIZE SCANLINE_PART_WIDTH
+
+  // Read word size at a time for performance.
+  STATIC_ASSERT(sizeof(unsigned) == 4);
+  STATIC_ASSERT((SMALLEST_COPY_SIZE % 4) == 0);
+  unsigned const *in = (unsigned const*)src;
+  unsigned *out = (unsigned*)dst;
+
+  // Unroll for even more performance.
+#define COPY_UNROLL_FACTOR 16
+#define COPY_ONE(o) out[i + o] = in[i + o];
+  STATIC_ASSERT(((SMALLEST_COPY_SIZE / 4) % COPY_UNROLL_FACTOR) == 0);
+  for (int i = 0; i < size / 4; i += COPY_UNROLL_FACTOR) {
+    COPY_ONE(0)  COPY_ONE(1)  COPY_ONE(2)  COPY_ONE(3)
+    COPY_ONE(4)  COPY_ONE(5)  COPY_ONE(6)  COPY_ONE(7)
+    COPY_ONE(8)  COPY_ONE(9)  COPY_ONE(10) COPY_ONE(11)
+    COPY_ONE(12) COPY_ONE(13) COPY_ONE(14) COPY_ONE(15)
+  }
+}
+
 struct ReadOp {
   FORCEINLINE static void copy(u8 *local, const u8 *screen, int size) {
-    // Read word size at a time for performance.
-    unsigned const *in = (unsigned const*)screen;
-    unsigned *out = (unsigned*)local;
-    for (int i = 0; i < size / 4; i++) {
-      out[i] = in[i];
-    }
+    copy_n(screen, size, local);
   }
 };
 
 struct WriteOp {
   FORCEINLINE static void copy(const u8 *local, u8 *screen, int size) {
-    // Read word size at a time for performance.
-    unsigned const *in = (unsigned const*)local;
-    unsigned *out = (unsigned*)screen;
-    for (int i = 0; i < size / 4; i++) {
-      out[i] = in[i];
-    }
+    copy_n(local, size, screen);
   }
 };
 
@@ -292,6 +322,14 @@ FASTCALL void read_scanline(int line, u8 *data) {
 
 FASTCALL void write_scanline(int line, const u8 *data) {
   scanline_copy<WriteOp>(line, data);
+}
+
+FASTCALL void read_scanline_part(int line, int part, u8 (&data)[SCANLINE_PART_WIDTH]) {
+  scanline_part_copy<ReadOp>(line, data, part * SCANLINE_PART_WIDTH, SCANLINE_PART_WIDTH);
+}
+
+FASTCALL void write_scanline_part(int line, int part, const u8 (&data)[SCANLINE_PART_WIDTH]) {
+  scanline_part_copy<WriteOp>(line, data, part * SCANLINE_PART_WIDTH, SCANLINE_PART_WIDTH);
 }
 
 } // namespace gpu
