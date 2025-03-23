@@ -1,8 +1,10 @@
-"If DOSBox-X launches to a black screen, change Video -> Output to Surface."
-""
-"Don't forget to change CPU -> Emulate CPU speed -> 486DX 33MHz"
-Read-Host -Prompt "Press the enter key to continue" | Out-Null
-
-"Launching DOSBox-X"
+"Launching DOSBox-X, simulating a PC-9821AS2 (or close enough)"
 cd dosbox-x\mingw-build\mingw
-./dosbox-x.exe -machine pc9821 -c "dev.bat" -output surface | Out-Null
+./dosbox-x.exe `
+  -set machine=pc9821 `
+  -set cputype=486_prefetch `
+  -set fpu=false `
+  -set cycles=12000 `
+  -set output=surface `
+  -c "dev.bat" `
+  | Out-Null
