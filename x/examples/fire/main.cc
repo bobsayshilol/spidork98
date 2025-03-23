@@ -4,6 +4,7 @@
 
 #include "funcs.h"
 #include "gpuscrn.h"
+#include "profile.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -15,14 +16,21 @@
 
 namespace {
 
+// Profiling sections.
+PROFILE_DECLARE_SECTION(draw_hotspots);
+PROFILE_DECLARE_SECTION(move_hotspots);
+PROFILE_DECLARE_SECTION(draw_screen);
+
 // The scanline we'll update to give the fire effect.
 ALIGNAS(4) gpu::u8 scanline_data[GPU_WIDTH];
 
 // Hotspot locations.
-const int num_hotspots = 16;
+const int num_hotspots = 32;
 int hotspot_locations[num_hotspots];
 
 void draw_hotspots() {
+  PROFILE_TIME_SECTION(draw_hotspots);
+
   // Blank out the bottom line.
   for (int x = 0; x < GPU_WIDTH; x++) {
       scanline_data[x] = 0;
@@ -60,6 +68,8 @@ int rand_between(int a, int b) {
 }
 
 void move_hotspots() {
+  PROFILE_TIME_SECTION(move_hotspots);
+
   const int move_speed = 2;
   for (int i = 0; i < num_hotspots; i++) {
     int & x = hotspot_locations[i];
@@ -70,7 +80,12 @@ void move_hotspots() {
   }
 }
 
+// Lookup table for the next iteration step of the main loop.
+gpu::u8 decrement_if_positive_lookup[256];
+
 void draw_screen() {
+  PROFILE_TIME_SECTION(draw_screen);
+
   // Draw from the top down, excluding the bottom line.
   // The maximum value is 255 so we only need to process that many lines.
   for (int y = GPU_HEIGHT - 256; y < GPU_HEIGHT - 1; y++) {
@@ -79,17 +94,17 @@ void draw_screen() {
 
     // Decrement the intensity of each pixel.
 #if 0 // Basic implementation.
-  for (int x = 0; x < GPU_WIDTH; x += PIXEL_SPACING) {
-    if (scanline_data[x] > 0) {
-      scanline_data[x] -= 1;
+    for (int x = 0; x < GPU_WIDTH; x += PIXEL_SPACING) {
+      if (scanline_data[x] > 0) {
+        scanline_data[x] -= 1;
+      }
     }
-  }
 #else // Unroll it 16 times for much better performance.
     for (int x = 0; x < GPU_WIDTH; x += PIXEL_SPACING * 16) {
 #define DECREMENT_IF_POSITIVE(o) \
   { \
     gpu::u8 &pixel = scanline_data[(x) + PIXEL_SPACING * (o)]; \
-    pixel -= pixel != 0; \
+    pixel = decrement_if_positive_lookup[pixel]; \
   }
       DECREMENT_IF_POSITIVE(0)  DECREMENT_IF_POSITIVE(1)  DECREMENT_IF_POSITIVE(2)  DECREMENT_IF_POSITIVE(3)
       DECREMENT_IF_POSITIVE(4)  DECREMENT_IF_POSITIVE(5)  DECREMENT_IF_POSITIVE(6)  DECREMENT_IF_POSITIVE(7)
@@ -114,6 +129,12 @@ void play() {
 
   // Seed the RNG.
   srand(time(0));
+
+  // Build lookup table.
+  decrement_if_positive_lookup[0] = 0;
+  for (int i = 1; i < 256; i++) {
+    decrement_if_positive_lookup[i] = i - 1;
+  }
 
   // Spread out the initial hotspots.
   for (int i = 0; i < num_hotspots; i++) {
@@ -155,6 +176,8 @@ void play() {
       printf("%iFPKS\n", fps);
       num_frames = 0;
       last_time = now;
+      // Log the timings too.
+      PROFILE_PRINT_TIMINGS();
     }
   }
 
