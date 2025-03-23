@@ -37,8 +37,8 @@ void draw_hotspots() {
   }
 
   // Fill in the current hotspots and their neighbours.
-#define BLUR_WIDTH 30
-#define BLUR_FALLOFF 8
+#define BLUR_WIDTH 20
+#define FIRE_POWER 4
   for (int i = 0; i < num_hotspots; i++) {
     const int x = hotspot_locations[i];
     STATIC_ASSERT((BLUR_WIDTH % PIXEL_SPACING) == 0);
@@ -48,16 +48,15 @@ void draw_hotspots() {
       // Handle wrap around.
       if (p < 0) p += GPU_WIDTH;
       if (p >= GPU_WIDTH) p -= GPU_WIDTH;
-      // Reduce the intensity of the neighbours.
-      STATIC_ASSERT(255 - BLUR_FALLOFF * BLUR_WIDTH > 0);
-      const gpu::u8 value = 255 - BLUR_FALLOFF * adx;
-      gpu::u8 & pixel = scanline_data[p];
-      if (pixel < value) {
-        pixel = value;
-      }
+      // Add the contribution from this hotspot.
+      STATIC_ASSERT(FIRE_POWER * BLUR_WIDTH < 255);
+      const unsigned delta = FIRE_POWER * BLUR_WIDTH - adx;
+      unsigned pixel = scanline_data[p];
+      pixel += delta;
+      scanline_data[p] = pixel > 255 ? 255 : pixel;
     }
   }
-  
+
   // Write it to the bottom line.
   gpu::write_scanline(GPU_HEIGHT - 1, scanline_data);
 }
