@@ -133,7 +133,7 @@ void play() {
   }
 
   // Timings to calculate FPS.
-  clock_t last_time = Funcs::now();
+  uclock_t last_time = Funcs::ticks();
   int num_frames = 0;
 
   while (true) {
@@ -146,12 +146,12 @@ void play() {
     move_hotspots();
     draw_screen();
 
-    // Report the FPS.
-    const clock_t now = Funcs::now();
+    // Report the FPS once a second.
+    const uclock_t now = Funcs::ticks();
     num_frames++;
-    if (now - last_time > CLOCKS_PER_SEC * 5) {
+    if (now - last_time > Funcs::ticks_per_sec()) {
       Funcs::clear_screen();
-      const int fps = (num_frames * CLOCKS_PER_SEC * 1000) / (now - last_time);
+      const int fps = (num_frames * Funcs::ticks_per_sec() * 1000) / (now - last_time);
       printf("%iFPKS\n", fps);
       num_frames = 0;
       last_time = now;

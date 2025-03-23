@@ -15,7 +15,8 @@ struct FuncsAT {
   static FORCEINLINE void delay_ms(unsigned msec) { delay_at(msec); }
   static FORCEINLINE void pc_beep(int freq) { sound_at(freq); }
   static FORCEINLINE bool kb_hit() { return kbhit_at(); }
-  static FORCEINLINE clock_t now() { return clock_at(); }
+  static FORCEINLINE uclock_t ticks() { return uclock_at(); }
+  static FORCEINLINE uclock_t ticks_per_sec() { return UCLOCKS_PER_SEC; }
 };
 
 struct Funcs98 {
@@ -24,7 +25,8 @@ struct Funcs98 {
   static FORCEINLINE void delay_ms(unsigned msec) { delay_98(msec); }
   static FORCEINLINE void pc_beep(int freq) { sound_98(freq); }
   static FORCEINLINE bool kb_hit() { return kbhit_98(); }
-  static FORCEINLINE clock_t now() { return clock_98(); }
+  static FORCEINLINE uclock_t ticks() { return uclock_98(); }
+  static FORCEINLINE uclock_t ticks_per_sec() { return UCLOCKS_PER_SEC; }
 };
 
 } // namespace
