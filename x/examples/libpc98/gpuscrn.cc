@@ -290,16 +290,18 @@ FORCEINLINE void copy_n(const u8 * __restrict__ src, int size, u8 * __restrict__
   unsigned const *in = (unsigned const*)src;
   unsigned *out = (unsigned*)dst;
 
-  // Unroll for even more performance.
-#define COPY_UNROLL_FACTOR 16
-#define COPY_ONE(o) out[i + o] = in[i + o];
-  STATIC_ASSERT(((SMALLEST_COPY_SIZE / 4) % COPY_UNROLL_FACTOR) == 0);
-  for (int i = 0; i < size / 4; i += COPY_UNROLL_FACTOR) {
-    COPY_ONE(0)  COPY_ONE(1)  COPY_ONE(2)  COPY_ONE(3)
-    COPY_ONE(4)  COPY_ONE(5)  COPY_ONE(6)  COPY_ONE(7)
-    COPY_ONE(8)  COPY_ONE(9)  COPY_ONE(10) COPY_ONE(11)
-    COPY_ONE(12) COPY_ONE(13) COPY_ONE(14) COPY_ONE(15)
-  }
+  // Stolen from ___dj_movedata, but with the outer bits removed.
+  __asm__ __volatile__ (
+    "cld\n"
+    // gcc is too old to let me do this directly
+    "mov %0, %%edi\n"
+    "mov %1, %%esi\n"
+    "mov %2, %%ecx\n"
+    "rep movsl\n"
+    : // no outputs
+    : "r"(out), "r"(in), "r"(size / 4)
+    : "memory", "edi", "esi", "ecx"
+  );
 }
 
 struct ReadOp {
