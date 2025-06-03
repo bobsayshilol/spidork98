@@ -6,7 +6,7 @@
 
 # Make an EXE
 $(TARGET): $(OBJS) $(DEPS)
-	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBPC98)
+	$(LD) -o $@ $(OBJS) $(LIBPC98) $(LDFLAGS)
 	$(STRIP) $@
 
 # Cleanup
