@@ -2,8 +2,8 @@
 include ..\\libpc98\\flags.mk
 
 # What we're building
-DEPS	+= notes.h maths.h
-OBJS	= main.o sincos.s
+DEPS	+=
+OBJS	= main.o
 TARGET	= pcm.exe
 
 # Build it
