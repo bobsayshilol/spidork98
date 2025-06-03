@@ -35,7 +35,7 @@
 // Mute control.
 //   0:0 - 1=muted, 0=not
 #define PORT_MUTE 0xA66E
-// 32KB FIFO buffer.
+// 32KB FIFO buffer. signed char.
 #define PORT_PCM_DATA 0xA46C
 
 namespace pcm {
@@ -113,8 +113,8 @@ void reset_fifo(SamplingRate::E rate, SampleSize::E size, Panning::E panning) {
   muted &= 0xFE; // 11111110
   outportb(PORT_MUTE, muted);
 
-  // Set volume.
-  const unsigned char volume = 0xA0; // 10100000
+  // Set volume, 50% or it Hertz.
+  const unsigned char volume = 0xA8; // 10101000
   outportb(PORT_FIFO_STATUS, volume);
 
   // Clean out FIFO.
@@ -130,21 +130,52 @@ void enable_playback() {
   outportb(PORT_FIFO_CONTROL, fifo_ctrl);
 }
 
-} // namespace
+int to_hz(SamplingRate::E rate) {
+  switch (rate) {
+    case SamplingRate::kHz_44_1: return 44100;
+    case SamplingRate::kHz_33:   return 33080;
+    case SamplingRate::kHz_22:   return 22050;
+    case SamplingRate::kHz_16_5: return 16540;
+    case SamplingRate::kHz_11:   return 11030;
+    case SamplingRate::kHz_8_3:  return 8270;
+    case SamplingRate::kHz_5_5:  return 5520;
+    case SamplingRate::kHz_4_1:  return 4130;
+  }
+  return -1;
+}
 
-void generate_audio() {
-  const unsigned long sampling_rate = 16500;
-  const unsigned long freq = 300;
-  const int bytes_per_frame = 2; // 8bits, stereo
-  for (int t = 0; t < 32768 / bytes_per_frame; t++) {
-    int f = maths::sin(t * freq * 256 / sampling_rate);
-    unsigned char val = 0x80 + f;
+void generate_audio(SamplingRate::E rate, SampleSize::E size, Panning::E panning) {
+  (void)size; // TODO: 16 bit
+
+  // mono is 1 sample, stereo 2 samples.
+  const int bytes_per_frame = panning == Panning::pan_stereo ? 2 : 1;
+  const int num_samples = 0x8000 / bytes_per_frame;
+
+  const unsigned long sampling_rate = to_hz(rate);
+  const unsigned long freq1 = 523; // C
+  const unsigned long freq2 = 660; // E
+  const unsigned long freq3 = 783; // G
+  const unsigned long freq4 = 988; // B
+  for (int t = 0; t < num_samples; t++) {
+    int val = 0;
+    val += maths::sin(t * (freq1 * 256) / sampling_rate);
+    val += maths::sin(t * (freq2 * 256) / sampling_rate);
+    val += maths::sin(t * (freq3 * 256) / sampling_rate);
+    val += maths::sin(t * (freq4 * 256) / sampling_rate);
+    val /= 4;
     outportb(PORT_PCM_DATA, val); // l
     outportb(PORT_PCM_DATA, val); // r
   }
 }
 
-bool init() {
+} // namespace
+
+FASTCALL bool init(SamplingRate::E rate, SampleSize::E size, Panning::E panning) {
+  if (size != SampleSize::bits_8) {
+    printf("Only 8bit audio is implemented\n");
+    return false;
+  }
+
   unsigned char const sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
   unsigned char const hw_id = sound_id >> 4;
   printf("Audio device like: %s\n", device_name(hw_id));
@@ -165,10 +196,10 @@ bool init() {
   s_old_mute = inportb(PORT_MUTE);
 
   // Reset so we don't get random static.
-  reset_fifo(SamplingRate::kHz_16_5, SampleSize::bits_8, Panning::pan_stereo);
+  reset_fifo(rate, size, panning);
 
   // Hack up something for now.
-  generate_audio();
+  generate_audio(rate, size, panning);
   enable_playback();
 
   // All done.
@@ -176,7 +207,7 @@ bool init() {
   return true;
 }
 
-void shutdown() {
+FASTCALL void shutdown() {
   if (!s_inited) return;
   s_inited = false;
 

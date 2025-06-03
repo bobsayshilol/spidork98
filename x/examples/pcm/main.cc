@@ -8,7 +8,7 @@ template <typename Funcs>
 static void play() {
   printf("Running on %s\n", Funcs::name());
 
-  if (!pcm::init()) {
+  if (!pcm::init(pcm::SamplingRate::kHz_8_3, pcm::SampleSize::bits_8, pcm::Panning::pan_stereo)) {
     printf("Failed to init PCM\n");
     return;
   }

@@ -1,6 +1,8 @@
 #ifndef PCM_H
 #define PCM_H
 
+#include "macros.h"
+
 namespace pcm {
 
 struct SamplingRate {
@@ -20,8 +22,8 @@ struct SamplingRate {
 struct SampleSize {
   // These values match the raw value you'd write to the port.
   enum E {
-    bits_8 = 0 << 6,
-    bits_16 = 1 << 6,
+    bits_8 = 1 << 6,
+    bits_16 = 0 << 6,
   };
 };
 
@@ -36,11 +38,8 @@ struct Panning {
 
 
 // Init/shutdown the PCM system.
-bool init();
-void shutdown();
-
-// Generate some testing data.
-void generate_audio();
+FASTCALL bool init(SamplingRate::E rate, SampleSize::E size, Panning::E panning);
+FASTCALL void shutdown();
 
 } // namespace pcm
 
