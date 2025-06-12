@@ -14,4 +14,4 @@ CFLAGS	+= -mcpu=i486 -march=i486 -O3
 LIBPC98	= ..\\libpc98\\libpc98.a
 CFLAGS	+= -I..\\libpc98
 LDFLAGS	= -g
-DEPS	= ..\\libpc98\\funcs.h ..\\libpc98\\gpuscrn.h ..\\libpc98\\macros.h ..\\libpc98\\profile.h
+DEPS	= ..\\libpc98\\funcs.h ..\\libpc98\\gpuscrn.h ..\\libpc98\\macros.h ..\\libpc98\\maths.h ..\\libpc98\\pcm.h ..\\libpc98\\profile.h
