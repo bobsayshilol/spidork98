@@ -208,7 +208,7 @@ void refill_data_stereo() {
     outportb(PORT_PCM_DATA, *buffer++);
     outportb(PORT_PCM_DATA, *buffer++);
   }
-  for (int i = 0; i < size & 3; i++) {
+  for (int i = 0; i < (size & 3); i++) {
     outportb(PORT_PCM_DATA, *buffer++);
   }
 
@@ -233,7 +233,7 @@ void refill_data_mono() {
     outportb(PORT_PCM_DATA, v1);
     outportb(PORT_PCM_DATA, v1);
   }
-  for (int i = 0; i < size & 1; i++) {
+  for (int i = 0; i < (size & 1); i++) {
     const signed char v0 = *buffer++;
     outportb(PORT_PCM_DATA, v0);
     outportb(PORT_PCM_DATA, v0);
