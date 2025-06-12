@@ -36,10 +36,48 @@ struct Panning {
   };
 };
 
+struct Format {
+  enum E {
+    fmt_mono = 1,
+    fmt_stereo = 0,
+  };
+};
 
-// Init/shutdown the PCM system.
-FASTCALL bool init(SamplingRate::E rate, SampleSize::E size, Panning::E panning);
+struct Volume {
+  // These values match the raw value you'd write to the port.
+  enum E {
+    vol_max = 0x0,
+    vol_3_quater = 0x4,
+    vol_half = 0x8,
+    vol_1_quater = 0xB,
+    vol_min = 0xF,
+  };
+};
+
+namespace detail {
+extern "C" bool g_pcm_buffer_empty;
+} // detail
+
+// Init the PCM system.
+// Data will be read from the provided buffer, which should be filled() when it's empty.
+FASTCALL bool init(SamplingRate::E rate, Format::E format, const signed char *buffer);
+FASTCALL bool init(SamplingRate::E rate, Format::E format, const signed short *buffer); // not implemented
+
+// Stop any playback and shutdown the PCM system.
 FASTCALL void shutdown();
+
+// Convert an enum to its Hz.
+FASTCALL int to_hz(SamplingRate::E rate);
+
+// Change the volume.
+FASTCALL void set_volume(Volume::E volume);
+
+// Needs checking often to see if we need more data filling the read buffer.
+FASTCALL bool is_empty(); // { return detail::g_pcm_buffer_empty; }
+
+// Report to the system that the buffer has been filled with this many elements.
+// Should only be called when is_empty(), with a max size of 32KB.
+FASTCALL void filled(unsigned short buffer_elems);
 
 } // namespace pcm
 
