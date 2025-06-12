@@ -208,8 +208,11 @@ void refill_data_stereo() {
     outportb(PORT_PCM_DATA, *buffer++);
     outportb(PORT_PCM_DATA, *buffer++);
   }
-  for (int i = 0; i < (size & 3); i++) {
-    outportb(PORT_PCM_DATA, *buffer++);
+  switch (size & 3) {
+    case 3: outportb(PORT_PCM_DATA, *buffer++);
+    case 2: outportb(PORT_PCM_DATA, *buffer++);
+    case 1: outportb(PORT_PCM_DATA, *buffer++);
+    case 0: break;
   }
 
 #if USE_INTERRUPTS
@@ -233,7 +236,7 @@ void refill_data_mono() {
     outportb(PORT_PCM_DATA, v1);
     outportb(PORT_PCM_DATA, v1);
   }
-  for (int i = 0; i < (size & 1); i++) {
+  if (size & 1) {
     const signed char v0 = *buffer++;
     outportb(PORT_PCM_DATA, v0);
     outportb(PORT_PCM_DATA, v0);

@@ -7,8 +7,8 @@ STRIP	= strip.exe
 
 # Compiler options
 CFLAGS	= -g -Wall -Werror -Wparentheses
-#CFLAGS	+= -mcpu=i486 -march=i486 -O3
-CFLAGS	+= -mcpu=i386 -march=i386 -O3
+CFLAGS	+= -mcpu=i486 -march=i486 -O3
+#CFLAGS	+= -mcpu=i386 -march=i386 -O3
 
 # LIBPC98 target
 LIBPC98	= ..\\libpc98\\libpc98.a
