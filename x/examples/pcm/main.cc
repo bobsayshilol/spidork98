@@ -4,19 +4,13 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 namespace {
 
-// I think there's a bug in the emulator since audio continues playing after quitting.
-// But it's equally likely that there's a hole in my understanding of the FIFO.
-// For now, use bigger buffer sizes to reduce hitching (it's still bad though).
-#define AUDIO_BUFFER_SAMPLES (1024 * 2)
-STATIC_ASSERT(AUDIO_BUFFER_SAMPLES < 0x8000);
-signed char s_audio_buffer[AUDIO_BUFFER_SAMPLES];
-
 #define AUDIO_DEBUG 0
 
-unsigned char generate_audio(pcm::SamplingRate::E rate, pcm::Format::E format, unsigned char last_t, int num_samples) {
+unsigned char generate_audio(pcm::SamplingRate::E rate, pcm::Format::E format, unsigned char last_t, signed char *out, int num_samples) {
   (void)format; // assume mono for now
 
 #if AUDIO_DEBUG
@@ -29,7 +23,6 @@ unsigned char generate_audio(pcm::SamplingRate::E rate, pcm::Format::E format, u
   const unsigned long freq2 = 660; // E
   const unsigned long freq3 = 783; // G
   const unsigned long freq4 = 988; // B
-  signed char *out = s_audio_buffer;
   for (int t = last_t; t < num_samples + last_t; t++) {
     int val = 0;
     val += maths::sin(t * (freq1 * 256) / sampling_rate);
@@ -49,18 +42,30 @@ unsigned char generate_audio(pcm::SamplingRate::E rate, pcm::Format::E format, u
 } // namespace
 
 template <typename Funcs>
-static void play() {
+static bool play(int buffer_size) {
   printf("Running on %s\n", Funcs::name());
 
+  // Allocate a new buffer for us to work with.
+  signed char *buffer = static_cast<signed char*>(malloc(buffer_size));
+  if (!buffer) {
+    printf("Failed to allocate data\n");
+    return false;
+  }
+  DEFER(signed char *, ptr, buffer, free(ptr));
+
+  // Clear it out.
+  memset(buffer, 0, buffer_size);
+
+  // Setup PCM.
   const pcm::SamplingRate::E pcm_rate = pcm::SamplingRate::kHz_8_3;
   const pcm::Format::E pcm_format = pcm::Format::fmt_mono;
-  if (!pcm::init(pcm_rate, pcm_format, s_audio_buffer)) {
+  if (!pcm::init(pcm_rate, pcm_format, buffer)) {
     printf("Failed to init PCM\n");
-    return;
+    return false;
   }
 
   const int hz = pcm::to_hz(pcm_rate);
-  printf("Audio buffer size: %u samples (%llims @ %iHz)\n", AUDIO_BUFFER_SAMPLES, AUDIO_BUFFER_SAMPLES * 1000LL / hz, hz);
+  printf("Audio buffer size: %u samples (%llims @ %iHz)\n", buffer_size, buffer_size * 1000LL / hz, hz);
 
   printf("Press any key to stop\n");
   unsigned iteration = 0;
@@ -74,12 +79,12 @@ static void play() {
       refills++;
 
       // Running low, generate more audio.
-      last_t = generate_audio(pcm_rate, pcm_format, last_t, AUDIO_BUFFER_SAMPLES);
+      last_t = generate_audio(pcm_rate, pcm_format, last_t, buffer, buffer_size);
 #if 0 // debugging
-if (iteration & 7)
+if (refills & 7)
 #endif
-      pcm::filled(AUDIO_BUFFER_SAMPLES);
-      printf("Regened %i samples [%u - %u]\n", AUDIO_BUFFER_SAMPLES, refills, iteration);
+      pcm::filled(buffer_size);
+      printf("Regened %i samples [%u - %u]\n", buffer_size, refills, iteration);
     }
 
     // Check for user input.
@@ -90,17 +95,25 @@ if (iteration & 7)
 
   // Reset PCM state.
   pcm::shutdown();
+  return true;
 }
 
-int main() {
-  int m = __crt0_mtype;
-  if (ISPCAT(m)) {
-    printf("Can't run on PC-AT\n");
+int main(int argc, const char **argv) {
+  if (!ISPC98(__crt0_mtype)) {
+    printf("Can only run on PC-98\n");
     return EXIT_FAILURE;
-  } else if (ISPC98(m)) {
-    play<Funcs98>();
-  } else {
-    printf("Unknown CPU type: %d\n", m);
+  } else if (argc != 2) {
+    printf("Usage: %s <size>\nsize must be a power of 2\n512, 1024, 2048 are good choices", argv[0]);
+    return EXIT_FAILURE;
+  }
+
+  int const buffer_size = atoi(argv[1]);
+  if (buffer_size < 0 || (buffer_size & (buffer_size - 1))) {
+    printf("Buffer size isn't a power of 2: %i\n", buffer_size);
+    return EXIT_FAILURE;
+  }
+
+  if (!play<Funcs98>(buffer_size)) {
     return EXIT_FAILURE;
   }
 

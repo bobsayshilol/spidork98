@@ -23,4 +23,15 @@
 #define STATIC_ASSERT(x) struct CONCAT(_static_assert, __LINE__) \
     { char static_assert_failed[(x) ? 1 : -1]; }
 
+// Defer some code until destruction.
+// Example:
+//   void *ptr = malloc(1);
+//   DEFER( void* , p , ptr , free(p) );
+#define DEFER(type_, var_, init_, code_) \
+  struct CONCAT(_defer_t, __LINE__) { \
+    CONCAT(_defer_t, __LINE__) (type_ var_) : var_ (var_) {} \
+    CONCAT(~_defer_t, __LINE__) () { code_ ; } \
+    type_ var_ ; \
+  } CONCAT(_defer_val, __LINE__) (init_)
+
 #endif
