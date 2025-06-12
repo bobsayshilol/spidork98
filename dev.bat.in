@@ -1,15 +1,24 @@
 @echo off
 
-echo Mounting X drive
-mount X YOUR_X_PATH -nocachedir
-X:
+echo ========
+echo Setting up dev environment
 
-echo Setting up DJGPP
+echo ========
+echo Mounting drives
+mount X DRIVES_PATH\x -nocachedir
+rem mount Y DRIVES_PATH\y -nocachedir
+
+echo ========
+rem echo Setting up DJGPP
 PATH=%PATH%;X:\djgpp\bin
 set DJGPP=X:\djgpp\djgpp.env
+rem echo Setting up Turbo C++
+rem PATH=Y:\TC4\BIN;Y:\TASM;Y:\TD;Y:\TPROF;%PATH%
 
+echo ========
+X:
 cd EXAMPLES
 echo Available examples:
-ls
+dir /b /ad
 echo To build all examples simply run make
 echo Then to run an example do name/name.exe, eg basic/basic.exe
