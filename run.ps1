@@ -6,5 +6,6 @@ cd dosbox-x\mingw-build\mingw
   -set fpu=false `
   -set cycles=12000 `
   -set output=surface `
+  -set sensitivity=1,1 `
   -c "dev.bat" `
   | Out-Null

@@ -1,6 +1,6 @@
 # Build libpc98 first so that the examples can use it
 all:
-	for %n in (libpc98 basic bgm gfx fire bench pcm) do make -C %n
+	for %n in (libpc98 basic bgm gfx fire bench pcm mouse) do make -C %n
 
 clean:
-	for %n in (libpc98 basic bgm gfx fire bench pcm) do make -C %n clean
+	for %n in (libpc98 basic bgm gfx fire bench pcm mouse) do make -C %n clean
