@@ -65,8 +65,8 @@ static _go32_dpmi_seginfo g_pcm_old_handler;
 #else // USE_INTERRUPTS
 namespace {
 
-const signed char *g_pcm_fifo_buffer;
-unsigned short g_pcm_fifo_size;
+const i8 *g_pcm_fifo_buffer;
+u16 g_pcm_fifo_size;
 void (*s_pcm_refill_data)(void);
 
 // Keep track of how far behind we are and request top ups as we go.
@@ -84,13 +84,13 @@ namespace {
 // System inited.
 bool s_inited;
 // Saved FIFO state.
-unsigned char s_old_fifo_status;
-unsigned char s_old_fifo_control;
-unsigned char s_old_bitrate_pan;
-unsigned char s_old_mute;
+u8 s_old_fifo_status;
+u8 s_old_fifo_control;
+u8 s_old_bitrate_pan;
+u8 s_old_mute;
 
 // Get the audio device name.
-const char * device_name(unsigned char hw_id) {
+const char * device_name(u8 hw_id) {
   switch (hw_id) {
     case 0: return "PC-98DO+";
     case 1: return "PC-98GS";
@@ -107,18 +107,18 @@ const char * device_name(unsigned char hw_id) {
 }
 
 #if USE_INTERRUPTS
-unsigned char get_interrupt_port_w(unsigned char hw_id) {
+u8 get_interrupt_port_w(u8 hw_id) {
   return (hw_id == 3 || hw_id == 5) ? 0x0288 : 0x0188;
 }
 
-unsigned char get_interrupt(unsigned char hw_id) {
+u8 get_interrupt(u8 hw_id) {
   // Find the ports we need to use. The read port is the next address up.
-  const unsigned short interrupt_port_w = get_interrupt_port_w(hw_id);
-  const unsigned short interrupt_port_r = interrupt_port_w + 2;
+  const u16 interrupt_port_w = get_interrupt_port_w(hw_id);
+  const u16 interrupt_port_r = interrupt_port_w + 2;
   // Write to it and read back the result.
   // TODO: document these ports better
   outportb(interrupt_port_w, 0x0E);
-  const unsigned char result = inportb(interrupt_port_r);
+  const u8 result = inportb(interrupt_port_r);
   // Map that to an interrupt.
   switch (result >> 6) {
     case 0: return 0;
@@ -136,7 +136,7 @@ void reset_fifo(SamplingRate::E rate, SampleSize::E size) {
   const Panning::E panning = Panning::pan_stereo;
 
   // Disable FIFO.
-  unsigned char fifo_ctrl = inportb(PORT_FIFO_CONTROL);
+  u8 fifo_ctrl = inportb(PORT_FIFO_CONTROL);
   fifo_ctrl &= 0x1f; // 00011111
   outportb(PORT_FIFO_CONTROL, fifo_ctrl);
 
@@ -150,17 +150,17 @@ void reset_fifo(SamplingRate::E rate, SampleSize::E size) {
   // Playback, no interrupts, set rate.
   //fifo_ctrl &= 0xF0; // 11110000
   fifo_ctrl &= 0xB0; //10110000
-  fifo_ctrl |= static_cast<unsigned char>(rate);
+  fifo_ctrl |= static_cast<u8>(rate);
   outportb(PORT_FIFO_CONTROL, fifo_ctrl);
 
   // Set other options.
-  unsigned char fifo_bitrate = 0x82; // 10000010
-  fifo_bitrate |= static_cast<unsigned char>(size);
-  fifo_bitrate |= static_cast<unsigned char>(panning);
+  u8 fifo_bitrate = 0x82; // 10000010
+  fifo_bitrate |= static_cast<u8>(size);
+  fifo_bitrate |= static_cast<u8>(panning);
   outportb(PORT_BITRATE_PAN, fifo_bitrate);
 
   // Unmute.
-  unsigned char muted = inportb(PORT_MUTE);
+  u8 muted = inportb(PORT_MUTE);
   muted &= 0xFE; // 11111110
   outportb(PORT_MUTE, muted);
 
@@ -177,7 +177,7 @@ void reset_fifo(SamplingRate::E rate, SampleSize::E size) {
 
 void enable_playback() {
   // Enable FIFO.
-  unsigned char fifo_ctrl = inportb(PORT_FIFO_CONTROL);
+  u8 fifo_ctrl = inportb(PORT_FIFO_CONTROL);
   fifo_ctrl |= 0x80; // 1000000
 #if USE_INTERRUPTS
   fifo_ctrl |= 0x30; // 00110000
@@ -187,7 +187,7 @@ void enable_playback() {
 #if !USE_INTERRUPTS && 0
   // Wait for FIFO to drain.
   while (true) {
-    const unsigned char status = inportb(PORT_FIFO_STATUS);
+    const u8 status = inportb(PORT_FIFO_STATUS);
     if (status & 0x40) {
       break;
     }
@@ -197,11 +197,11 @@ void enable_playback() {
 
 void refill_data_stereo() {
   // Read and reset the size.
-  const unsigned short size = g_pcm_fifo_size;
+  const u16 size = g_pcm_fifo_size;
   g_pcm_fifo_size = 0;
 
   // Copy data over.
-  const signed char *buffer = g_pcm_fifo_buffer;
+  const i8 *buffer = g_pcm_fifo_buffer;
   for (int i = 0; i < size / 4; i++) {
     outportb(PORT_PCM_DATA, *buffer++);
     outportb(PORT_PCM_DATA, *buffer++);
@@ -223,21 +223,21 @@ void refill_data_stereo() {
 
 void refill_data_mono() {
   // Read and reset the size.
-  const unsigned short size = g_pcm_fifo_size;
+  const u16 size = g_pcm_fifo_size;
   g_pcm_fifo_size = 0;
 
   // Copy data over.
-  const signed char *buffer = g_pcm_fifo_buffer;
+  const i8 *buffer = g_pcm_fifo_buffer;
   for (int i = 0; i < size / 2; i++) {
-    const signed char v0 = *buffer++;
+    const i8 v0 = *buffer++;
     outportb(PORT_PCM_DATA, v0);
     outportb(PORT_PCM_DATA, v0);
-    const signed char v1 = *buffer++;
+    const i8 v1 = *buffer++;
     outportb(PORT_PCM_DATA, v1);
     outportb(PORT_PCM_DATA, v1);
   }
   if (size & 1) {
-    const signed char v0 = *buffer++;
+    const i8 v0 = *buffer++;
     outportb(PORT_PCM_DATA, v0);
     outportb(PORT_PCM_DATA, v0);
   }
@@ -254,9 +254,9 @@ _go32_dpmi_registers regs, regs2;
 void hook_interrupt() {
   detail::g_pcm_buffer_empty = false;
 
-  unsigned char const sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
-  unsigned char const hw_id = sound_id >> 4;
-  const unsigned char interrupt = get_interrupt(hw_id);
+  u8 const sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
+  u8 const hw_id = sound_id >> 4;
+  const u8 interrupt = get_interrupt(hw_id);
 
 #if 1
 if (_go32_dpmi_get_real_mode_interrupt_vector(interrupt, &g_pcm_old_handler)) printf("failed to get\n");
@@ -288,7 +288,7 @@ printf("before: %i\n", g_pcm_fifo_size);
 #endif
 
 /// something ???
-  const unsigned short interrupt_port_w = get_interrupt_port_w(hw_id);
+  const u16 interrupt_port_w = get_interrupt_port_w(hw_id);
   outportb(interrupt_port_w, 0x27);
   // wait?
   outportb(0x5F, 0x27);
@@ -300,9 +300,9 @@ printf("before: %i\n", g_pcm_fifo_size);
 }
 
 void unhook_interrupt() {
-  unsigned char const sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
-  unsigned char const hw_id = sound_id >> 4;
-  const unsigned char interrupt = get_interrupt(hw_id);
+  const u8 sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
+  const u8 hw_id = sound_id >> 4;
+  const u8 interrupt = get_interrupt(hw_id);
 #if 1
   if (_go32_dpmi_set_real_mode_interrupt_vector(interrupt, &g_pcm_old_handler)) printf("failed to restore\n");
   if (_go32_dpmi_free_real_mode_callback(&info)) printf("failed to free\n");
@@ -318,7 +318,7 @@ printf("after: %i\n", g_pcm_fifo_size);
 
 } // namespace
 
-FASTCALL bool init(SamplingRate::E rate, Format::E format, const signed char *buffer) {
+FASTCALL bool init(SamplingRate::E rate, Format::E format, const i8 *buffer) {
   if (s_inited) {
     printf("PCM system already initialised\n");
     return false;
@@ -330,8 +330,8 @@ FASTCALL bool init(SamplingRate::E rate, Format::E format, const signed char *bu
     return false;
   }
 
-  unsigned char const sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
-  unsigned char const hw_id = sound_id >> 4;
+  u8 const sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
+  u8 const hw_id = sound_id >> 4;
   printf("Audio device like: %s\n", device_name(hw_id));
 
   // Check this is supported.
@@ -413,8 +413,8 @@ FASTCALL int to_hz(SamplingRate::E rate) {
 }
 
 FASTCALL void set_volume(Volume::E volume) {
-  unsigned char vol = 0xA8; // 10101000
-  vol |= static_cast<unsigned char>(volume); // 00000xxx
+  u8 vol = 0xA8; // 10101000
+  vol |= static_cast<u8>(volume); // 00000xxx
   outportb(PORT_FIFO_STATUS, vol);
 }
 
@@ -431,7 +431,7 @@ FASTCALL bool is_empty() {
 }
 #endif // !USE_INTERRUPTS
 
-FASTCALL void filled(unsigned short buffer_elems) {
+FASTCALL void filled(u16 buffer_elems) {
   // Set the size of the buffer so that the interrupt knows that there's more to read.
   g_pcm_fifo_size = buffer_elems;
 

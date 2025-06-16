@@ -2,13 +2,12 @@
 #define GPU_SCREEN_H
 
 #include "macros.h"
+#include "types.h"
 
 #define GPU_WIDTH 640
 #define GPU_HEIGHT 400
 
 namespace gpu {
-
-typedef unsigned char u8;
 
 // Setup and shutdown the GPU.
 FASTCALL bool setup();

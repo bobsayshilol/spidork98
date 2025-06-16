@@ -23,14 +23,14 @@ PROFILE_DECLARE_SECTION(move_hotspots);
 PROFILE_DECLARE_SECTION(draw_screen);
 
 // The scanline we'll update to give the fire effect.
-ALIGNAS(4) gpu::u8 scanline_data[GPU_WIDTH];
+ALIGNAS(4) u8 scanline_data[GPU_WIDTH];
 
 // Hotspot locations.
 const int num_hotspots = 64;
 int hotspot_locations[num_hotspots];
 
 // Lookup table for the next iteration step of the main loop.
-gpu::u8 decrement_if_positive_lookup[256];
+u8 decrement_if_positive_lookup[256];
 
 // Inclusive range.
 int rand_between(int a, int b) {
@@ -54,9 +54,9 @@ void setup_palette() {
   for (int i = 0; i < 64; i++) {
     const unsigned rgb = palette[63 - i];
     // Extract colours.
-    const gpu::u8 r = (rgb >> 16) & 0xff;
-    const gpu::u8 g = (rgb >>  8) & 0xff;
-    const gpu::u8 b = (rgb >>  0) & 0xff;
+    const u8 r = (rgb >> 16) & 0xff;
+    const u8 g = (rgb >>  8) & 0xff;
+    const u8 b = (rgb >>  0) & 0xff;
     // Set the palette.
     gpu::set_palette_colour(4 * i + 0, r, g, b);
     gpu::set_palette_colour(4 * i + 1, r, g, b);
@@ -151,7 +151,7 @@ void draw_screen() {
     for (int x = 0; x < GPU_WIDTH; x += PIXEL_SPACING_X * 16) {
 #define DECREMENT_IF_POSITIVE(o) \
   { \
-    gpu::u8 &pixel = scanline_data[(x) + PIXEL_SPACING_X * (o)]; \
+    u8 &pixel = scanline_data[(x) + PIXEL_SPACING_X * (o)]; \
     pixel = decrement_if_positive_lookup[pixel]; \
   }
       DECREMENT_IF_POSITIVE(0)  DECREMENT_IF_POSITIVE(1)  DECREMENT_IF_POSITIVE(2)  DECREMENT_IF_POSITIVE(3)

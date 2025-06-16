@@ -2,6 +2,7 @@
 #define PCM_H
 
 #include "macros.h"
+#include "types.h"
 
 namespace pcm {
 
@@ -60,8 +61,8 @@ extern "C" bool g_pcm_buffer_empty;
 
 // Init the PCM system.
 // Data will be read from the provided buffer, which should be filled() when it's empty.
-FASTCALL bool init(SamplingRate::E rate, Format::E format, const signed char *buffer);
-FASTCALL bool init(SamplingRate::E rate, Format::E format, const signed short *buffer); // not implemented
+FASTCALL bool init(SamplingRate::E rate, Format::E format, const i8 *buffer);
+FASTCALL bool init(SamplingRate::E rate, Format::E format, const i16 *buffer); // not implemented
 
 // Stop any playback and shutdown the PCM system.
 FASTCALL void shutdown();
@@ -77,7 +78,7 @@ FASTCALL bool is_empty(); // { return detail::g_pcm_buffer_empty; }
 
 // Report to the system that the buffer has been filled with this many elements.
 // Should only be called when is_empty(), with a max size of 32KB.
-FASTCALL void filled(unsigned short buffer_elems);
+FASTCALL void filled(u16 buffer_elems);
 
 } // namespace pcm
 

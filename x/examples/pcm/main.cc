@@ -13,10 +13,12 @@ namespace {
 
 STATIC_ASSERT(sizeof(unsigned) == 4);
 
-unsigned (*generate_audio)(pcm::SamplingRate::E rate, unsigned state, signed char *out, int num_samples);
+typedef u32 PCMState;
 
-unsigned generate_audio_tone(pcm::SamplingRate::E rate, unsigned state, signed char *out, int num_samples) {
-  unsigned char const start_t = state;
+PCMState (*generate_audio)(pcm::SamplingRate::E rate, PCMState state, i8 *out, int num_samples);
+
+PCMState generate_audio_tone(pcm::SamplingRate::E rate, PCMState state, i8 *out, int num_samples) {
+  u8 const start_t = state;
 
   const unsigned long sampling_rate = pcm::to_hz(rate);
   const unsigned long freq1 = 523; // C
@@ -36,17 +38,17 @@ unsigned generate_audio_tone(pcm::SamplingRate::E rate, unsigned state, signed c
   return num_samples + start_t;
 }
 
-unsigned generate_audio_debug(pcm::SamplingRate::E rate, unsigned flip, signed char *out, int num_samples) {
+PCMState generate_audio_debug(pcm::SamplingRate::E rate, PCMState flip, i8 *out, int num_samples) {
   for (int t = 0; t < num_samples; t++) {
     *out++ = flip ? -t : t;
   }
   return ~flip;
 }
 
-unsigned generate_audio_bgm(pcm::SamplingRate::E rate, unsigned state, signed char *out, int num_samples) {
+PCMState generate_audio_bgm(pcm::SamplingRate::E rate, PCMState state, i8 *out, int num_samples) {
   unsigned bgm_idx = (state >> 24) & 0xFF;
   unsigned sample_count = state & 0x00FFFFFF;
-  unsigned char const start_t = sample_count & 0xFF;
+  u8 const start_t = sample_count & 0xFF;
 
   const unsigned long bpm = 120;
   const unsigned long freq = bgm_data[bgm_idx * 2 + 0];
@@ -86,7 +88,7 @@ static bool play(int buffer_size) {
   printf("Running on %s\n", Funcs::name());
 
   // Allocate a new buffer for us to work with.
-  signed char *buffer = static_cast<signed char*>(malloc(buffer_size));
+  i8 *buffer = static_cast<signed char*>(malloc(buffer_size));
   if (!buffer) {
     printf("Failed to allocate data\n");
     return false;
@@ -110,7 +112,7 @@ static bool play(int buffer_size) {
   printf("Press any key to stop\n");
   unsigned iteration = 0;
   unsigned refills = 0;
-  unsigned generator_state = 0;
+  PCMState generator_state = 0;
   while (true) {
     iteration++;
 

@@ -1,4 +1,5 @@
 #include "gpuscrn.h"
+#include "utils.h"
 
 #include <go32.h>
 #include <pc.h>
@@ -49,16 +50,6 @@
 #define WINDOW0_DATA_ADDR SEG2REAL(0xA800, 0x0000)
 #define WINDOW1_DATA_ADDR SEG2REAL(0xB000, 0x0000)
 #define WINDOW_BANK_SIZE (32 * 1024)
-
-
-// TODO: libstdc++ is very broken due to 8.3 filenames
-//#include <utility>
-template <typename T>
-FORCEINLINE static void SWAP(T&l,T&r) {
-  T t = l;
-  l = r;
-  r = t;
-}
 
 
 // Based on https://www.delorie.com/djgpp/doc/brennan/brennan_access_vga.html
@@ -210,8 +201,8 @@ FASTCALL void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
   u8 volatile *const window0 = g_windows[0];
 
   // Render from top to bottom.
-  if (x0 > x1) SWAP(x0, x1);
-  if (y0 > y1) SWAP(y0, y1);
+  if (x0 > x1) utils::swap(x0, x1);
+  if (y0 > y1) utils::swap(y0, y1);
 
   // TODO: go a bank at a time filling them in
   //const BankInfo first_bank = pixel_to_bank(x0, y0);
