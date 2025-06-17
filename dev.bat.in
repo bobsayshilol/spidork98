@@ -21,4 +21,4 @@ cd EXAMPLES
 echo Available examples:
 dir /b /ad
 echo To build all examples simply run make
-echo Then to run an example do name/name.exe, eg basic/basic.exe
+echo Then you'll find the examples in the EXES folder
