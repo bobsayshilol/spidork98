@@ -17,9 +17,7 @@ struct Note {
   static const short Cs5 = 554;
 };
 
-static inline short make_beat(short bar, short note, short half) {
-  return (bar * 4 + note) * 2 + half;
-}
+#define make_beat(bar, note, half) (((bar) * 4 + (note)) * 2 + (half))
 
 } // namespace
 
