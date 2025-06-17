@@ -18,7 +18,7 @@ typedef u32 PCMState;
 PCMState (*generate_audio)(pcm::SamplingRate::E rate, PCMState state, i8 *out, int num_samples);
 
 PCMState generate_audio_tone(pcm::SamplingRate::E rate, PCMState state, i8 *out, int num_samples) {
-  u8 const start_t = state;
+  u16 const start_t = state;
 
   const unsigned long sampling_rate = pcm::to_hz(rate);
   const unsigned long freq1 = 523; // C
@@ -48,7 +48,7 @@ PCMState generate_audio_debug(pcm::SamplingRate::E rate, PCMState flip, i8 *out,
 PCMState generate_audio_bgm(pcm::SamplingRate::E rate, PCMState state, i8 *out, int num_samples) {
   unsigned bgm_idx = (state >> 24) & 0xFF;
   unsigned sample_count = state & 0x00FFFFFF;
-  u8 const start_t = sample_count & 0xFF;
+  u16 const start_t = sample_count;
 
   const unsigned long bpm = 120;
   const unsigned long freq = bgm_data[bgm_idx * 2 + 0];

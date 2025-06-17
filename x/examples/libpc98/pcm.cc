@@ -107,7 +107,7 @@ const char * device_name(u8 hw_id) {
 }
 
 #if USE_INTERRUPTS
-u8 get_interrupt_port_w(u8 hw_id) {
+u16 get_interrupt_port_w(u8 hw_id) {
   return (hw_id == 3 || hw_id == 5) ? 0x0288 : 0x0188;
 }
 
