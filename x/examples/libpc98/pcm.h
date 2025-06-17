@@ -61,6 +61,7 @@ extern "C" bool g_pcm_buffer_empty;
 
 // Init the PCM system.
 // Data will be read from the provided buffer, which should be filled() when it's empty.
+// |buffer| must be aligned to 4 bytes minimum.
 FASTCALL bool init(SamplingRate::E rate, Format::E format, const i8 *buffer);
 FASTCALL bool init(SamplingRate::E rate, Format::E format, const i16 *buffer); // not implemented
 

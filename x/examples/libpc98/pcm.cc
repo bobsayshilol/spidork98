@@ -202,12 +202,15 @@ void refill_data_stereo() {
 
   // Copy data over.
   const i8 *buffer = g_pcm_fifo_buffer;
+  const u32 *buffer32 = reinterpret_cast<const u32*>(buffer);
   for (int i = 0; i < size / 4; i++) {
-    outportb(PORT_PCM_DATA, *buffer++);
-    outportb(PORT_PCM_DATA, *buffer++);
-    outportb(PORT_PCM_DATA, *buffer++);
-    outportb(PORT_PCM_DATA, *buffer++);
+    const u32 v32 = *buffer32++;
+    outportb(PORT_PCM_DATA, (v32 >> 0) & 0xFF);
+    outportb(PORT_PCM_DATA, (v32 >> 8) & 0xFF);
+    outportb(PORT_PCM_DATA, (v32 >> 16) & 0xFF);
+    outportb(PORT_PCM_DATA, (v32 >> 24) & 0xFF);
   }
+  buffer += size / 4;
   switch (size & 3) {
     case 3: outportb(PORT_PCM_DATA, *buffer++);
     case 2: outportb(PORT_PCM_DATA, *buffer++);
@@ -228,18 +231,33 @@ void refill_data_mono() {
 
   // Copy data over.
   const i8 *buffer = g_pcm_fifo_buffer;
-  for (int i = 0; i < size / 2; i++) {
-    const i8 v0 = *buffer++;
-    outportb(PORT_PCM_DATA, v0);
-    outportb(PORT_PCM_DATA, v0);
-    const i8 v1 = *buffer++;
-    outportb(PORT_PCM_DATA, v1);
-    outportb(PORT_PCM_DATA, v1);
+  const u32 *buffer32 = reinterpret_cast<const u32*>(buffer);
+  for (int i = 0; i < size / 4; i++) {
+      const u32 v32 = *buffer32++;
+      __asm__ __volatile__ (
+        "mov %1, %%eax\n"
+        "outb %%al, %0\n"
+        "outb %%al, %0\n"
+        "shr $0x8, %%eax\n"
+        "outb %%al, %0\n"
+        "outb %%al, %0\n"
+        "shr $0x8, %%eax\n"
+        "outb %%al, %0\n"
+        "outb %%al, %0\n"
+        "shr $0x8, %%eax\n"
+        "outb %%al, %0\n"
+        "outb %%al, %0\n"
+        : // no outputs
+        : "dN" (static_cast<u16>(PORT_PCM_DATA)), "r" (v32)
+        : "eax"
+      );
   }
-  if (size & 1) {
-    const i8 v0 = *buffer++;
-    outportb(PORT_PCM_DATA, v0);
-    outportb(PORT_PCM_DATA, v0);
+  buffer += size / 4;
+  switch (size & 3) {
+    case 3: { const u8 v = *buffer++; outportb(PORT_PCM_DATA, v); outportb(PORT_PCM_DATA, v); }
+    case 2: { const u8 v = *buffer++; outportb(PORT_PCM_DATA, v); outportb(PORT_PCM_DATA, v); }
+    case 1: { const u8 v = *buffer++; outportb(PORT_PCM_DATA, v); outportb(PORT_PCM_DATA, v); }
+    case 0: break;
   }
 
 #if USE_INTERRUPTS
