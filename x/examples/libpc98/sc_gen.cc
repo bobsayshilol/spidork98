@@ -1,3 +1,5 @@
+// gcc -x c++ sc_gen.cc -o sc_gen.exe
+
 #include <cstdio>
 #include <cstdlib>
 

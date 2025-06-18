@@ -1,3 +1,6 @@
+// gcc -x c++ -c sc_test.cc -o sc_test.o
+// gcc sc_test.o sincos.o -o sc_test.exe
+
 #include "maths.h"
 
 #include <cstdio>
