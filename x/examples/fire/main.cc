@@ -201,8 +201,8 @@ void play() {
     num_frames++;
     if (now - last_time > Funcs::ticks_per_sec()) {
       Funcs::clear_screen();
-      const int fps = (num_frames * Funcs::ticks_per_sec() * 1000) / (now - last_time);
-      printf("%iFPKS\n", fps);
+      const unsigned fpks = (num_frames * Funcs::ticks_per_sec() * 1000) / (now - last_time);
+      printf("%u.%uFPS\n", fpks / 1000, (fpks / 100) % 10);
       num_frames = 0;
       last_time = now;
       // Log the timings too.
