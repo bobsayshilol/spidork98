@@ -23,6 +23,10 @@
 #define STATIC_ASSERT(x) struct CONCAT(_static_assert, __LINE__) \
     { char static_assert_failed[(x) ? 1 : -1]; }
 
+// Count number of elements in an array.
+#define COUNT_OF(x) (_check_is_array(x), sizeof(x) / sizeof((x)[0]))
+template <typename T, int N> static void FORCEINLINE _check_is_array(T const (&)[N]) {}
+
 // Defer some code until destruction.
 // Example:
 //   void *ptr = malloc(1);

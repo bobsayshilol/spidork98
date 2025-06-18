@@ -38,6 +38,8 @@
 #define PORT_GDC_GPU_COMMAND 0xA2
 #define GDC_COMMAND_STOP 0x0C
 #define GDC_COMMAND_START 0x0D
+#define GDC_IN_HBLANK 0x40 // set when in hblank
+#define GDC_IN_VBLANK 0x20 // set when in vblank
 
 // Memory map options.
 #define MEMORY_MAP_WINDOW0_BANK_ADDR SEG2REAL(0xE000, 0x0004)
@@ -163,6 +165,13 @@ FASTCALL void shutdown() {
 
 FASTCALL void swap() {
   // TODO: double buffering with dual screen
+}
+
+FASTCALL void wait_for_vsync() {
+  // Wait for vblank to start.
+  while (!(inportb(PORT_GDC_GPU_PARAMETER) & GDC_IN_VBLANK)) ;
+  // Wait for vblank to end.
+  while (inportb(PORT_GDC_GPU_PARAMETER) & GDC_IN_VBLANK) ;
 }
 
 FASTCALL void enable_text_layer(bool show) {

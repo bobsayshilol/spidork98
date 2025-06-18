@@ -16,6 +16,9 @@ FASTCALL void shutdown();
 // Swap screen buffers.
 FASTCALL void swap();
 
+// Wait for vsync.
+FASTCALL void wait_for_vsync();
+
 // Enable/disable text layer.
 FASTCALL void enable_text_layer(bool show);
 
