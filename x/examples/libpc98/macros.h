@@ -25,7 +25,7 @@
 
 // Count number of elements in an array.
 #define COUNT_OF(x) (_check_is_array(x), sizeof(x) / sizeof((x)[0]))
-template <typename T, int N> static void FORCEINLINE _check_is_array(T const (&)[N]) {}
+template <typename T, int N> static void _check_is_array(T const (&)[N]) {}
 
 // Defer some code until destruction.
 // Example:

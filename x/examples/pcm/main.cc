@@ -38,7 +38,7 @@ PCMState generate_audio_tone(pcm::SamplingRate::E rate, PCMState state, i8 *out,
   return num_samples + start_t;
 }
 
-PCMState generate_audio_debug(pcm::SamplingRate::E rate, PCMState flip, i8 *out, int num_samples) {
+PCMState generate_audio_debug(pcm::SamplingRate::E, PCMState flip, i8 *out, int num_samples) {
   for (int t = 0; t < num_samples; t++) {
     *out++ = flip ? -t : t;
   }
