@@ -39,9 +39,12 @@ FASTCALL void read_scanline(int line, u8 *data);
 FASTCALL void write_scanline(int line, const u8 *data);
 
 // Read/write part of a scanline starting part*SCANLINE_PART_WIDTH into the line.
-#define SCANLINE_PART_WIDTH 64
-FASTCALL void read_scanline_part(int line, int part, u8 (&data)[SCANLINE_PART_WIDTH]);
-FASTCALL void write_scanline_part(int line, int part, const u8 (&data)[SCANLINE_PART_WIDTH]);
+#define SCANLINE_PART_WIDTH_16 16
+FASTCALL void read_scanline_part_16(u16 line, u16 part, u8 *data /*SCANLINE_PART_WIDTH_16*/);
+FASTCALL void write_scanline_part_16(u16 line, u16 part, const u8 *data /*SCANLINE_PART_WIDTH_16*/);
+#define SCANLINE_PART_WIDTH_32 32
+FASTCALL void read_scanline_part_32(u16 line, u16 part, u8 *data /*SCANLINE_PART_WIDTH_32*/);
+FASTCALL void write_scanline_part_32(u16 line, u16 part, const u8 *data /*SCANLINE_PART_WIDTH_32*/);
 
 } // namespace gpu
 

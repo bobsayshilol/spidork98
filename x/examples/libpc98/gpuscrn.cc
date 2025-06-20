@@ -274,7 +274,8 @@ FORCEINLINE void scanline_part_copy(int line, T *data, int start, int size) {
   // Bank splits are multiples of 128 (see bank_split_for_line()) so if
   // the size of the split is big enough we don't have to worry about a
   // second bank.
-  STATIC_ASSERT((128 % SCANLINE_PART_WIDTH) == 0);
+  STATIC_ASSERT((128 % SCANLINE_PART_WIDTH_16) == 0);
+  STATIC_ASSERT((128 % SCANLINE_PART_WIDTH_32) == 0);
 
   // Copy the single line.
   CopyOp::copy(data, window0 + bank.offset, size);
@@ -282,7 +283,7 @@ FORCEINLINE void scanline_part_copy(int line, T *data, int start, int size) {
 
 FORCEINLINE void copy_n(const u8 * __restrict__ src, int size, u8 * __restrict__ dst) {
   // Without the partial copies this would 128 (bank splits).
-#define SMALLEST_COPY_SIZE SCANLINE_PART_WIDTH
+#define SMALLEST_COPY_SIZE SCANLINE_PART_WIDTH_16
 
   // Read word size at a time for performance.
   STATIC_ASSERT(sizeof(unsigned) == 4);
@@ -326,12 +327,24 @@ FASTCALL void write_scanline(int line, const u8 *data) {
   scanline_copy<WriteOp>(line, data);
 }
 
-FASTCALL void read_scanline_part(int line, int part, u8 (&data)[SCANLINE_PART_WIDTH]) {
-  scanline_part_copy<ReadOp>(line, data, part * SCANLINE_PART_WIDTH, SCANLINE_PART_WIDTH);
+FASTCALL void read_scanline_part_16(u16 line, u16 part, u8 *data) {
+  STATIC_ASSERT(SCANLINE_PART_WIDTH_16 == 16);
+  scanline_part_copy<ReadOp>(line, data, part << 4, SCANLINE_PART_WIDTH_16);
 }
 
-FASTCALL void write_scanline_part(int line, int part, const u8 (&data)[SCANLINE_PART_WIDTH]) {
-  scanline_part_copy<WriteOp>(line, data, part * SCANLINE_PART_WIDTH, SCANLINE_PART_WIDTH);
+FASTCALL void write_scanline_part_16(u16 line, u16 part, const u8 *data) {
+  STATIC_ASSERT(SCANLINE_PART_WIDTH_16 == 16);
+  scanline_part_copy<WriteOp>(line, data, part << 4, SCANLINE_PART_WIDTH_16);
+}
+
+FASTCALL void read_scanline_part_32(u16 line, u16 part, u8 *data) {
+  STATIC_ASSERT(SCANLINE_PART_WIDTH_32 == 32);
+  scanline_part_copy<ReadOp>(line, data, part << 8, SCANLINE_PART_WIDTH_32);
+}
+
+FASTCALL void write_scanline_part_32(u16 line, u16 part, const u8 *data) {
+  STATIC_ASSERT(SCANLINE_PART_WIDTH_32 == 32);
+  scanline_part_copy<WriteOp>(line, data, part << 8, SCANLINE_PART_WIDTH_32);
 }
 
 } // namespace gpu
