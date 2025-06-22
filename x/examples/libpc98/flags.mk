@@ -25,6 +25,7 @@ DEPS	= \
 	..\\libpc98\\mouse.h	\
 	..\\libpc98\\pcm.h		\
 	..\\libpc98\\profile.h	\
+	..\\libpc98\\progress.h	\
 	..\\libpc98\\types.h 	\
 	..\\libpc98\\utils.h	\
 	# line left blank

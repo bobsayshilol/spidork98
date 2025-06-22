@@ -2,6 +2,7 @@
 
 #include "macros.h"
 #include "pcm.h"
+#include "progress.h"
 #include "types.h"
 
 #include <cstdio>
@@ -19,6 +20,8 @@ u32 fourcc(u32 a, u32 b, u32 c, u32 d) {
 }
 
 bool read_header(FILE * input, PCMInfo & info) {
+  printf("Parsing header...\n");
+
   u32 chunk_name = 0;
   u32 chunk_size = 0;
 
@@ -63,7 +66,7 @@ bool read_header(FILE * input, PCMInfo & info) {
     u32 byte_rate;
     u16 block_align;
     u16 bits_per_sample;
-  } fmt;
+  } __attribute__((packed)) fmt;
   STATIC_ASSERT(sizeof(fmt) == 16);
 
   // fmt chunk size.
@@ -121,6 +124,16 @@ bool read_header(FILE * input, PCMInfo & info) {
 }
 
 bool convert(FILE * input, FILE * output, const PCMInfo & info) {
+  printf("Converting sound data...\n");
+  Progress progress(info.frame_count, 10000);
+
+  // Write the magic.
+  const u32 magic = fourcc('S', 'D', '9', '8');
+  if (fwrite(&magic, 4, 1, output) != 1) {
+    printf("Failed to write to output\n");
+    return false;
+  }
+
   // Write sampling rate.
   const u8 sampling_rate = info.sampling_rate;
   if (fwrite(&sampling_rate, 1, 1, output) != 1) {
@@ -135,11 +148,15 @@ bool convert(FILE * input, FILE * output, const PCMInfo & info) {
       printf("File ended early (%i) (%u)\n", __LINE__, frame);
       return false;
     }
+
+    // Scale 16bit to 8bit.
     const i8 sample8 = sample16 / 256;
     if (fwrite(&sample8, 1, 1, output) != 1) {
       printf("Failed to write to output\n");
       return false;
     }
+
+    progress.increment();
   }
 
   return true;
