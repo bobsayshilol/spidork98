@@ -19,6 +19,7 @@ LDFLAGS	= -g
 DEPS	= \
 	..\\libpc98\\funcs.h	\
 	..\\libpc98\\gpuscrn.h	\
+	..\\libpc98\\images.h	\
 	..\\libpc98\\macros.h	\
 	..\\libpc98\\maths.h	\
 	..\\libpc98\\mouse.h	\

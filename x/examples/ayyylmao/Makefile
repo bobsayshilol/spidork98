@@ -2,8 +2,8 @@
 include ..\\libpc98\\flags.mk
 
 # What we're building
-DEPS	+= $(LIBPC98) images.h
-OBJS	= main.o images.o
+DEPS	+= $(LIBPC98)
+OBJS	= main.o
 TARGET	= ayyylmao.exe
 
 # Build it
