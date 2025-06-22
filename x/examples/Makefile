@@ -7,6 +7,7 @@ all: .build
 	mkdir exes
 	for %n in (basic bgm gfx fire bench pcm mouse ayyylmao) do copy %n\\%n.exe exes
 	copy libpc98\\snd_conv.exe exes
+	copy libpc98\\img_conv.exe exes
 
 clean:
 	for %n in (libpc98 basic bgm gfx fire bench pcm mouse ayyylmao) do make -C %n clean

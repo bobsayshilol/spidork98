@@ -21,6 +21,13 @@ static FORCEINLINE i8 cos(u8 x) {
   return maths_cos_lookup[x];
 }
 
+// Pad to a power of 2.
+template <u32 Pad>
+static FORCEINLINE u32 pad_to(u32 x) {
+  STATIC_ASSERT((Pad & (Pad - 1)) == 0);
+  return ((x - 1) | (Pad - 1)) + 1;
+}
+
 } // namespace
 
 #endif

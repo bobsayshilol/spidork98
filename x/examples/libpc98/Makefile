@@ -12,7 +12,7 @@ include ..\\libpc98\\lib.mk
 
 
 # Build the tools too
-tools: sc_gen.exe sc_test.exe snd_conv.exe ;
+tools: sc_gen.exe sc_test.exe snd_conv.exe img_conv.exe;
 
 sc_gen.exe sc_gen.cc:
 	gcc -x c++ sc_gen.cc -o sc_gen.exe
@@ -23,3 +23,7 @@ sc_test.exe: $(TARGET) sc_test.cc
 
 snd_conv.exe: $(TARGET) snd_conv.cc
 	gcc -x c++ snd_conv.cc -o snd_conv.exe
+
+img_conv.exe: $(TARGET) img_conv.cc
+	gcc -x c++ -O3 -c img_conv.cc -o img_conv.o
+	gcc img_conv.o images.o gpuscrn.o -o img_conv.exe
