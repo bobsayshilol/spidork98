@@ -107,6 +107,7 @@ static bool play(int buffer_size) {
   }
 
   const int hz = pcm::to_hz(pcm_rate);
+  const uclock_t buffer_size_ticks = buffer_size * Funcs::ticks_per_sec() / hz;
   printf("Audio buffer size: %u samples (%llims @ %iHz)\n", buffer_size, buffer_size * 1000LL / hz, hz);
 
   printf("Press any key to stop\n");
@@ -121,9 +122,12 @@ static bool play(int buffer_size) {
       refills++;
 
       // Running low, generate more audio.
+      const uclock_t generate_start = Funcs::ticks();
       generator_state = generate_audio(pcm_rate, generator_state, buffer, buffer_size);
       pcm::filled(buffer_size);
-      printf("Regened %i samples [%u - %u]\n", buffer_size, refills, iteration);
+      const uclock_t generate_dt = Funcs::ticks() - generate_start;
+
+      printf("Regened %u samples (generated in %llu ticks: %llu%%) [%u:%u]\n", buffer_size, generate_dt, generate_dt * 100 / buffer_size_ticks, refills, iteration);
     }
 
     // Check for user input.
