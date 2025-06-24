@@ -14,7 +14,7 @@ namespace mouse {
 // Running dosbox-x in windows sandbox doesn't lock the cursor
 // so you get broken mouse movement.
 // sensitivity = 1,1 needs adding to the [sdl] section too.
-#define MOUSE_BROKEN_CURSOR_LOCK 1
+#define MOUSE_BROKEN_CURSOR_LOCK 0
 
 // Read the status of the mouse (read):
 //   7:7 - left button up
