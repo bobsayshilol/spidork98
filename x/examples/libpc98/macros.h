@@ -38,4 +38,12 @@ template <typename T, int N> static void _check_is_array(T const (&)[N]) {}
     type_ var_ ; \
   } CONCAT(_defer_val, __LINE__) (init_)
 
+// Create a fourcc.
+#define FOURCC(a, b, c, d) ( \
+  (static_cast<unsigned>(a) <<  0) | \
+  (static_cast<unsigned>(b) <<  8) | \
+  (static_cast<unsigned>(c) << 16) | \
+  (static_cast<unsigned>(d) << 24) \
+)
+
 #endif

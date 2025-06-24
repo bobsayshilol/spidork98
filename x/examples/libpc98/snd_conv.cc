@@ -15,10 +15,6 @@ struct PCMInfo {
   u32 frame_count;
 };
 
-u32 fourcc(u32 a, u32 b, u32 c, u32 d) {
-  return (a) | (b << 8) | (c << 16) | (d << 24);
-}
-
 bool read_header(FILE * input, PCMInfo & info) {
   printf("Parsing header...\n");
 
@@ -29,7 +25,7 @@ bool read_header(FILE * input, PCMInfo & info) {
   if (fread(&chunk_name, 1, 4, input) != 4) {
     printf("File ended early (%i)\n", __LINE__);
     return false;
-  } else if (chunk_name != fourcc('R', 'I', 'F', 'F')) {
+  } else if (chunk_name != FOURCC('R', 'I', 'F', 'F')) {
     printf("Bad RIFF chunk: 0x%x\n", chunk_name);
     return false;
   }
@@ -44,7 +40,7 @@ bool read_header(FILE * input, PCMInfo & info) {
   if (fread(&chunk_name, 1, 4, input) != 4) {
     printf("File ended early (%i)\n", __LINE__);
     return false;
-  } else if (chunk_name != fourcc('W', 'A', 'V', 'E')) {
+  } else if (chunk_name != FOURCC('W', 'A', 'V', 'E')) {
     printf("Bad WAVE ID: 0x%x\n", chunk_name);
     return false;
   }
@@ -53,7 +49,7 @@ bool read_header(FILE * input, PCMInfo & info) {
   if (fread(&chunk_name, 1, 4, input) != 4) {
     printf("File ended early (%i)\n", __LINE__);
     return false;
-  } else if (chunk_name != fourcc('f', 'm', 't', ' ')) {
+  } else if (chunk_name != FOURCC('f', 'm', 't', ' ')) {
     printf("Bad fmt chunk: 0x%x\n", chunk_name);
     return false;
   }
@@ -106,7 +102,7 @@ bool read_header(FILE * input, PCMInfo & info) {
   if (fread(&chunk_name, 1, 4, input) != 4) {
     printf("File ended early (%i)\n", __LINE__);
     return false;
-  } else if (chunk_name != fourcc('d', 'a', 't', 'a')) {
+  } else if (chunk_name != FOURCC('d', 'a', 't', 'a')) {
     printf("Bad data chunk: 0x%x\n", chunk_name);
     return false;
   }
@@ -128,7 +124,7 @@ bool convert(FILE * input, FILE * output, const PCMInfo & info) {
   Progress progress(info.frame_count, 10000);
 
   // Write the magic.
-  const u32 magic = fourcc('S', 'D', '9', '8');
+  const u32 magic = FOURCC('S', 'D', '9', '8');
   if (fwrite(&magic, 4, 1, output) != 1) {
     printf("Failed to write to output\n");
     return false;

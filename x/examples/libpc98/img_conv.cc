@@ -18,10 +18,6 @@ struct BMPInfo {
   u32 data_offset;
 };
 
-u32 fourcc(u32 a, u32 b, u32 c, u32 d) {
-  return (a) | (b << 8) | (c << 16) | (d << 24);
-}
-
 u16 colour_distance(i16 r0, i16 g0, i16 b0, i16 r1, i16 g1, i16 b1) {
   // Simple, lazy, easy.
   return abs(r0 - r1) + abs(g0 - g1) + abs(b0 - b1);
@@ -60,7 +56,7 @@ bool read_header(FILE * input, BMPInfo & info) {
   if (fread(&primary_header, sizeof(primary_header), 1, input) != 1) {
     printf("File ended early (%i)\n", __LINE__);
     return false;
-  } else if (primary_header.sig != fourcc('B', 'M', 0, 0) || primary_header.reserved != 0) {
+  } else if (primary_header.sig != FOURCC('B', 'M', 0, 0) || primary_header.reserved != 0) {
     printf("Bad primary header: 0x%x - 0x%x\n", primary_header.sig, primary_header.reserved);
     return false;
   }
@@ -134,7 +130,7 @@ bool convert(FILE * input, FILE * output, const BMPInfo & info, const images::Pa
   Progress progress(info.width * info.height, 20000);
 
   // Write the magic.
-  const u32 magic = fourcc('I', 'M', '9', '8');
+  const u32 magic = FOURCC('I', 'M', '9', '8');
   if (fwrite(&magic, 4, 1, output) != 1) {
     printf("Failed to write to output\n");
     return false;
