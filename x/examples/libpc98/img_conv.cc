@@ -30,7 +30,7 @@ u8 colour_to_palette(images::Palette const & palette, u8 r, u8 g, u8 b) {
   u16 best_distance = 0xFFFF;
   const u8 *rgb = palette.rgb;
   for (int i = 0; i < palette.num_colours; i++) {
-    const u8 d = colour_distance(r, g, b, rgb[0], rgb[1], rgb[2]);
+    const u16 d = colour_distance(r, g, b, rgb[0], rgb[1], rgb[2]);
     rgb += 3;
     if (d < best_distance) {
       best_distance = d;
