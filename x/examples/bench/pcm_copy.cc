@@ -2,6 +2,8 @@
 #include "macros.h"
 #include "types.h"
 
+#include <cstring>
+
 namespace {
 
 #define PORT_PCM_DATA 0xA46C
