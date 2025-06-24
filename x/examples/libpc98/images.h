@@ -11,13 +11,21 @@
 
 namespace images {
 
+// Upper 128 are reserved
+#define IMAGES_MAX_PALETTE_SIZE 128
+
 struct AnimatedGif;
 struct AnimationData;
 struct ImageData;
 struct Palette;
 
-// 16bit palette.
+// Default palettes.
 extern const Palette default_palette_16;
+extern const Palette default_palette_32;
+extern const Palette default_palette_64;
+
+// Load a palette.
+FASTCALL bool load_palette(Palette & palette, const char *path);
 
 // Use the provided palette.
 FASTCALL void set_palette(const Palette & palette);
@@ -28,8 +36,8 @@ FASTCALL void draw_image(u16 x, u16 y, ImageData const & data);
 
 // A predefined palette to use.
 struct Palette {
-  u16 num_colours;
-  u8 rgb[256 * 3];
+  u8 num_colours; // limited to IMAGES_MAX_PALETTE_SIZE
+  u8 rgb[IMAGES_MAX_PALETTE_SIZE * 3];
 };
 
 // Precomputed image data.

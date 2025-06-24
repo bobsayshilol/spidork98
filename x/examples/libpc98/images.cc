@@ -131,6 +131,45 @@ const Palette default_palette_16 = {
 
 //
 
+FASTCALL bool load_palette(Palette & palette, const char *path) {
+  palette.num_colours = 0;
+
+  FILE * input = fopen(path, "rb");
+  if (!input) {
+    printf("Failed to open %s\n", path);
+    return false;
+  }
+  DEFER(FILE *, p, input, fclose(p));
+
+  // Check magic.
+  u32 magic = 0;
+  if (fread(&magic, 4, 1, input) != 1) {
+    printf("Failed to read %s\n", path);
+    return false;
+  } else if (magic != FOURCC('P', 'L', '9', '8')) {
+    printf("File isn't an palette: %s\n", path);
+    return false;
+  }
+
+  // Read off count.
+  if (fread(&palette.num_colours, 1, 1, input) != 1) {
+    printf("Failed to read %s\n", path);
+    return false;
+  } else if (palette.num_colours > IMAGES_MAX_PALETTE_SIZE) {
+    printf("Invalid colour count in palette: %u\n", palette.num_colours);
+    return false;
+  }
+
+  // Read off data.
+  if (fread(palette.rgb, 3, palette.num_colours, input) != palette.num_colours) {
+    printf("Failed to read %s\n", path);
+    return false;
+  }
+
+  // Done.
+  return true;
+}
+
 FASTCALL void set_palette(const Palette & palette) {
   const int num_colours = palette.num_colours;
   const u8 *rgb = palette.rgb;
