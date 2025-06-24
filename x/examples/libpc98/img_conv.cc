@@ -125,21 +125,43 @@ bool read_header(FILE * input, BMPInfo & info) {
   return true;
 }
 
-bool convert(FILE * input, FILE * output, const BMPInfo & info, const images::Palette & palette) {
+bool convert(FILE * input, FILE * output, const BMPInfo & info, const images::Palette & palette, u16 flags, u8 fps, u8 num_frames) {
   printf("Converting image data...\n");
   Progress progress(info.width * info.height, 20000);
 
-  // Write the magic.
-  const u32 magic = FOURCC('I', 'M', '9', '8');
-  if (fwrite(&magic, 4, 1, output) != 1) {
-    printf("Failed to write to output\n");
-    return false;
+  if (num_frames > 0) {
+    // Write the magic.
+    const u32 magic = FOURCC('A', 'N', '9', '8');
+    if (fwrite(&magic, 4, 1, output) != 1) {
+      printf("Failed to write to output\n");
+      return false;
+    }
+
+    // Validate frame count.
+    if (info.height % num_frames) {
+      printf("Height(%u) isn't divisible by frame count(%u)\n", info.height, num_frames);
+      return false;
+    }
+
+    // Write the fps and frame count.
+    if (fwrite(&fps, 1, 1, output) != 1 || fwrite(&num_frames, 1, 1, output) != 1) {
+      printf("Failed to write to output\n");
+      return false;
+    }
+
+  } else {
+    // Write the magic.
+    const u32 magic = FOURCC('I', 'M', '9', '8');
+    if (fwrite(&magic, 4, 1, output) != 1) {
+      printf("Failed to write to output\n");
+      return false;
+    }
   }
 
-  // Write width and height.
+  // Write width, height, flags.
   const u16 width = info.width;
-  const u16 height = info.height;
-  if (fwrite(&width, 2, 1, output) != 1 || fwrite(&height, 2, 1, output) != 1) {
+  const u16 height = (num_frames > 0) ? info.height / num_frames : info.height;
+  if (fwrite(&width, 2, 1, output) != 1 || fwrite(&height, 2, 1, output) != 1 || fwrite(&flags, 2, 1, output) != 1) {
     printf("Failed to write to output\n");
     return false;
   }
@@ -149,7 +171,8 @@ bool convert(FILE * input, FILE * output, const BMPInfo & info, const images::Pa
   u8 *scanline_data = static_cast<u8*>(alloca(scanline_size));
 
   // Data is upside down so we have to read backwards.
-  for (int y = height - 1; y >= 0; y--) {
+  const u16 num_scanlines = info.height;
+  for (int y = num_scanlines - 1; y >= 0; y--) {
     if (fseek(input, info.data_offset + y * scanline_size, SEEK_SET) != 0) {
       printf("File ended early (%i)\n", __LINE__);
       return false;
@@ -183,20 +206,28 @@ bool convert(FILE * input, FILE * output, const BMPInfo & info, const images::Pa
 } // namespace
 
 int main(int argc, const char ** argv) {
-  if (argc != 3) {
+  if (argc != 4 && argc != 6) {
     printf(
       "Usage:\n"
-      "  %s <in> <out>\n"
-      "<in> is the input BMP file.\n"
-      "<out> is the output IMG that'll be written.\n"
+      "  %s <in> <out> <flags> [<fps> <frames>]\n"
+      "  <in> is the input BMP file.\n"
+      "  <out> is the output IMG that'll be written.\n"
+      "  <flags> special flags OR'd together (0 to ignore):\n"
+      "    1 - ping pong the animation (play backwards on loop)\n"
+      "If the image is an animation you must also specify:\n"
+      "  <fps> is the frame rate.\n"
+      "  <frames> how many frames in the animation.\n"
       , argv[0]
     );
     return EXIT_FAILURE;
   }
 
-  // Read off file names.
+  // Read off inputs.
   const char * const in_name = argv[1];
   const char * const out_name = argv[2];
+  const int flags = atoi(argv[3]);
+  const int fps = (argc == 4) ? 0 : atoi(argv[4]);
+  const int num_frames = (argc == 4) ? 0 : atoi(argv[5]);
 
   // Open files.
   FILE * input = fopen(in_name, "rb");
@@ -221,7 +252,7 @@ int main(int argc, const char ** argv) {
   const images::Palette & palette = images::default_palette_16;
 
   // Do the conversion.
-  if (!convert(input, output, info, palette)) {
+  if (!convert(input, output, info, palette, flags, fps, num_frames)) {
     printf("Failed to convert data\n");
     return EXIT_FAILURE;
   }

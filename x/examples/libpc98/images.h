@@ -37,7 +37,11 @@ struct ImageData {
   ImageData();
   ~ImageData();
 
-  bool load();
+  // Try and load a file.
+  bool load(const char *path);
+
+  // Reset image.
+  void clear();
 
 private:
   ImageData(ImageData const&);
@@ -54,7 +58,8 @@ struct AnimationData {
   AnimationData();
   ~AnimationData();
 
-  bool load();
+  // Try and load a file.
+  bool load(const char *path);
 
 private:
   AnimationData(AnimationData const&);

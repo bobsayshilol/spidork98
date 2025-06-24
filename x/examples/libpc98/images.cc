@@ -5,6 +5,7 @@
 #include "macros.h"
 
 #include <cstdlib>
+#include <cstdio>
 
 namespace images {
 
@@ -29,6 +30,75 @@ FASTCALL void draw_internal(u16 x_start, u16 x_end, u16 y_start, u16 y_end, cons
       data += SCANLINE_PART_WIDTH_16;
     }
   }
+}
+
+//
+
+struct ImgType { enum E { Image, Anim }; };
+
+bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16 &flags, u8 *&data, u8 &fps, u8 &num_frames) {
+  FILE * input = fopen(path, "rb");
+  if (!input) {
+    printf("Failed to open %s\n", path);
+    return false;
+  }
+  DEFER(FILE *, p, input, fclose(p));
+
+  // Check magic.
+  u32 magic = 0;
+  if (fread(&magic, 4, 1, input) != 1) {
+    printf("Failed to read %s\n", path);
+    return false;
+  } else if (magic == FOURCC('I', 'M', '9', '8')) {
+    if (type != ImgType::Image) {
+      printf("File isn't an image: %s\n", path);
+      return false;
+    }
+
+    fps = 0;
+    num_frames = 1;
+
+  } else if (magic == FOURCC('A', 'N', '9', '8')) {
+    if (type != ImgType::Anim) {
+      printf("File isn't an animation: %s\n", path);
+      return false;
+    }
+
+    // Read the fps and frame count.
+    if (fread(&fps, 1, 1, input) != 1 || fread(&num_frames, 1, 1, input) != 1) {
+      printf("Failed to read %s\n", path);
+      return false;
+    }
+
+  } else {
+    printf("File isn't an image or animation: %s\n", path);
+    return false;
+  }
+
+  // Read off width, height, flags.
+  if (fread(&width, 2, 1, input) != 1 || fread(&height, 2, 1, input) != 1 || fread(&flags, 2, 1, input) != 1) {
+    printf("Failed to read %s\n", path);
+    return false;
+  }
+
+  // Allocate space for the image data.
+  const unsigned size = width * static_cast<unsigned>(height) * num_frames;
+  data = static_cast<u8*>(malloc(size));
+  if (!data) {
+    printf("Failed to allocate space for image: %s\n", path);
+    return false;
+  }
+
+  // Read it in.
+  if (fread(data, 1, size, input) != size) {
+    printf("Failed to read %s\n", path);
+    free(data);
+    data = 0;
+    return false;
+  }
+
+  // All done.
+  return true;
 }
 
 } // namespace
@@ -83,13 +153,32 @@ ImageData::ImageData()
 }
 
 ImageData::~ImageData() {
+  clear();
+}
+
+void ImageData::clear() {
   if (m_data != s_invalid_data) {
     free(const_cast<u8*>(m_data));
+    m_data = s_invalid_data;
+    m_width = COUNT_OF(s_invalid_data);
+    m_height = 1;
   }
 }
 
-bool ImageData::load() {
-  // TODO
+bool ImageData::load(const char *path) {
+  clear();
+
+  u16 width = 0, height = 0, flags = 0;
+  u8 *data = 0;
+  u8 fps = 0, num_frames = 0;
+  if (!load_common(path, ImgType::Image, width, height, flags, data, fps, num_frames)) {
+    return false;
+  }
+
+  // All done.
+  m_width = width;
+  m_height = height;
+  m_data = data;
   return true;
 }
 
@@ -105,8 +194,23 @@ AnimationData::AnimationData()
 AnimationData::~AnimationData() {
 }
 
-bool AnimationData::load() {
-  // TODO
+bool AnimationData::load(const char *path) {
+  m_data.clear();
+
+  u16 width = 0, height = 0, flags = 0;
+  u8 *data = 0;
+  u8 fps = 0, num_frames = 0;
+  if (!load_common(path, ImgType::Anim, width, height, flags, data, fps, num_frames)) {
+    return false;
+  }
+
+  // All done.
+  m_data.m_width = width;
+  m_data.m_height = height;
+  m_data.m_data = data;
+  m_num_frames = num_frames;
+  m_fps = fps;
+  m_pingpong = flags & 1;
   return true;
 }
 
@@ -137,8 +241,8 @@ FASTCALL void AnimatedGif::advance() {
     } else {
       m_frame_idx = 0;
     }
-    draw();
   }
+  draw();
 }
 
 void AnimatedGif::draw() {

@@ -25,17 +25,21 @@ void play() {
 
   // Load the animation.
   images::AnimationData anim_data;
-  if (!anim_data.load()) {
+  if (!anim_data.load("ayy.ani")) {
     printf("Failed to load animated sprite data\n");
     return;
   }
 
-  // Make a sprite.
-  images::AnimatedGif gif(304, 304, anim_data);
+  // Make some sprites.
+  images::AnimatedGif gif1(320 - 32, 100, anim_data);
+  images::AnimatedGif gif2(160 - 32, 100, anim_data);
+  images::AnimatedGif gif3(480 - 32, 100, anim_data);
 
   // Draw it the first time.
   gpu::wait_for_vsync();
-  gif.draw();
+  gif1.draw();
+  gif2.draw();
+  gif3.draw();
 
   // Timing tracking.
   uclock_t last_time = Funcs98::ticks();
@@ -76,8 +80,10 @@ void play() {
       gpu::wait_for_vsync();
     }
 
-    // Advance the gif.
-    gif.tick(dt);
+    // Advance the gifs.
+    gif1.tick(dt);
+    gif2.tick(dt);
+    gif3.tick(dt);
   }
 }
 
