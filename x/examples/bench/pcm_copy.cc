@@ -166,6 +166,7 @@ FORCEINLINE void refill_data_mono_4byte_4unroll_asm(const u16 size, const i8 *bu
 BENCHMARK_FUNC(compare_pcm_copy) {
   const int num_iterations = 1000;
   ALIGNAS(4) i8 big_buffer[512];
+  memset(big_buffer, 0, 512);
 
   BENCHMARK_RUN(mono_1byte_1unroll, num_iterations) {
     refill_data_mono_1byte_1unroll(512, big_buffer);
