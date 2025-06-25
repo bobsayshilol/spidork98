@@ -91,10 +91,17 @@ bool read_header(FILE * input, BMPInfo & info) {
   if (fread(&info_header, sizeof(info_header), 1, input) != 1) {
     printf("File ended early (%i)\n", __LINE__);
     return false;
-  } else if (info_header.header_size != sizeof(info_header)) {
+  } else if (info_header.header_size < sizeof(info_header)) {
     printf("Unknown info header size: %u\n", info_header.header_size);
     return false;
-  } else if (info_header.width % 16) {
+  } else if (info_header.header_size != sizeof(info_header)) {
+    printf(
+      "Warning: BMP header may contain extra colour info that will\n"
+      "be ignored. Be sure to check that the output looks correct!\n"
+    );
+  }
+
+  if (info_header.width % 16) {
     printf("Unsupported width: %u (must be a multiple of 16)\n", info_header.width);
     return false;
   } else if (info_header.planes != 1) {
@@ -124,9 +131,14 @@ bool read_header(FILE * input, BMPInfo & info) {
   const u32 data_length = primary_header.file_size - primary_header.data_offset;
   const u32 scanline_size = maths::pad_to<4>(info_header.width) * 3;
   const u32 bytes_expected = scanline_size * info_header.height;
-  if (data_length != bytes_expected) {
+  if (data_length < bytes_expected) {
     printf("Bad data size: found %u, expected %u\n", data_length, bytes_expected);
     return false;
+  } else if (data_length > bytes_expected) {
+    printf(
+      "Warning: BMP contains extra data at the end of the file.\n"
+      "Be sure to check that the output looks correct!\n"
+    );
   }
 
   // Done.
