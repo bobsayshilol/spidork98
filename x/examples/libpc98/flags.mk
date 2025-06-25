@@ -6,7 +6,7 @@ RANLIB	= ranlib.exe
 STRIP	= strip.exe
 
 # Compiler options
-CFLAGS	= -g -Wall -Werror -W -Wparentheses -Winline -Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn
+CFLAGS	= -g -Wall -Werror -W -Wparentheses -Winline -Wmissing-prototypes -Wmissing-declarations -Wmissing-noreturn -Wshadow
 CFLAGS	+= -mcpu=i486 -march=i486 -O3
 #CFLAGS	+= -mcpu=i386 -march=i386 -O3
 #CFLAGS	+= -fomit-frame-pointer -fexpensive-optimizations -fgcse -frerun-loop-opt

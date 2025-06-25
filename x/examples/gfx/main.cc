@@ -46,16 +46,16 @@ void play() {
   }
 
   // Random rectangles.
-  for (int i = 0; i < N; i++) {
+  for (int j = 0; j < N; j++) {
     Funcs::clear_screen();
-    printf("Quad test %i/%i\n", i + 1, N);
+    printf("Quad test %i/%i\n", j + 1, N);
     const int x0 = rand() % GPU_WIDTH;
     const int y0 = rand() % GPU_HEIGHT;
     const int x1 = rand() % GPU_WIDTH;
     const int y1 = rand() % GPU_HEIGHT;
     printf("Random co-ords (%i,%i) to (%i,%i)\n", x0, y0, x1, y1);
 
-    gpu::draw_quad(x0, y0, x1, y1, i);
+    gpu::draw_quad(x0, y0, x1, y1, j);
 
     wait_for_any_key();
   }

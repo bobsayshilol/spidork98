@@ -119,8 +119,8 @@ void build_lookup_table() {
   for (int i = 0; i < PIXEL_SPACING_Y; i++) {
     decrement_if_positive_lookup[i] = 0;
   }
-  for (int i = PIXEL_SPACING_Y; i < 256; i++) {
-    decrement_if_positive_lookup[i] = i - PIXEL_SPACING_Y;
+  for (int j = PIXEL_SPACING_Y; j < 256; j++) {
+    decrement_if_positive_lookup[j] = j - PIXEL_SPACING_Y;
   }
 }
 
@@ -143,11 +143,11 @@ void draw_hotspots() {
 #define BLUR_WIDTH 20
 #define FIRE_POWER 4
   for (int i = 0; i < num_hotspots; i++) {
-    const int x = hotspot_locations[i];
+    const int h = hotspot_locations[i];
     STATIC_ASSERT((BLUR_WIDTH % PIXEL_SPACING_X) == 0);
     for (int dx = -BLUR_WIDTH; dx <= BLUR_WIDTH; dx += PIXEL_SPACING_X) {
       const int adx = dx < 0 ? -dx : dx;
-      int p = x + dx;
+      int p = h + dx;
       // Handle wrap around.
       if (p < 0) p += GPU_WIDTH;
       if (p >= GPU_WIDTH) p -= GPU_WIDTH;

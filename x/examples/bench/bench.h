@@ -26,7 +26,10 @@
   void _benchmark_##name(benchmarking::Benchmark &/*_benchmark_info*/)
 
 #define BENCHMARK_RUN(name, iters) \
-  for (benchmarking::Timer _timer(#name, iters); _timer.counter < _timer.max; _timer.counter++)
+  for (benchmarking::Timer CONCAT(_timer, __LINE__) (#name, iters); \
+    CONCAT(_timer, __LINE__) .counter < CONCAT(_timer, __LINE__) .max; \
+    CONCAT(_timer, __LINE__) .counter++ \
+  )
 
 namespace benchmarking {
 

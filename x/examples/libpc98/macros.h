@@ -33,7 +33,7 @@ template <typename T, int N> static void _check_is_array(T const (&)[N]) {}
 //   DEFER( void* , p , ptr , free(p) );
 #define DEFER(type_, var_, init_, code_) \
   struct CONCAT(_defer_t, __LINE__) { \
-    CONCAT(_defer_t, __LINE__) (type_ var_) : var_ (var_) {} \
+    CONCAT(_defer_t, __LINE__) (type_ var_##_) : var_ (var_##_) {} \
     CONCAT(~_defer_t, __LINE__) () { code_ ; } \
     type_ var_ ; \
   } CONCAT(_defer_val, __LINE__) (init_)
