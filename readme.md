@@ -2,31 +2,37 @@
 
 It stands for the Silly PC-98 Integrated Development On Real hardware Kit. Definitely nothing else.
 
-# How to use
+
+## Examples
+
+Check out the [examples folder](x/examples/readme.md) for all of the tests and experiments that have been created.
+
+
+## How to use
 
 Development uses [`DJGPP`](https://www.delorie.com/djgpp/) in the [`DOSBox-X`](https://dosbox-x.com/) emulator since it Just Works in most cases.
 
 [`Neko Project II`](https://www.yui.ne.jp/np2/) can be used for more accurate testing, but note that it requires a `PC-98` BIOS dump to work.
 
 
-## Setup dev environment
+### Setup dev environment
 
 1. Run [`setup.ps1`](setup.ps1) (only needs running once) to download and unzip the required tools.
 
 
-## Launch dev environment
+### Launch dev environment
 
 1. Run [`run.ps1`](run.ps1) to launch the dev environment.
 
 
-# Credits and references
+## Credits and references
 
-## Emulators
+### Emulators
 
 * [`DOSBox-X`](https://dosbox-x.com/)
 * [`Neko Project II`](https://www.yui.ne.jp/np2/)
 
-## Technical references
+### Technical references
 
 * [`DJGPP` setup guide](https://www.target-earth.net/wiki/doku.php?id=blog:pc98_devtools)
 * https://printf.neocities.org/programming
