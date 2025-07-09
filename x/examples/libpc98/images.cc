@@ -207,16 +207,16 @@ void ImageData::clear() {
 bool ImageData::load(const char *path) {
   clear();
 
-  u16 width = 0, height = 0, flags = 0;
+  u16 w = 0, h = 0, flags = 0;
   u8 *data = 0;
   u8 fps = 0, num_frames = 0;
-  if (!load_common(path, ImgType::Image, width, height, flags, data, fps, num_frames)) {
+  if (!load_common(path, ImgType::Image, w, h, flags, data, fps, num_frames)) {
     return false;
   }
 
   // All done.
-  m_width = width;
-  m_height = height;
+  m_width = w;
+  m_height = h;
   m_data = data;
   return true;
 }
@@ -236,16 +236,16 @@ AnimationData::~AnimationData() {
 bool AnimationData::load(const char *path) {
   m_data.clear();
 
-  u16 width = 0, height = 0, flags = 0;
+  u16 w = 0, h = 0, flags = 0;
   u8 *data = 0;
   u8 fps = 0, num_frames = 0;
-  if (!load_common(path, ImgType::Anim, width, height, flags, data, fps, num_frames)) {
+  if (!load_common(path, ImgType::Anim, w, h, flags, data, fps, num_frames)) {
     return false;
   }
 
   // All done.
-  m_data.m_width = width;
-  m_data.m_height = height;
+  m_data.m_width = w;
+  m_data.m_height = h;
   m_data.m_data = data;
   m_num_frames = num_frames;
   m_fps = fps;

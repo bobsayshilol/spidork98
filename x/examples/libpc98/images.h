@@ -69,6 +69,9 @@ struct AnimationData {
   // Try and load a file.
   bool load(const char *path);
 
+  FORCEINLINE u16 width() const { return m_data.m_width; }
+  FORCEINLINE u16 height() const { return m_data.m_height; }
+
 private:
   AnimationData(AnimationData const&);
   AnimationData&operator=(AnimationData const&);
