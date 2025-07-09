@@ -21,19 +21,19 @@ void play() {
   gpu::enable_text_layer(true); // log text for FPS
 
   // Set the palette for the animations.
-  images::set_palette(images::default_palette_16);
+  images::set_palette(images::default_palette_64);
 
   // Load the animation.
   images::AnimationData anim_data;
-  if (!anim_data.load("ayy.ani")) {
+  if (!anim_data.load("ayylmao/ayy.ani")) {
     printf("Failed to load animated sprite data\n");
     return;
   }
 
   // Make some sprites.
-  images::AnimatedGif gif1(320 - 32, 100, anim_data);
-  images::AnimatedGif gif2(160 - 32, 100, anim_data);
-  images::AnimatedGif gif3(480 - 32, 100, anim_data);
+  images::AnimatedGif gif1(GPU_WIDTH * 1 / 4 - anim_data.width() / 2, (GPU_HEIGHT - anim_data.height()) / 2, anim_data);
+  images::AnimatedGif gif2(GPU_WIDTH * 2 / 4 - anim_data.width() / 2, (GPU_HEIGHT - anim_data.height()) / 2, anim_data);
+  images::AnimatedGif gif3(GPU_WIDTH * 3 / 4 - anim_data.width() / 2, (GPU_HEIGHT - anim_data.height()) / 2, anim_data);
 
   // Draw it the first time.
   gpu::wait_for_vsync();
@@ -81,9 +81,10 @@ void play() {
     }
 
     // Advance the gifs.
-    gif1.tick(dt);
+    const uclock_t dt2 = dt << 1;
+    gif1.tick(dt2);
     gif2.tick(dt);
-    gif3.tick(dt);
+    gif3.tick(dt + dt2);
   }
 }
 
