@@ -60,6 +60,29 @@ void play() {
     wait_for_any_key();
   }
 
+  // Draw to background.
+  {
+    Funcs::clear_screen();
+    printf("Clearing back buffer to red\n");
+    gpu::set_palette_colour(N, 255, 0, 0);
+
+    gpu::g_draw_to = gpu::DrawTo::Back;
+    gpu::clear(N);
+    gpu::g_draw_to = gpu::DrawTo::Front;
+
+    wait_for_any_key();
+  }
+
+  // Undraw from background.
+  {
+    Funcs::clear_screen();
+    printf("Drawing from back buffer to front buffer\n");
+
+    gpu::undraw_quad(GPU_WIDTH / 4, GPU_HEIGHT / 4, GPU_WIDTH * 3 / 4, GPU_HEIGHT * 3 / 4);
+
+    wait_for_any_key();
+  }
+
   // Cleanup.
   gpu::shutdown();
   Funcs::clear_screen();

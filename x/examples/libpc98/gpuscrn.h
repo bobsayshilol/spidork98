@@ -9,6 +9,10 @@
 
 namespace gpu {
 
+// Whether the next draw operation will be on the front or back buffer.
+struct DrawTo { enum E { Front = 0, Back = 8 }; };
+extern DrawTo::E g_draw_to;
+
 // Setup and shutdown the GPU.
 FASTCALL bool setup();
 FASTCALL void shutdown();
@@ -33,6 +37,9 @@ FASTCALL void draw_line(int x0, int y0, int x1, int y1, u8 pal_col);
 
 // Draw a quad from corner (x0, y0) -> (x1, y1)
 FASTCALL void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col);
+
+// Copy a quad from the backbuffer.
+FASTCALL void undraw_quad(int x0, int y0, int x1, int y1);
 
 // Read/write a scanline (GPU_WIDTH in size).
 FASTCALL void read_scanline(int line, u8 *data);

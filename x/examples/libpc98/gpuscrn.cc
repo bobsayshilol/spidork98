@@ -23,6 +23,16 @@
 #define SCANLINE_COUNT_400 0x00
 #define SCANLINE_COUNT_480 0x01
 
+// Which screen to display?
+#define PORT_DISPLAY_SCREEN 0xA4
+#define DISPLAY_SCREEN_BANKS_0_TO_7 0x00
+#define DISPLAY_SCREEN_BANKS_8_TO_15 0x01
+
+// Which screen to keep hidden?
+#define PORT_HIDDEN_SCREEN 0xA6
+#define HIDDEN_SCREEN_BANKS_0_TO_7 0x00
+#define HIDDEN_SCREEN_BANKS_8_TO_15 0x01
+
 // Palette ports.
 #define PORT_PALETTE_NUM 0xA8
 #define PORT_PALETTE_GREEN 0xAA
@@ -53,6 +63,9 @@
 #define WINDOW1_DATA_ADDR SEG2REAL(0xB000, 0x0000)
 #define WINDOW_BANK_SIZE (32 * 1024)
 
+// First 8 banks are rendered, backbuffer are the second 8.
+#define BACKBUFFER_BANK_OFFSET 8
+
 
 // Based on https://www.delorie.com/djgpp/doc/brennan/brennan_access_vga.html
 // And https://web.archive.org/web/20041225164712/http://www2.muroran-it.ac.jp/circle/mpc/program/pc98dos/index.html
@@ -69,6 +82,7 @@ u8 *g_windows[2];
 
 // Map in a new bank to one of the windows.
 FORCEINLINE void set_bank(Window::E window, short bank) {
+  bank += static_cast<short>(g_draw_to);
   _farpokew(_dos_ds, window == Window::Window1 ? MEMORY_MAP_WINDOW1_BANK_ADDR : MEMORY_MAP_WINDOW0_BANK_ADDR, bank);
 }
 
@@ -101,7 +115,9 @@ FORCEINLINE int bank_split_for_line(int line) {
   }
 }
 
-} // namespace raw
+} // namespace
+
+DrawTo::E g_draw_to = DrawTo::Front;
 
 FASTCALL bool setup() {
   // Need near pointers to actually access memory.
@@ -123,6 +139,9 @@ FASTCALL bool setup() {
   // Packed pixel format.
   _farpokeb(_dos_ds, MEMORY_MAP_MODE_ADDR, MEMORY_MAP_PACKED);
 
+  // Draw everything to the front buffer by default.
+  g_draw_to = DrawTo::Front;
+
   // Clear the palette and the screen.
   for (int i = 0; i < 256; i++) {
     set_palette_colour(i, 0, 0, 0);
@@ -131,10 +150,6 @@ FASTCALL bool setup() {
 
   // Disable text mode.
   enable_text_layer(false);
-
-  // Setup initial mappings.
-  set_bank(Window::Window0, 0);
-  set_bank(Window::Window1, 1);
 
   return true;
 }
@@ -163,9 +178,11 @@ FASTCALL void shutdown() {
   __djgpp_nearptr_disable();
 }
 
+#if 0
 FASTCALL void swap() {
   // TODO: double buffering with dual screen
 }
+#endif
 
 FASTCALL void wait_for_vsync() {
   // Wait for vblank to start.
@@ -189,12 +206,20 @@ FASTCALL void clear(u8 pal_col) {
   u8 volatile *const window0 = g_windows[0];
   u8 volatile *const window1 = g_windows[1];
 
+  // Do the work a word at a time.
+  const u32 pal_col4 =
+    (pal_col <<  0) |
+    (pal_col <<  8) |
+    (pal_col << 16) |
+    (pal_col << 24)
+  ;
+
   for (int bank = 0; bank < 4; bank++) {
     set_bank(Window::Window0, 2 * bank + 0);
     set_bank(Window::Window1, 2 * bank + 1);
-    for (int i = 0; i < WINDOW_BANK_SIZE; i++) {
-      window0[i] = pal_col;
-      window1[i] = pal_col;
+    for (int i = 0; i < WINDOW_BANK_SIZE / 4; i++) {
+      reinterpret_cast<u32 volatile *>(window0)[i] = pal_col4;
+      reinterpret_cast<u32 volatile *>(window1)[i] = pal_col4;
     }
   }
 }
@@ -235,6 +260,46 @@ FASTCALL void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
       window0[addr] = pal_col;
     }
   }
+}
+
+FASTCALL void undraw_quad(int x0, int y0, int x1, int y1) {
+  u8 volatile *const window0 = g_windows[0]; // front
+  const u8 volatile *const window1 = g_windows[1]; // back
+
+  // Render from top to bottom.
+  if (x0 > x1) utils::swap(x0, x1);
+  if (y0 > y1) utils::swap(y0, y1);
+
+  // Save the current draw mode.
+  DrawTo::E old_draw_to = g_draw_to;
+  g_draw_to = DrawTo::Front;
+
+  // TODO: go a bank at a time filling them in
+  //const BankInfo first_bank = pixel_to_bank(x0, y0);
+  //const BankInfo last_bank = pixel_to_bank(x1, y1);
+
+  // For now, basic but works.
+  int current_bank = -1;
+  int bank_start = 0;
+  for (int y = y0; y < y1; y++) {
+    for (int x = x0; x < x1; x += 4) {
+      // Change bank if we need to.
+      const BankInfo bank_info = pixel_to_bank(x, y);
+      if (bank_info.bank != current_bank) {
+        // window0 is front, window1 is back.
+        set_bank(Window::Window0, bank_info.bank);
+        set_bank(Window::Window1, bank_info.bank + BACKBUFFER_BANK_OFFSET);
+        current_bank = bank_info.bank;
+        bank_start = current_bank * WINDOW_BANK_SIZE;
+      }
+      // Copy pixel over.
+      const u32 addr4 = (pixel_to_addr(x, y) - bank_start) >> 2;
+      reinterpret_cast<u32 volatile *>(window0)[addr4] =
+        reinterpret_cast<const u32 volatile *>(window1)[addr4];
+    }
+  }
+
+  g_draw_to = old_draw_to;
 }
 
 namespace {
