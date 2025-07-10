@@ -3,6 +3,7 @@
 #include "funcs.h"
 #include "gpuscrn.h"
 #include "macros.h"
+#include "memory.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -83,7 +84,7 @@ bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16
 
   // Allocate space for the image data.
   const unsigned size = width * static_cast<unsigned>(height) * num_frames;
-  data = static_cast<u8*>(malloc(size));
+  data = static_cast<u8*>(memory::alloc4(size));
   if (!data) {
     printf("Failed to allocate space for image: %s\n", path);
     return false;
@@ -92,7 +93,7 @@ bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16
   // Read it in.
   if (fread(data, 1, size, input) != size) {
     printf("Failed to read %s\n", path);
-    free(data);
+    memory::free4(data);
     data = 0;
     return false;
   }
@@ -268,7 +269,7 @@ ImageData::~ImageData() {
 
 void ImageData::clear() {
   if (m_data != s_invalid_data) {
-    free(const_cast<u8*>(m_data));
+    memory::free4(const_cast<u8*>(m_data));
     m_data = s_invalid_data;
     m_width = COUNT_OF(s_invalid_data);
     m_height = 1;

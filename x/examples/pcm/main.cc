@@ -1,6 +1,7 @@
 #include "funcs.h"
 #include "pcm.h"
 #include "maths.h"
+#include "memory.h"
 
 #include "bgm.h"
 
@@ -88,12 +89,12 @@ static bool play(int buffer_size) {
   printf("Running on %s\n", Funcs::name());
 
   // Allocate a new buffer for us to work with.
-  i8 *buffer = static_cast<signed char*>(malloc(buffer_size));
+  i8 *buffer = static_cast<signed char*>(memory::alloc4(buffer_size));
   if (!buffer) {
     printf("Failed to allocate data\n");
     return false;
   }
-  DEFER(signed char *, ptr, buffer, free(ptr));
+  DEFER(signed char *, ptr, buffer, memory::free4(ptr));
 
   // Clear it out.
   memset(buffer, 0, buffer_size);

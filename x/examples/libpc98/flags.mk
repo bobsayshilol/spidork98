@@ -22,6 +22,7 @@ DEPS	= \
 	..\\libpc98\\images.h	\
 	..\\libpc98\\macros.h	\
 	..\\libpc98\\maths.h	\
+	..\\libpc98\\memory.h	\
 	..\\libpc98\\mouse.h	\
 	..\\libpc98\\pcm.h		\
 	..\\libpc98\\profile.h	\
