@@ -84,7 +84,7 @@ bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16
 
   // Allocate space for the image data.
   const unsigned size = width * static_cast<unsigned>(height) * num_frames;
-  data = static_cast<u8*>(memory::alloc4(size));
+  data = memory::alloc4<u8>(size);
   if (!data) {
     printf("Failed to allocate space for image: %s\n", path);
     return false;

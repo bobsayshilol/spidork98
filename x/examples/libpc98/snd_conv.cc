@@ -3,6 +3,7 @@
 #include "macros.h"
 #include "pcm.h"
 #include "progress.h"
+#include "sound.h"
 #include "types.h"
 
 #include <cstdio>
@@ -11,7 +12,7 @@
 namespace {
 
 struct PCMInfo {
-  pcm::SamplingRate::E sampling_rate;
+  pcm::SamplingRate::E pcm_rate;
   u32 frame_count;
 };
 
@@ -84,12 +85,19 @@ bool read_header(FILE * input, PCMInfo & info) {
   } else if (fmt.channels != 1) {
     printf("Unsupported channel count: %i (should be mono)\n", fmt.channels);
     return false;
-  } else if (fmt.sampling_rate != 11025 && fmt.sampling_rate != 8000) {
-    printf("Unsupported sampling rate: %i (should be 11025 or 8000)\n", fmt.sampling_rate);
-    return false;
   } else if (fmt.bits_per_sample != 16) {
-    printf("Unsupported bytes/sample: %i (should be 16 bit signed/short)\n", fmt.bits_per_sample);
+    printf("Unsupported bits per sample: %i (should be 16 bit signed/short)\n", fmt.bits_per_sample);
     return false;
+  }
+
+  pcm::SamplingRate::E pcm_rate;
+  switch (fmt.sampling_rate) {
+    case 8000: pcm_rate = pcm::SamplingRate::kHz_8_3; break;
+    case 11025: pcm_rate = pcm::SamplingRate::kHz_11; break;
+    case 16000: pcm_rate = pcm::SamplingRate::kHz_16_5; break;
+    default:
+      printf("Unsupported sampling rate: %i (should be one of 8000, 11025, 16000)\n", fmt.sampling_rate);
+      return false;
   }
 
   // Skip the rest of the fmt chunk.
@@ -114,7 +122,7 @@ bool read_header(FILE * input, PCMInfo & info) {
   }
 
   // Done.
-  info.sampling_rate = fmt.sampling_rate == 11025 ? pcm::SamplingRate::kHz_11 : pcm::SamplingRate::kHz_8_3;
+  info.pcm_rate = pcm_rate;
   info.frame_count = chunk_size / 2;
   return true;
 }
@@ -131,22 +139,32 @@ bool convert(FILE * input, FILE * output, const PCMInfo & info) {
   }
 
   // Write sampling rate.
-  const u8 sampling_rate = info.sampling_rate;
-  if (fwrite(&sampling_rate, 1, 1, output) != 1) {
+  const u8 pcm_rate8 = static_cast<u8>(info.pcm_rate);
+  if (fwrite(&pcm_rate8, 1, 1, output) != 1) {
+    printf("Failed to write to output\n");
+    return false;
+  }
+
+  // Write the number of rames.
+  const u32 frame_count = info.frame_count;
+  if (fwrite(&frame_count, 4, 1, output) != 1) {
     printf("Failed to write to output\n");
     return false;
   }
 
   // Write the data.
-  for (u32 frame = 0; frame < info.frame_count; frame++) {
+  for (u32 frame = 0; frame < frame_count; frame++) {
     i16 sample16;
-    if (fread(&sample16, 1, 2, input) != 2) {
+    if (fread(&sample16, 2, 1, input) != 1) {
       printf("File ended early (%i) (%u)\n", __LINE__, frame);
       return false;
     }
 
     // Scale 16bit to 8bit.
-    const i8 sample8 = sample16 / 256;
+    i8 sample8 = sample16 / 256;
+    // To avoid having to scale in the mixing, we do the scaling here.
+    // Note that this means we're less than 8bit.
+    sample8 /= MAX_SOUNDS;
     if (fwrite(&sample8, 1, 1, output) != 1) {
       printf("Failed to write to output\n");
       return false;

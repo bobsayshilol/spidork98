@@ -13,6 +13,16 @@ FORCEINLINE static void swap(T & l,T & r) {
   r = t;
 }
 
+template <typename T>
+FORCEINLINE static T min(T l,T r) {
+  return l < r ? l : r;
+}
+
+template <typename T>
+FORCEINLINE static T max(T l,T r) {
+  return l > r ? l : r;
+}
+
 } // namespace utils
 
 #endif

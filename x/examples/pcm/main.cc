@@ -91,7 +91,7 @@ static bool play(const pcm::SamplingRate::E pcm_rate, const int buffer_size) {
   printf("Running on %s\n", Funcs::name());
 
   // Allocate a new buffer for us to work with.
-  i8 *buffer = static_cast<signed char*>(memory::alloc4(buffer_size));
+  i8 *buffer = memory::alloc4<i8>(buffer_size);
   if (!buffer) {
     printf("Failed to allocate data\n");
     return false;
@@ -165,7 +165,7 @@ int main(int argc, const char **argv) {
       "Usage:\n"
       "  %s <type> <rate> <size>\n"
       "<type> is \"tone\", \"bgm\", or \"debug\"\n"
-      "<rate> is sampling rate in kHz (8 or 16)\n"
+      "<rate> is sampling rate in kHz (8,11,16)\n"
       "<size> is buffer size and must be a power of 2\n"
       "       (512, 1024, 2048 are good choices)\n"
       , argv[0]
@@ -189,6 +189,7 @@ int main(int argc, const char **argv) {
   pcm::SamplingRate::E sampling_rate;
   switch (sampling_rate_int) {
     case 8: sampling_rate = pcm::SamplingRate::kHz_8_3; break;
+    case 11: sampling_rate = pcm::SamplingRate::kHz_11; break;
     case 16: sampling_rate = pcm::SamplingRate::kHz_16_5; break;
     default:
       printf("Sampling rate given isn't supported: %i\n", sampling_rate_int);

@@ -27,6 +27,7 @@ DEPS	= \
 	..\\libpc98\\pcm.h		\
 	..\\libpc98\\profile.h	\
 	..\\libpc98\\progress.h	\
+	..\\libpc98\\sound.h	\
 	..\\libpc98\\types.h 	\
 	..\\libpc98\\utils.h	\
 	# line left blank
