@@ -48,10 +48,10 @@ struct Volume {
   // These values match the raw value you'd write to the port.
   enum E {
     vol_max = 0x0,
-    vol_3_quater = 0x4,
-    vol_half = 0x8,
-    vol_1_quater = 0xB,
-    vol_min = 0xF,
+    vol_3_quater = 0x2,
+    vol_half = 0x4,
+    vol_1_quater = 0x6,
+    vol_min = 0x7,
   };
 };
 

@@ -10,6 +10,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <conio.h>
+
 namespace {
 
 STATIC_ASSERT(sizeof(unsigned) == 4);
@@ -85,7 +87,7 @@ PCMState generate_audio_bgm(pcm::SamplingRate::E rate, PCMState state, i8 *out, 
 } // namespace
 
 template <typename Funcs>
-static bool play(int buffer_size) {
+static bool play(const pcm::SamplingRate::E pcm_rate, const int buffer_size) {
   printf("Running on %s\n", Funcs::name());
 
   // Allocate a new buffer for us to work with.
@@ -99,19 +101,19 @@ static bool play(int buffer_size) {
   // Clear it out.
   memset(buffer, 0, buffer_size);
 
+  const int hz = pcm::to_hz(pcm_rate);
+  const uclock_t buffer_size_ticks = buffer_size * Funcs::ticks_per_sec() / hz;
+  printf("Audio buffer size: %u samples (%llims @ %iHz)\n", buffer_size, buffer_size * 1000LL / hz, hz);
+  printf("Press any key to start, then 1-5 to control the volume and q to quit\n");
+  getch();
+
   // Setup PCM.
-  const pcm::SamplingRate::E pcm_rate = pcm::SamplingRate::kHz_8_3;
   const pcm::Format::E pcm_format = pcm::Format::fmt_mono;
   if (!pcm::init(pcm_rate, pcm_format, buffer)) {
     printf("Failed to init PCM\n");
     return false;
   }
 
-  const int hz = pcm::to_hz(pcm_rate);
-  const uclock_t buffer_size_ticks = buffer_size * Funcs::ticks_per_sec() / hz;
-  printf("Audio buffer size: %u samples (%llims @ %iHz)\n", buffer_size, buffer_size * 1000LL / hz, hz);
-
-  printf("Press any key to stop\n");
   unsigned iteration = 0;
   unsigned refills = 0;
   PCMState generator_state = 0;
@@ -128,12 +130,24 @@ static bool play(int buffer_size) {
       pcm::filled(buffer_size);
       const uclock_t generate_dt = Funcs::ticks() - generate_start;
 
-      printf("Regened %u samples (generated in %llu ticks: %llu%%) [%u:%u]\n", buffer_size, generate_dt, generate_dt * 100 / buffer_size_ticks, refills, iteration);
+      printf("Regened %u samples (in %llu ticks: %llu%%) [%u:%u]\n", buffer_size, generate_dt, generate_dt * 100 / buffer_size_ticks, refills, iteration);
     }
 
     // Check for user input.
     if (Funcs::kb_hit()) {
-      break;
+      bool quit = false;
+      const char ch = getch();
+      switch (ch) {
+        case '1': pcm::set_volume(pcm::Volume::vol_min); break;
+        case '2': pcm::set_volume(pcm::Volume::vol_1_quater); break;
+        case '3': pcm::set_volume(pcm::Volume::vol_half); break;
+        case '4': pcm::set_volume(pcm::Volume::vol_3_quater); break;
+        case '5': pcm::set_volume(pcm::Volume::vol_max); break;
+        case 'q': case 'Q': quit = true; break;
+      }
+      if (quit) {
+        break;
+      }
     }
   }
 
@@ -146,11 +160,12 @@ int main(int argc, const char **argv) {
   if (!ISPC98(__crt0_mtype)) {
     printf("Can only run on PC-98\n");
     return EXIT_FAILURE;
-  } else if (argc != 3) {
+  } else if (argc != 4) {
     printf(
       "Usage:\n"
-      "  %s <type> <size>\n"
+      "  %s <type> <rate> <size>\n"
       "<type> is \"tone\", \"bgm\", or \"debug\"\n"
+      "<rate> is sampling rate in kHz (8 or 16)\n"
       "<size> is buffer size and must be a power of 2\n"
       "       (512, 1024, 2048 are good choices)\n"
       , argv[0]
@@ -170,13 +185,23 @@ int main(int argc, const char **argv) {
     return EXIT_FAILURE;
   }
 
-  int const buffer_size = atoi(argv[2]);
+  int const sampling_rate_int = atoi(argv[2]);
+  pcm::SamplingRate::E sampling_rate;
+  switch (sampling_rate_int) {
+    case 8: sampling_rate = pcm::SamplingRate::kHz_8_3; break;
+    case 16: sampling_rate = pcm::SamplingRate::kHz_16_5; break;
+    default:
+      printf("Sampling rate given isn't supported: %i\n", sampling_rate_int);
+      return EXIT_FAILURE;
+  }
+
+  int const buffer_size = atoi(argv[3]);
   if (buffer_size < 0 || (buffer_size & (buffer_size - 1))) {
     printf("Buffer size isn't a power of 2: %i\n", buffer_size);
     return EXIT_FAILURE;
   }
 
-  if (!play<Funcs98>(buffer_size)) {
+  if (!play<Funcs98>(sampling_rate, buffer_size)) {
     return EXIT_FAILURE;
   }
 
