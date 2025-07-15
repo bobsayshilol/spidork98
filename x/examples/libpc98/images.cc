@@ -2,6 +2,7 @@
 
 #include "funcs.h"
 #include "gpuscrn.h"
+#include "logs.h"
 #include "macros.h"
 #include "memory.h"
 
@@ -40,7 +41,7 @@ struct ImgType { enum E { Image, Anim }; };
 bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16 &flags, u8 *&data, u8 &fps, u8 &num_frames) {
   FILE * input = fopen(path, "rb");
   if (!input) {
-    printf("Failed to open %s\n", path);
+    logging::print(logging::Level::Error, "Failed to open %s", path);
     return false;
   }
   DEFER(FILE *, p, input, fclose(p));
@@ -48,11 +49,11 @@ bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16
   // Check magic.
   u32 magic = 0;
   if (fread(&magic, 4, 1, input) != 1) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     return false;
   } else if (magic == FOURCC('I', 'M', '9', '8')) {
     if (type != ImgType::Image) {
-      printf("File isn't an image: %s\n", path);
+      logging::print(logging::Level::Error, "File isn't an image: %s", path);
       return false;
     }
 
@@ -61,24 +62,24 @@ bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16
 
   } else if (magic == FOURCC('A', 'N', '9', '8')) {
     if (type != ImgType::Anim) {
-      printf("File isn't an animation: %s\n", path);
+      logging::print(logging::Level::Error, "File isn't an animation: %s", path);
       return false;
     }
 
     // Read the fps and frame count.
     if (fread(&fps, 1, 1, input) != 1 || fread(&num_frames, 1, 1, input) != 1) {
-      printf("Failed to read %s\n", path);
+      logging::print(logging::Level::Error, "Failed to read %s", path);
       return false;
     }
 
   } else {
-    printf("File isn't an image or animation: %s\n", path);
+    logging::print(logging::Level::Error, "File isn't an image or animation: %s", path);
     return false;
   }
 
   // Read off width, height, flags.
   if (fread(&width, 2, 1, input) != 1 || fread(&height, 2, 1, input) != 1 || fread(&flags, 2, 1, input) != 1) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     return false;
   }
 
@@ -86,19 +87,20 @@ bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16
   const unsigned size = width * static_cast<unsigned>(height) * num_frames;
   data = memory::alloc4<u8>(size);
   if (!data) {
-    printf("Failed to allocate space for image: %s\n", path);
+    logging::print(logging::Level::Error, "Failed to allocate space for image: %s", path);
     return false;
   }
 
   // Read it in.
   if (fread(data, 1, size, input) != size) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     memory::free4(data);
     data = 0;
     return false;
   }
 
   // All done.
+  logging::print(logging::Level::Info, "Loaded image/animation %s", path);
   return true;
 }
 
@@ -208,7 +210,7 @@ FASTCALL bool load_palette(Palette & palette, const char *path) {
 
   FILE * input = fopen(path, "rb");
   if (!input) {
-    printf("Failed to open %s\n", path);
+    logging::print(logging::Level::Error, "Failed to open %s", path);
     return false;
   }
   DEFER(FILE *, p, input, fclose(p));
@@ -216,29 +218,30 @@ FASTCALL bool load_palette(Palette & palette, const char *path) {
   // Check magic.
   u32 magic = 0;
   if (fread(&magic, 4, 1, input) != 1) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     return false;
   } else if (magic != FOURCC('P', 'L', '9', '8')) {
-    printf("File isn't an palette: %s\n", path);
+    logging::print(logging::Level::Error, "File isn't an palette: %s", path);
     return false;
   }
 
   // Read off count.
   if (fread(&palette.num_colours, 1, 1, input) != 1) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     return false;
   } else if (palette.num_colours > IMAGES_MAX_PALETTE_SIZE) {
-    printf("Invalid colour count in palette: %u\n", palette.num_colours);
+    logging::print(logging::Level::Error, "Invalid colour count in palette: %u", palette.num_colours);
     return false;
   }
 
   // Read off data.
   if (fread(palette.rgb, 3, palette.num_colours, input) != palette.num_colours) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     return false;
   }
 
   // Done.
+  logging::print(logging::Level::Info, "Loaded palette %s", path);
   return true;
 }
 

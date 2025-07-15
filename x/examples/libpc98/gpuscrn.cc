@@ -1,5 +1,6 @@
 #include "gpuscrn.h"
 #include "utils.h"
+#include "logs.h"
 
 #include <go32.h>
 #include <pc.h>
@@ -122,6 +123,7 @@ DrawTo::E g_draw_to = DrawTo::Front;
 FASTCALL bool setup() {
   // Need near pointers to actually access memory.
   if (__djgpp_nearptr_enable() == 0) {
+    logging::print(logging::Level::Error, "Failed to enable nearptr");
     return false;
   }
   g_windows[0] = (u8*)(__djgpp_conventional_base + WINDOW0_DATA_ADDR);
@@ -151,6 +153,7 @@ FASTCALL bool setup() {
   // Disable text mode.
   enable_text_layer(false);
 
+  logging::print(logging::Level::Info, "GPU system initialised");
   return true;
 }
 
@@ -176,6 +179,8 @@ FASTCALL void shutdown() {
   g_windows[0] = 0;
   g_windows[1] = 0;
   __djgpp_nearptr_disable();
+
+  logging::print(logging::Level::Info, "GPU system shutdown");
 }
 
 #if 0

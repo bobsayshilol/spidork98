@@ -1,5 +1,6 @@
 #include "pcm.h"
 #include "funcs.h"
+#include "logs.h"
 
 #include <cstdio>
 #include <dpmi.h>
@@ -338,26 +339,26 @@ printf("after: %i\n", g_pcm_fifo_size);
 
 FASTCALL bool init(SamplingRate::E rate, Format::E format, const i8 *buffer) {
   if (s_inited) {
-    printf("PCM system already initialised\n");
+    logging::print(logging::Level::Warning, "PCM system already initialised");
     return false;
   }
 
   const SampleSize::E size = SampleSize::bits_8;
   if (size != SampleSize::bits_8) {
-    printf("Only 8bit audio is implemented\n");
+    logging::print(logging::Level::Error, "Only 8bit audio is implemented");
     return false;
   }
 
   u8 const sound_id = inportb(PORT_SOUND_HW_ID_OPN_MASK);
   u8 const hw_id = sound_id >> 4;
-  printf("Audio device like: %s\n", device_name(hw_id));
+  logging::print(logging::Level::Info, "Audio device like: %s", device_name(hw_id));
 
   // Check this is supported.
   if (hw_id == 0 || hw_id > 6) {
-    printf("Unsupported audio device\n");
+    logging::print(logging::Level::Error, "Unsupported audio device");
     return false;
   } else if (hw_id != 4) {
-    printf("WARNING: not tested on this audio device\n");
+    logging::print(logging::Level::Warning, "WARNING: not tested on this audio device");
   }
 
   // Backup current registers.
@@ -391,6 +392,11 @@ FASTCALL bool init(SamplingRate::E rate, Format::E format, const i8 *buffer) {
   enable_playback();
 
   // All done.
+  logging::print(logging::Level::Info, "PCM system initialised @ %iHz, %s, %llu ticks/sample"
+    , pcm::to_hz(rate)
+    , format == Format::fmt_mono ? "mono" : "stereo"
+    , s_pcm_ticks_per_sample
+  );
   s_inited = true;
   return true;
 }
@@ -414,6 +420,8 @@ FASTCALL void shutdown() {
   g_pcm_fifo_buffer = NULL;
   g_pcm_fifo_size = 0;
   s_pcm_refill_data = 0;
+
+  logging::print(logging::Level::Info, "PCM system shut down");
 }
 
 FASTCALL int to_hz(SamplingRate::E rate) {

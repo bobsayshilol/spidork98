@@ -1,4 +1,5 @@
 #include "profile.h"
+#include "logs.h"
 
 #if PROFILE_ENABLED
 
@@ -25,7 +26,7 @@ FASTCALL int register_scope(ScopeInfo *info) {
 FASTCALL void print() {
     for (ScopeInfo *info = s_active; info != NULL; info = info->next) {
         // Log info about this one.
-        printf("[PROF] %s: %lld ticks\n", info->name, info->ticks);
+        logging::print(logging::Level::Info, "[PROF] %s: %lld ticks\n", info->name, info->ticks);
 
         // Clear it and move to the next.
         info->ticks = 0;

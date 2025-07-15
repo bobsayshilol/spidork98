@@ -1,4 +1,5 @@
 #include "sound.h"
+#include "logs.h"
 #include "macros.h"
 #include "memory.h"
 #include "utils.h"
@@ -30,12 +31,12 @@ int s_buffer_size;
 
 FASTCALL bool init(pcm::SamplingRate::E pcm_rate) {
   if (s_active) {
-    printf("Sound system already initialised\n");
+    logging::print(logging::Level::Error, "Sound system already initialised");
     return false;
   }
 
   if (pcm_rate != pcm::SamplingRate::kHz_8_3 && pcm_rate != pcm::SamplingRate::kHz_16_5) {
-    printf("Unsupported sampling rate: %i\n", pcm::to_hz(pcm_rate));
+    logging::print(logging::Level::Error, "Unsupported sampling rate: %i", pcm::to_hz(pcm_rate));
     return false;
   }
 
@@ -43,13 +44,13 @@ FASTCALL bool init(pcm::SamplingRate::E pcm_rate) {
   s_buffer_size = pcm_rate == pcm::SamplingRate::kHz_16_5 ? 2048 : 1024;
   s_buffer = memory::alloc4<i8>(s_buffer_size);
   if (!s_buffer) {
-    printf("Failed to allocate sound buffer\n");
+    logging::print(logging::Level::Error, "Failed to allocate sound buffer");
     return false;
   }
 
   // Setup the PCM subsystem.
   if (!pcm::init(pcm_rate, pcm::Format::fmt_mono, s_buffer)) {
-    printf("Failed to init PCM subsystem\n");
+    logging::print(logging::Level::Error, "Failed to init PCM subsystem");
     memory::free4(s_buffer);
     return false;
   }
@@ -61,6 +62,7 @@ FASTCALL bool init(pcm::SamplingRate::E pcm_rate) {
     snd.data = 0;
   }
 
+  logging::print(logging::Level::Info, "Sound system initialised @ %iHz", pcm::to_hz(pcm_rate));
   s_pcm_rate = pcm_rate;
   s_active = true;
   return true;
@@ -76,6 +78,8 @@ FASTCALL void shutdown() {
   for (Handle h = 0; h < MAX_SOUNDS; h++) {
     free_handle(h);
   }
+
+  logging::print(logging::Level::Info, "Sound system shut down");
 }
 
 FASTCALL void update() {
@@ -146,7 +150,7 @@ FASTCALL bool load_sound(Handle handle, const char *path, bool loop) {
   // Load the data.
   FILE * input = fopen(path, "rb");
   if (!input) {
-    printf("Failed to open %s\n", path);
+    logging::print(logging::Level::Error, "Failed to open %s", path);
     return false;
   }
   DEFER(FILE *, p, input, fclose(p));
@@ -154,10 +158,10 @@ FASTCALL bool load_sound(Handle handle, const char *path, bool loop) {
   // Check magic.
   u32 magic = 0;
   if (fread(&magic, 4, 1, input) != 1) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     return false;
   } else if (magic != FOURCC('S', 'D', '9', '8')) {
-    printf("File isn't a sound: %s\n", path);
+    logging::print(logging::Level::Error, "File isn't a sound: %s", path);
     return false;
   }
 
@@ -165,12 +169,12 @@ FASTCALL bool load_sound(Handle handle, const char *path, bool loop) {
   u8 pcm_rate8 = 0;
   u32 frame_count = 0;
   if (fread(&pcm_rate8, 1, 1, input) != 1 || fread(&frame_count, 4, 1, input) != 1) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     return false;
   }
 
   if (pcm_rate8 != static_cast<u8>(s_pcm_rate)) {
-    printf("File rate (%u) doesn't match sound system rate (%u)\n"
+    logging::print(logging::Level::Error, "File rate (%u) doesn't match sound system rate (%u)"
       , pcm::to_hz(static_cast<pcm::SamplingRate::E>(pcm_rate8))
       , pcm::to_hz(s_pcm_rate)
     );
@@ -180,11 +184,11 @@ FASTCALL bool load_sound(Handle handle, const char *path, bool loop) {
   // Read in the data;
   i8 *data = memory::alloc4<i8>(frame_count);
   if (!data) {
-    printf("Failed to allocate voice buffer\n");
+    logging::print(logging::Level::Error, "Failed to allocate voice buffer");
     return false;
   }
   if (fread(data, 1, frame_count, input) != frame_count) {
-    printf("Failed to read %s\n", path);
+    logging::print(logging::Level::Error, "Failed to read %s", path);
     memory::free4(data);
     return false;
   }
