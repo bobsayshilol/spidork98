@@ -23,6 +23,14 @@ FORCEINLINE static T max(T l,T r) {
   return l > r ? l : r;
 }
 
+template <typename T>
+static void randomise(T * p, int n) {
+  for (int i = 0; i < n; i++) {
+    const int j = rand() % (i + 1);
+    swap(p[i], p[j]);
+  }
+}
+
 } // namespace utils
 
 #endif
