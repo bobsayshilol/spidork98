@@ -17,7 +17,12 @@ namespace {
 struct SplashState { enum E { FadeIn, Input, FadeOut }; };
 SplashState::E s_splash_state;
 
-#define FADE_TIME (Funcs98::ticks_per_sec())
+i32 s_continue_dir;
+i32 s_continue_tick;
+
+#define FADE_IN_TIME (Funcs98::ticks_per_sec())
+#define FADE_OUT_TIME (Funcs98::ticks_per_sec() * 2 / 3)
+#define FLASHER_TIME (Funcs98::ticks_per_sec() / 2)
 
 void splash_menu_enter() {
   logging::print(logging::Level::Info, "Entering splash menu");
@@ -25,7 +30,7 @@ void splash_menu_enter() {
   // Draw the background to the backbuffer.
   {
     images::ImageData splash_bg;
-    if (!splash_bg.load("splash.img")) {
+    if (!splash_bg.load(GAME_DATA_PATH("splash.img"))) {
       logging::print(logging::Level::Error, "Failed to load splash screen image");
       g_had_error = true;
       return;
@@ -36,15 +41,17 @@ void splash_menu_enter() {
     gpu::g_draw_to = gpu::DrawTo::Front;
   }
 
-  // Load the palette.
-  memcpy(&g_palette_fader.target_palette(), &images::default_palette_16, sizeof(images::Palette));
-
   // Copy to the front buffer.
   gpu::undraw_quad(0, 0, GPU_WIDTH, GPU_HEIGHT);
 
+  // Load the palette.
+  g_palette_fader.target_palette() = images::default_palette_16;
+
   // Start the fade in.
-  g_palette_fader.start_fade_in(FADE_TIME);
+  g_palette_fader.start_fade_in(FADE_IN_TIME);
   s_splash_state = SplashState::FadeIn;
+  s_continue_tick = 0;
+  s_continue_dir = 1;
 }
 
 const MenuScreen *splash_menu_update(u32 dt) {
@@ -56,15 +63,38 @@ const MenuScreen *splash_menu_update(u32 dt) {
       }
       break;
 
-    case SplashState::Input:
+    case SplashState::Input: {
+      // Flash the continue button.
+      s_continue_tick += s_continue_dir * static_cast<i32>(dt);
+      if (s_continue_tick > FLASHER_TIME) {
+        s_continue_tick = FLASHER_TIME;
+        s_continue_dir = -1;
+      } else if (s_continue_tick < 0) {
+        s_continue_tick = 0;
+        s_continue_dir = 1;
+      }
+
+      // We use channel 16 for the flasher.
+      const u8 flash_rgb = s_continue_tick * 255 / FLASHER_TIME; // >>8 has flickers, >>7 too dark
+      gpu::set_palette_colour(16, flash_rgb, flash_rgb, flash_rgb);
+
       if (kbhit_98()) {
         const int ch = getch();
         if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == ' ' || ch == '\r') {
-          g_palette_fader.start_fade_out(FADE_TIME);
+          // Add the hidden colour.
+          images::Palette & target_palette = g_palette_fader.target_palette();
+          u8 *pal = &target_palette.rgb[3 * target_palette.num_colours];
+          *pal++ = flash_rgb;
+          *pal++ = flash_rgb;
+          *pal++ = flash_rgb;
+          target_palette.num_colours++;
+
+          // Start the fade.
+          g_palette_fader.start_fade_out(FADE_OUT_TIME);
           s_splash_state = SplashState::FadeOut;
         }
       }
-      break;
+    } break;
 
     case SplashState::FadeOut:
       if (g_palette_fader.tick(dt)) {
@@ -73,6 +103,7 @@ const MenuScreen *splash_menu_update(u32 dt) {
       break;
   }
 
+  gpu::wait_for_vsync();
   return &g_splash_menu;
 }
 
