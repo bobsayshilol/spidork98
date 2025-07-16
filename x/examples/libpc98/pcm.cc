@@ -483,6 +483,8 @@ FASTCALL void filled(u16 buffer_elems) {
   s_pcm_lag_ticks -= ticks;
 
   if (underflowed) {
+    logging::print(logging::Level::Warning, "Underflowed PCM buffer");
+
     // If we underflowed then add a bit more to try and keep up.
     s_pcm_lag_ticks += Funcs98::ticks_per_sec() / 100; // arbitrary bodge
   }

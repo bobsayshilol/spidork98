@@ -47,8 +47,8 @@ void print(Level::E level, const char *msg, ...) {
     va_list args;
     va_start(args, msg);
 
-    const unsigned long long t_ms = Funcs98::ticks_per_sec() / 1000;
-    fprintf(s_log_file, "[%c][%u] ", static_cast<char>(level), static_cast<unsigned>(Funcs98::ticks() / t_ms));
+    const unsigned t_ms = static_cast<unsigned>(Funcs98::ticks() / (Funcs98::ticks_per_sec() / 1000));
+    fprintf(s_log_file, "[%c][%u.%04u] ", static_cast<char>(level), t_ms / 1000, t_ms % 1000);
     vfprintf(s_log_file, msg, args);
     fprintf(s_log_file, "\n");
 
