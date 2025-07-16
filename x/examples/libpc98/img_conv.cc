@@ -226,16 +226,27 @@ bool convert(FILE * input, FILE * output, const BMPInfo & info, const images::Pa
   return true;
 }
 
-bool extract(FILE * input, FILE * output, const BMPInfo & info) {
-  printf("Extracting palette data...\n");
-  Progress progress(info.width * info.height, 100000);
-
+bool write_palette(FILE * output, images::Palette const & palette) {
   // Write the magic.
   const u32 magic = FOURCC('P', 'L', '9', '8');
   if (fwrite(&magic, 4, 1, output) != 1) {
     printf("Failed to write to output\n");
     return false;
   }
+
+  // Write the data.
+  if (fwrite(&palette.num_colours, 1, 1, output) != 1 ||
+      fwrite(palette.rgb, 3, palette.num_colours, output) != palette.num_colours) {
+    printf("Failed to write to output\n");
+    return false;
+  }
+
+  return true;
+}
+
+bool extract(FILE * input, FILE * output, const BMPInfo & info) {
+  printf("Extracting palette data...\n");
+  Progress progress(info.width * info.height, 100000);
 
   // Setup palette.
   images::Palette palette;
@@ -281,13 +292,7 @@ bool extract(FILE * input, FILE * output, const BMPInfo & info) {
   }
 
   // Write the palette.
-  if (fwrite(&palette.num_colours, 1, 1, output) != 1 ||
-      fwrite(palette.rgb, 3, palette.num_colours, output) != palette.num_colours) {
-    printf("Failed to write to output\n");
-    return false;
-  }
-
-  return true;
+  return write_palette(output, palette);
 }
 
 int main_convert(int argc, const char ** argv) {
@@ -413,6 +418,121 @@ int main_extract(int argc, const char ** argv) {
   return EXIT_SUCCESS;
 }
 
+int main_pal2txt(int argc, const char ** argv) {
+  if (argc != 4) {
+    printf(
+      "Usage:\n"
+      "  %s e <in> <out>\n"
+      "  <in> is the input PAL file, or 16/32/64 for a default.\n"
+      "  <out> is the output TXT that'll be written.\n"
+      , argv[0]
+    );
+    return EXIT_FAILURE;
+  }
+
+  // Read off inputs.
+  const char * const in_name = argv[2];
+  const char * const out_name = argv[3];
+
+  // Load palette.
+  images::Palette palette;
+  if (images::load_palette(palette, in_name)) {
+    // Loaded.
+  } else if (strcmp(in_name, "16") == 0) {
+    palette = images::default_palette_16;
+  } else if (strcmp(in_name, "64") == 0) {
+    palette = images::default_palette_64;
+  } else {
+    printf("Failed to parse palette: %s\n", in_name);
+    return EXIT_FAILURE;
+  }
+
+  // Open output.
+  FILE * output = fopen(out_name, "wb");
+  if (!output) {
+    printf("Failed to open %s\n", out_name);
+    return EXIT_FAILURE;
+  }
+
+  // Write it out.
+  fprintf(output, "N %u\n", palette.num_colours);
+  const u8 *rgb = palette.rgb;
+  for (int i = 0; i < palette.num_colours; i++) {
+    fprintf(output, "C %i %u %u %u\n", i, rgb[0], rgb[1], rgb[2]);
+    rgb += 3;
+  }
+
+  // Done.
+  printf("TXT file written to %s\n", out_name);
+  fclose(output);
+  return EXIT_SUCCESS;
+}
+
+int main_txt2pal(int argc, const char ** argv) {
+  if (argc != 4) {
+    printf(
+      "Usage:\n"
+      "  %s e <in> <out>\n"
+      "  <in> is the input TXT file.\n"
+      "  <out> is the output PAL that'll be written.\n"
+      , argv[0]
+    );
+    return EXIT_FAILURE;
+  }
+
+  // Read off inputs.
+  const char * const in_name = argv[2];
+  const char * const out_name = argv[3];
+
+  // Open files.
+  FILE * input = fopen(in_name, "rb");
+  if (!input) {
+    printf("Failed to open %s\n", in_name);
+    return EXIT_FAILURE;
+  }
+  FILE * output = fopen(out_name, "wb");
+  if (!output) {
+    printf("Failed to open %s\n", out_name);
+    return EXIT_FAILURE;
+  }
+
+  // Load palette.
+  images::Palette palette;
+  int num_colours = -1;
+  if (fscanf(input, "N %i\n", &num_colours) != 1 || num_colours < 0 || num_colours > IMAGES_MAX_PALETTE_SIZE) {
+    printf("Failed to parse N in %s (%i)\n", in_name, num_colours);
+    return EXIT_FAILURE;
+  }
+  palette.num_colours = num_colours;
+  u8 *rgb = palette.rgb;
+  for (int i = 0; i < palette.num_colours; i++) {
+    int r = -1, g = -1, b = -1, k = -1;
+    if (fscanf(input, "C %i %i %i %i\n", &k, &r, &g, &b) != 4
+       || i != k
+       || r < 0 || r > 255
+       || g < 0 || g > 255
+       || b < 0 || b > 255
+    ) {
+      printf("Failed to parse C in %s (index %i)\n", in_name, i);
+      return EXIT_FAILURE;
+    }
+    *rgb++ = r;
+    *rgb++ = g;
+    *rgb++ = b;
+  }
+
+  // Write it back out.
+  if (!write_palette(output, palette)) {
+    return false;
+  }
+
+  // Done.
+  printf("PAL file written to %s\n", out_name);
+  fclose(output);
+  fclose(input);
+  return EXIT_SUCCESS;
+}
+
 } // namespace
 
 int main(int argc, const char ** argv) {
@@ -422,6 +542,10 @@ int main(int argc, const char ** argv) {
       return main_convert(argc, argv);
     } else if (mode == 'e') {
       return main_extract(argc, argv);
+    } else if (mode == 'p') {
+      return main_pal2txt(argc, argv);
+    } else if (mode == 't') {
+      return main_txt2pal(argc, argv);
     }
   }
 
@@ -431,6 +555,8 @@ int main(int argc, const char ** argv) {
     "  <mode> is the mode of operation:\n"
     "    c - convert an image.\n"
     "    e - extract palette from an image.\n"
+    "    p - palette to text.\n"
+    "    t - text to palette.\n"
     , argv[0]
   );
   return EXIT_FAILURE;
