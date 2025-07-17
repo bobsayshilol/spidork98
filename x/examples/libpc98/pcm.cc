@@ -439,6 +439,7 @@ FASTCALL int to_hz(SamplingRate::E rate) {
 }
 
 FASTCALL void set_volume(Volume::E volume) {
+  logging::print(logging::Level::Info, "Setting volume to %u", static_cast<u8>(volume));
   u8 vol = 0xA8; // 10101000
   vol |= static_cast<u8>(volume); // 00000xxx
   outportb(PORT_FIFO_STATUS, vol);
