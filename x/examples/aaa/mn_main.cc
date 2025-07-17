@@ -28,11 +28,11 @@ namespace {
 #define UNSELECTED_COLOUR COLOUR_WHITE
 
 const char * s_selection_texts[] = {
-  "LEVEL SELECT",
+  "L E V E L  S E L E C T",
   "",
   "",
-  "CREDITS",
-  "QUIT GAME",
+  "C R E D I T S",
+  "Q U I T  G A M E",
 };
 STATIC_ASSERT(COUNT_OF(s_selection_texts) == NUM_SELECTIONS);
 int s_selection_idx;
@@ -50,17 +50,17 @@ void redraw_text_ui() {
 
   // Update what we display depending on flags.
   if (g_sound_enabled) {
-    s_selection_texts[SELECTION_TOGGLE_SOUND] = "SOUND: ON";
+    s_selection_texts[SELECTION_TOGGLE_SOUND] = "S O U N D :   O N";
     switch (s_volume_level) {
-      case 0: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "VOLUME:   0%"; break;
-      case 1: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "VOLUME:  25%"; break;
-      case 2: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "VOLUME:  50%"; break;
-      case 3: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "VOLUME:  75%"; break;
-      case 4: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "VOLUME: 100%"; break;
+      case 0: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "V O L U M E :       0 %"; break;
+      case 1: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "V O L U M E :     2 5 %"; break;
+      case 2: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "V O L U M E :     5 0 %"; break;
+      case 3: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "V O L U M E :     7 5 %"; break;
+      case 4: s_selection_texts[SELECTION_TOGGLE_VOLUME] = "V O L U M E :   1 0 0 %"; break;
     }
   } else {
-    s_selection_texts[SELECTION_TOGGLE_SOUND] = "SOUND: NO";
-    s_selection_texts[SELECTION_TOGGLE_VOLUME] = "VOLUME:  OFF";
+    s_selection_texts[SELECTION_TOGGLE_SOUND] = "S O U N D :   N O";
+    s_selection_texts[SELECTION_TOGGLE_VOLUME] = "V O L U M E :     O F F";
   }
 
   // Screen sizes.
