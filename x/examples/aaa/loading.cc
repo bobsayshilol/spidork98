@@ -1,6 +1,7 @@
 #include "loading.h"
 
 #include "funcs.h"
+#include "game.h"
 #include "gpuscrn.h"
 #include "utils.h"
 #include "types.h"
@@ -35,13 +36,13 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
   //DEFER(u8, o, old_attr, (ScreenAttrib = o));
 
   // Can't do much with attributes.
-  //ScreenAttrib = GREEN;
+  //ScreenAttrib = COLOUR_GREEN;
 
   // Info line bits.
   const char info_line[] = "\xA2 S.P.I.D.O.R.K. 0.9.8 INITIALISING \xA3";
   const int info_line_x = (num_cols - sizeof(info_line)) / 2;
   const int info_line_y = num_rows / 3;
-  ScreenPutString_98(info_line, GREEN, info_line_x, info_line_y);
+  ScreenPutString_98(info_line, COLOUR_GREEN, info_line_x, info_line_y);
   //const char loading_chars_l[] = "|/-`";
   //const char loading_chars_r[] = "|`-/";
 
@@ -58,18 +59,18 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
   {
     //u8 loading_char_idx = 0;
 
-    ScreenPutString_98(LEFT_2CHAR, GREEN, pb_x - 2, pb_y);
-    ScreenPutString_98(RIGHT_2CHAR, GREEN, pb_x + pb_w, pb_y);
+    ScreenPutString_98(LEFT_2CHAR, COLOUR_GREEN, pb_x - 2, pb_y);
+    ScreenPutString_98(RIGHT_2CHAR, COLOUR_GREEN, pb_x + pb_w, pb_y);
     for (u8 i = 0; i < pb_w; i++) {
       for (int j = 0; j < 2; j++) {
-        //ScreenPutChar_98(loading_chars_l[loading_char_idx], GREEN, info_line_x - 2, info_line_y);
-        //ScreenPutChar_98(loading_chars_r[loading_char_idx], GREEN, info_line_x + sizeof(info_line) + 1, info_line_y);
+        //ScreenPutChar_98(loading_chars_l[loading_char_idx], COLOUR_GREEN, info_line_x - 2, info_line_y);
+        //ScreenPutChar_98(loading_chars_r[loading_char_idx], COLOUR_GREEN, info_line_x + sizeof(info_line) + 1, info_line_y);
         //loading_char_idx = (loading_char_idx + 1) & 3;
         Funcs98::delay_ms(50);
         tick_progress(LoadingProgress::BarTick);
       }
 
-      ScreenPutChar_98(fill_char, GREEN, pb_x + i, pb_y);
+      ScreenPutChar_98(fill_char, COLOUR_GREEN, pb_x + i, pb_y);
     }
   }
 
@@ -97,8 +98,8 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
       num_hs--;
       memmove(heights + idx, heights + idx + 1, (num_hs - idx) * sizeof(ChPos));
     } else {
-      ScreenPutChar_98(fill_char, GREEN, pos.x, pb_y + pos.dy);
-      ScreenPutChar_98(fill_char, GREEN, pos.x, pb_y - pos.dy);
+      ScreenPutChar_98(fill_char, COLOUR_GREEN, pos.x, pb_y + pos.dy);
+      ScreenPutChar_98(fill_char, COLOUR_GREEN, pos.x, pb_y - pos.dy);
     }
 
     // Spread them out.
@@ -112,13 +113,13 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
         ChPos & chl = heights[num_hs];
         chl.x = pb_x - 1 - next_dx;
         chl.dy = 0;
-        ScreenPutChar_98(fill_char, GREEN, chl.x, pb_y);
+        ScreenPutChar_98(fill_char, COLOUR_GREEN, chl.x, pb_y);
         num_hs++;
 
         ChPos & chr = heights[num_hs];
         chr.x = pb_x + pb_w + next_dx;
         chr.dy = 0;
-        ScreenPutChar_98(fill_char, GREEN, chr.x, pb_y);
+        ScreenPutChar_98(fill_char, COLOUR_GREEN, chr.x, pb_y);
         num_hs++;
 
         next_dx++;
