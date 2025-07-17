@@ -17,9 +17,26 @@
 namespace game {
 
 bool g_had_error;
+bool g_sound_enabled;
+
 #define LOG_FILE "gamelog.txt"
 
 //
+
+void toggle_audio() {
+  if (g_sound_enabled) {
+    soundsystem::shutdown();
+    g_sound_enabled = false;
+  } else {
+    if (soundsystem::init(pcm::SamplingRate::kHz_16_5)) {
+      g_sound_enabled = true;
+    } else {
+      logging::print(logging::Level::Error, "Failed to setup sound system\n");
+    }
+  }
+}
+
+namespace {
 
 void play() {
   logging::init(LOG_FILE);
@@ -37,11 +54,8 @@ void play() {
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
   // Sound go!
-  if (!soundsystem::init(pcm::SamplingRate::kHz_16_5)) {
-    logging::print(logging::Level::Error, "Failed to setup sound system\n");
-    g_had_error = true;
-    return;
-  }
+  g_sound_enabled = false;
+  toggle_audio();
   DEFER(void*, p, NULL, (soundsystem::shutdown()));
 
   // No cursor unless we need it.
@@ -77,6 +91,8 @@ void play() {
     }
   }
 }
+
+} // namespace
 
 } // namespace game
 
