@@ -10,7 +10,7 @@ PaletteFader::PaletteFader() { m_done = true; }
 
 void PaletteFader::start_fade_in(u32 fade_time) {
   m_lerped_palette.num_colours = m_target_palette.num_colours;
-  memset(m_lerped_palette.rgb, 0, sizeof(m_lerped_palette.rgb));
+  memset(m_lerped_palette.rgb, 0, m_lerped_palette.num_colours * 3);
   images::set_palette(m_lerped_palette);
 
   m_done = false;
@@ -21,7 +21,7 @@ void PaletteFader::start_fade_in(u32 fade_time) {
 
 void PaletteFader::start_fade_out(u32 fade_time) {
   m_lerped_palette.num_colours = m_target_palette.num_colours;
-  memcpy(m_lerped_palette.rgb, m_target_palette.rgb, sizeof(m_lerped_palette.rgb));
+  memcpy(m_lerped_palette.rgb, m_target_palette.rgb, m_lerped_palette.num_colours * 3);
   images::set_palette(m_lerped_palette);
 
   m_done = false;
@@ -38,7 +38,12 @@ bool PaletteFader::tick(u32 dt) {
 
   m_timer += dt;
   if (m_timer > m_fade_time) {
-    images::set_palette(m_target_palette);
+    if (m_fade_in) {
+      images::set_palette(m_target_palette);
+    } else {
+      memset(m_lerped_palette.rgb, 0, m_lerped_palette.num_colours * 3);
+      images::set_palette(m_lerped_palette);
+    }
     m_done = true;
     return m_done;
   }
