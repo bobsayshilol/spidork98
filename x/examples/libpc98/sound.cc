@@ -7,6 +7,9 @@
 #include <cstdio>
 #include <cstring>
 
+// Keep voices around after shutdown so that we don't have to reload them.
+#define VOICES_ARE_PRESERVED_AFTER_SHUTDOWN 1
+
 namespace soundsystem {
 
 namespace {
@@ -55,12 +58,14 @@ FASTCALL bool init(pcm::SamplingRate::E pcm_rate) {
     return false;
   }
 
+#if !VOICES_ARE_PRESERVED_AFTER_SHUTDOWN
   for (Handle h = 0; h < MAX_SOUNDS; h++) {
     Sound &snd = s_sounds[h];
     snd.playing = false;
     snd.taken = false;
     snd.data = 0;
   }
+#endif
 
   logging::print(logging::Level::Info, "Sound system initialised @ %iHz", pcm::to_hz(pcm_rate));
   s_pcm_rate = pcm_rate;
@@ -75,9 +80,11 @@ FASTCALL void shutdown() {
   pcm::shutdown();
   memory::free4(s_buffer);
 
+#if !VOICES_ARE_PRESERVED_AFTER_SHUTDOWN
   for (Handle h = 0; h < MAX_SOUNDS; h++) {
     free_handle(h);
   }
+#endif
 
   logging::print(logging::Level::Info, "Sound system shut down");
 }
@@ -200,6 +207,7 @@ FASTCALL bool load_sound(Handle handle, const char *path, bool loop) {
   snd.data = data;
   snd.length = frame_count;
   snd.index = 0;
+  logging::print(logging::Level::Info, "Loaded %s into voice %u", path, handle);
   return true;
 }
 
@@ -211,6 +219,7 @@ FASTCALL void free_handle(Handle handle) {
   snd.playing = false;
   memory::free4(const_cast<i8*>(snd.data));
   snd.taken = false;
+  logging::print(logging::Level::Info, "Unloaded voice %u", handle);
 }
 
 //
