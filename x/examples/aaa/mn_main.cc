@@ -129,7 +129,7 @@ void on_right_pressed() {
 void on_enter_pressed() {
   switch (s_selection_idx) {
     case SELECTION_LEVEL_SELECT:
-      //s_next_screen = &g_level_select_menu;
+      s_next_screen = &g_level_select_menu;
       break;
 
     case SELECTION_TOGGLE_SOUND:
@@ -190,7 +190,7 @@ const MenuScreen *main_menu_update(u32) {
         case KEY_ENTER: case KEY_SPACE: case 'E': case 'e':
           on_enter_pressed();
           break;
-        case 'Q': case 'q':
+        case KEY_ESCAPE: case 'Q': case 'q':
           s_next_screen = NULL;
           break;
       }

@@ -24,6 +24,7 @@
 #define KEY_RIGHT 12
 #define KEY_ENTER '\r'
 #define KEY_SPACE ' '
+#define KEY_ESCAPE 27
 
 namespace game {
 

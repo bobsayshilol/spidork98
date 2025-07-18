@@ -80,7 +80,7 @@ const MenuScreen *splash_menu_update(u32 dt) {
 
       if (kbhit_98()) {
         const int ch = getch();
-        if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == KEY_SPACE || ch == KEY_ENTER) {
+        if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == KEY_SPACE || ch == KEY_ENTER || ch == KEY_ESCAPE) {
           // Add the hidden colour.
           images::Palette & target_palette = g_palette_fader.target_palette();
           u8 *pal = &target_palette.rgb[3 * target_palette.num_colours];
