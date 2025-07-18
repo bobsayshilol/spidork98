@@ -104,6 +104,7 @@ FASTCALL void update() {
     Sound &snd = s_sounds[h];
     if (!snd.playing) continue;
 
+play_looper:
     const u32 index = snd.index;
     const i8 *input = snd.data + index;
     const u32 length = snd.length;
@@ -132,6 +133,7 @@ FASTCALL void update() {
     if (snd.index >= length) {
       if (snd.loop) {
         snd.index = 0;
+        goto play_looper;
       } else {
         snd.playing = false;
       }
