@@ -104,18 +104,20 @@ FASTCALL void update() {
     Sound &snd = s_sounds[h];
     if (!snd.playing) continue;
 
+    i8 *output = buffer;
+    u32 to_write = buffer_size;
+
 play_looper:
     const u32 index = snd.index;
     const i8 *input = snd.data + index;
     const u32 length = snd.length;
     const u32 remaining = length - index;
-
-    const u32 bytes_to_copy = utils::min(remaining, buffer_size);
-    i8 *output = buffer;
+    const u32 bytes_to_copy = utils::min(remaining, to_write);
 
     if (playing_voices == 0) {
       // If this is the first voice then we can simply memcpy.
       memcpy(output, input, bytes_to_copy);
+      output += bytes_to_copy;
     } else {
       // Note that the converter does volume scaling for us so we just need to add here.
       // TODO: SWAR the adds
@@ -126,18 +128,20 @@ play_looper:
         *output++ += *input++;
       }
     }
-    playing_voices++;
 
     // If this is the end then either loop or stop it.
     snd.index += bytes_to_copy;
     if (snd.index >= length) {
       if (snd.loop) {
         snd.index = 0;
+        to_write -= bytes_to_copy;
         goto play_looper;
       } else {
         snd.playing = false;
       }
     }
+
+    playing_voices++;
   }
 
   // Play silence.
