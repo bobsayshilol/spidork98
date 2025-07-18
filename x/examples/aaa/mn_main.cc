@@ -174,27 +174,37 @@ void main_menu_enter() {
 const MenuScreen *main_menu_update(u32) {
   if (kbhit_98()) {
       const char ch = getch();
+      bool did_thing = false;
       switch (ch) {
         case KEY_UP: case 'W': case 'w':
           s_selection_idx = (s_selection_idx + NUM_SELECTIONS - 1) % NUM_SELECTIONS;
+          did_thing = true;
           break;
         case KEY_DOWN: case 'S': case 's':
           s_selection_idx = (s_selection_idx + 1) % NUM_SELECTIONS;
+          did_thing = true;
           break;
         case KEY_LEFT: case 'A': case 'a':
           on_left_pressed();
+          did_thing = true;
           break;
         case KEY_RIGHT: case 'D': case 'd':
           on_right_pressed();
+          did_thing = true;
           break;
         case KEY_ENTER: case KEY_SPACE: case 'E': case 'e':
           on_enter_pressed();
+          did_thing = true;
           break;
         case KEY_ESCAPE: case 'Q': case 'q':
           s_next_screen = NULL;
+          did_thing = true;
           break;
       }
-      redraw_text_ui();
+      if (did_thing) {
+        redraw_text_ui();
+        play_click_sound();
+      }
   }
 
   gpu::wait_for_vsync();

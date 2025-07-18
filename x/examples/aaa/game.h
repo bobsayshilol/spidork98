@@ -3,6 +3,7 @@
 
 #include "funcs.h"
 #include "macros.h"
+#include "sound.h"
 #include "types.h"
 
 #include <conio.h>
@@ -26,18 +27,28 @@
 #define KEY_SPACE ' '
 #define KEY_ESCAPE 27
 
+#define NUM_LEVELS 4
+
+// Common voice handles for shared state.
+#define VOICE_HANDLE_MENU_BGM 0
+#define VOICE_HANDLE_MENU_CLICK 1
+
 namespace game {
 
 #define GAME_DATA_PATH(path) "aaa/" path
 
 extern bool g_had_error;
 extern bool g_sound_enabled;
+extern u8 g_level_selected;
 
 static FORCEINLINE void flush_kb_buffer() {
   while (kbhit_98()) getch();
 }
 
 void toggle_audio();
+void load_menu_audio();
+
+#define play_click_sound() soundsystem::play(VOICE_HANDLE_MENU_CLICK)
 
 } // game
 

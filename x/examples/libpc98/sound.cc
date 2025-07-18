@@ -152,7 +152,10 @@ FASTCALL void update() {
 FASTCALL bool load_sound(Handle handle, const char *path, bool loop) {
   if (handle < 0 || handle >= MAX_SOUNDS) return false;
   Sound &snd = s_sounds[handle];
-  if (snd.taken) return false;
+  if (snd.taken) {
+    logging::print(logging::Level::Warning, "Voice handle %u already taken", handle);
+    return false;
+  }
 
   // Load the data.
   FILE * input = fopen(path, "rb");

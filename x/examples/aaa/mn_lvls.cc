@@ -22,8 +22,8 @@ namespace {
 #define SELECTED_COLOUR COLOUR_YELLOW
 #define UNSELECTED_COLOUR COLOUR_WHITE
 
-#define SELECTION_BACK 4
-#define NUM_SELECTIONS 5
+#define NUM_SELECTIONS (NUM_LEVELS + 1)
+#define SELECTION_BACK (NUM_SELECTIONS - 1)
 
 const char * const s_selection_texts[] = {
   "T U T O R I A L",
@@ -114,6 +114,7 @@ void on_enter_pressed() {
     return;
   }
 
+  g_level_selected = s_selection_idx;
   //s_next_screen = &g_playing_menu;
 }
 
@@ -141,21 +142,29 @@ void level_select_enter() {
 const MenuScreen *level_select_update(u32) {
   if (kbhit_98()) {
       const char ch = getch();
+      bool did_thing = false;
       switch (ch) {
         case KEY_UP: case 'W': case 'w':
           s_selection_idx = (s_selection_idx + NUM_SELECTIONS - 1) % NUM_SELECTIONS;
+          did_thing = true;
           break;
         case KEY_DOWN: case 'S': case 's':
           s_selection_idx = (s_selection_idx + 1) % NUM_SELECTIONS;
+          did_thing = true;
           break;
         case KEY_ENTER: case KEY_SPACE: case 'E': case 'e':
           on_enter_pressed();
+          did_thing = true;
           break;
         case KEY_ESCAPE: case 'Q': case 'q':
           s_next_screen = &g_main_menu;
+          did_thing = true;
           break;
       }
-      redraw_text_ui();
+      if (did_thing) {
+        redraw_text_ui();
+        play_click_sound();
+      }
   }
 
   gpu::wait_for_vsync();

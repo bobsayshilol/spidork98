@@ -18,6 +18,7 @@ namespace game {
 
 bool g_had_error;
 bool g_sound_enabled;
+u8 g_level_selected;
 
 #define LOG_FILE "gamelog.txt"
 
@@ -34,6 +35,21 @@ void toggle_audio() {
       logging::print(logging::Level::Error, "Failed to setup sound system\n");
     }
   }
+}
+
+void load_menu_audio() {
+  soundsystem::free_handle(VOICE_HANDLE_MENU_BGM);
+  if (!soundsystem::load_sound(VOICE_HANDLE_MENU_BGM, GAME_DATA_PATH("song3.pcm"), true)) {
+    logging::print(logging::Level::Warning, "Missing menu bgm");
+  }
+
+  soundsystem::free_handle(VOICE_HANDLE_MENU_CLICK);
+  if (!soundsystem::load_sound(VOICE_HANDLE_MENU_CLICK, GAME_DATA_PATH("boop.pcm"), false)) {
+    logging::print(logging::Level::Warning, "Missing click");
+  }
+
+  // Kick off the BGM too.
+  soundsystem::play(VOICE_HANDLE_MENU_BGM);
 }
 
 namespace {
@@ -57,6 +73,9 @@ void play() {
   g_sound_enabled = false;
   toggle_audio();
   DEFER(void*, p, NULL, (soundsystem::shutdown()));
+
+  load_menu_audio();
+  // TODO: unload
 
   // No cursor unless we need it.
   _setcursortype_98(_NOCURSOR);
