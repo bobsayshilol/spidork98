@@ -381,7 +381,7 @@ FASTCALL bool init(SamplingRate::E rate, Format::E format, const i8 *buffer) {
   // Install interrupt handler.
   hook_interrupt();
 #else // USE_INTERRUPTS
-  STATIC_ASSERT(UCLOCKS_PER_SEC * PCM_TICK_SCALE > 44000 * 120); // check we can use clocks for timing
+  STATIC_ASSERT(Funcs98::ticks_per_sec() * PCM_TICK_SCALE > 44000 * 120); // check we can use clocks for timing
   // TODO: stereo
   s_pcm_ticks_per_sample = (Funcs98::ticks_per_sec() * PCM_TICK_SCALE) / pcm::to_hz(rate);
   s_pcm_lag_ticks = 0;
