@@ -22,7 +22,8 @@ Development uses [`DJGPP`](https://www.delorie.com/djgpp/) in the [`DOSBox-X`](h
 
 ### Launch dev environment
 
-1. Run [`run.ps1`](run.ps1) to launch the dev environment.
+1. Run [`dosbox_dev.ps1`](dosbox_dev.ps1) to launch the dev environment.
+1. Run [`dosbox_run.ps1`](dosbox_run.ps1) to launch the game environment (same as dev except with less RAM)
 
 
 ## Credits and references
