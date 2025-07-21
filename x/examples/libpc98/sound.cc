@@ -2,6 +2,7 @@
 #include "logs.h"
 #include "macros.h"
 #include "memory.h"
+#include "profile.h"
 #include "utils.h"
 
 #include <cstdio>
@@ -13,6 +14,8 @@
 namespace soundsystem {
 
 namespace {
+
+PROFILE_DECLARE_SECTION(soundsystem_update);
 
 struct Sound {
   bool playing : 1;
@@ -92,6 +95,8 @@ FASTCALL void shutdown() {
 FASTCALL void update() {
   if (!s_active) return;
   if (!pcm::is_empty()) return;
+
+  PROFILE_TIME_SECTION(soundsystem_update);
 
   // TODO: this should be broken up over multiple frames
 

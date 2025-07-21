@@ -1,6 +1,8 @@
 #include "gpuscrn.h"
-#include "utils.h"
+
 #include "logs.h"
+#include "profile.h"
+#include "utils.h"
 
 #include <go32.h>
 #include <pc.h>
@@ -74,6 +76,8 @@
 namespace gpu {
 
 namespace {
+
+PROFILE_DECLARE_SECTION(wait_for_vsync);
 
 // C++11-ish enum.
 struct Window { enum E { Window0, Window1 }; };
@@ -190,6 +194,8 @@ FASTCALL void swap() {
 #endif
 
 FASTCALL void wait_for_vsync() {
+  PROFILE_TIME_SECTION(wait_for_vsync);
+
   // Wait for vblank to start.
   while (!(inportb(PORT_GDC_GPU_PARAMETER) & GDC_IN_VBLANK)) ;
   // Wait for vblank to end.
