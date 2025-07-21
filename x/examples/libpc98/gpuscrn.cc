@@ -120,6 +120,18 @@ FORCEINLINE int bank_split_for_line(int line) {
   }
 }
 
+FORCEINLINE int next_bank_split_line(int line) {
+  STATIC_ASSERT(GPU_WIDTH == 640);
+  STATIC_ASSERT(GPU_HEIGHT == 400);
+  if (line <= 51) return 51;
+  if (line <= 102) return 102;
+  if (line <= 153) return 153;
+  if (line <= 204) return 204;
+  if (line <= 307) return 307;
+  if (line <= 358) return 358;
+  return GPU_HEIGHT;
+}
+
 } // namespace
 
 DrawTo::E g_draw_to = DrawTo::Front;
@@ -256,9 +268,9 @@ FASTCALL void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
   // For now, basic but works.
   int current_bank = -1;
   int bank_start = 0;
-  for (int y = y0; y < y1; y++) {
+  for (int y = y0; y <= y1; y++) {
     // TODO: read/write word size at a time
-    for (int x = x0; x < x1; x++) {
+    for (int x = x0; x <= x1; x++) {
       // Change bank if we need to.
       const BankInfo bank_info = pixel_to_bank(x, y);
       if (bank_info.bank != current_bank) {
@@ -286,14 +298,25 @@ FASTCALL void undraw_quad(int x0, int y0, int x1, int y1) {
   g_draw_to = DrawTo::Front;
 
   // TODO: go a bank at a time filling them in
+#if 0
   //const BankInfo first_bank = pixel_to_bank(x0, y0);
   //const BankInfo last_bank = pixel_to_bank(x1, y1);
+  int y_start = y0;
+  while (y_start < y1) {
+    int y_end = next_bank_split_line(y_start);
+    for (int y = y_start; y < y_end; y++) {
 
+    }
+    y_start = y_end;
+  }
+
+#else
   // For now, basic but works.
   int current_bank = -1;
   int bank_start = 0;
-  for (int y = y0; y < y1; y++) {
-    for (int x = x0; x < x1; x += 4) {
+  for (int y = y0; y <= y1; y++) {
+    // TODO: read/write word size at a time
+    for (int x = x0; x <= x1; x++) {
       // Change bank if we need to.
       const BankInfo bank_info = pixel_to_bank(x, y);
       if (bank_info.bank != current_bank) {
@@ -304,11 +327,11 @@ FASTCALL void undraw_quad(int x0, int y0, int x1, int y1) {
         bank_start = current_bank * WINDOW_BANK_SIZE;
       }
       // Copy pixel over.
-      const u32 addr4 = (pixel_to_addr(x, y) - bank_start) >> 2;
-      reinterpret_cast<u32 volatile *>(window0)[addr4] =
-        reinterpret_cast<const u32 volatile *>(window1)[addr4];
+      const int addr = pixel_to_addr(x, y) - bank_start;
+      window0[addr] = window1[addr];
     }
   }
+#endif
 
   g_draw_to = old_draw_to;
 }
