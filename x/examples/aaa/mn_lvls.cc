@@ -115,7 +115,7 @@ void on_enter_pressed() {
   }
 
   g_level_selected = s_selection_idx;
-  //s_next_screen = &g_playing_menu;
+  s_next_screen = &g_playing_menu;
 }
 
 //
