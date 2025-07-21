@@ -3,7 +3,7 @@ include ..\\libpc98\\flags.mk
 
 # What we're building
 DEPS	+= $(LIBPC98) bench.h
-OBJS	= main.o bench.o memcpy.o decremnt.o pcm_copy.o
+OBJS	= main.o bench.o memcpy.o decremnt.o pcm_copy.o switch.o
 TARGET	= bench.exe
 
 # Build it
