@@ -8,8 +8,10 @@
 #include "gpuscrn.h"
 #include "logs.h"
 #include "maths.h"
+#include "keyboard.h"
 
 #include <conio.h>
+#include <cstdio>
 
 namespace game {
 namespace menus {
@@ -49,19 +51,27 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define GAME_PALETTE_BLACK (64 + 1)
 #define GAME_PALETTE_WHITE (64 + 2)
 #define GAME_PALETTE_DEBUG (64 + 3)
+#define GAME_PALETTE_RED (64 + 4)
+#define GAME_PALETTE_YELLOW (64 + 5)
 
 //
 
+#define BULLET_MOVE_SPEED 2
+
 // 12 per ring x 6 rings x 2 launchers = 144, 1/3 off screen
-#define MAX_BULLETS 100
-StaticUnorderedVector<Vec2_16, MAX_BULLETS> s_bullet_positions;
-StaticUnorderedVector<Vec2_8, MAX_BULLETS> s_bullet_velocities;
+#define MAX_ENEMY_BULLETS 128
+StaticUnorderedVector<Vec2_16, MAX_ENEMY_BULLETS> s_bullet_positions;
+StaticUnorderedVector<Vec2_8, MAX_ENEMY_BULLETS> s_bullet_velocities;
+StaticUnorderedVector<u8, MAX_ENEMY_BULLETS> s_bullet_metadata;
+
+#define BULLET_METADATA_HURTS_PLAYER (1 << 0)
 
 //
 
 #define MAX_HEALTH 3
 i8 s_player_health;
 
+#define SHIP_MOVE_SPEED 3
 Vec2_16 s_player_position;
 
 //
@@ -75,12 +85,15 @@ void play_menu_enter() {
   s_player_position.i.y = PLAY_AREA_HEIGHT / 2;
   s_bullet_positions.clear();
   s_bullet_velocities.clear();
+  s_bullet_metadata.clear();
 
   // Probably a good enough palette.
   images::set_palette(images::default_palette_64);
   gpu::set_palette_colour(GAME_PALETTE_BLACK, 0, 0, 0);
   gpu::set_palette_colour(GAME_PALETTE_WHITE, 255, 255, 255);
   gpu::set_palette_colour(GAME_PALETTE_DEBUG, 255, 0, 195);
+  gpu::set_palette_colour(GAME_PALETTE_RED, 255, 0, 0);
+  gpu::set_palette_colour(GAME_PALETTE_YELLOW, 255, 255, 0);
 
   // Clear everything. We'll load images later.
   gpu::g_draw_to = gpu::DrawTo::Back;
@@ -89,48 +102,105 @@ void play_menu_enter() {
   gpu::clear(GAME_PALETTE_BLACK);
 
   // TODO: loading screen for music and stuff, should happen in update loop
+
+  gpu::enable_text_layer(true);
+
+  flush_kb_buffer();
 }
 
-i32 s_spawner;
+bool emit_bullet(u16 x, u16 y, u8 angle, bool hurts_player) {
+  Vec2_16 *pos = s_bullet_positions.try_add();
+  if (!pos) {
+    return false;
+  }
+  pos->u.x = x;
+  pos->u.y = y;
+
+  Vec2_8 &vel = s_bullet_velocities.add();
+  STATIC_ASSERT(BULLET_MOVE_SPEED == 2); // 1 bit sign + 1 bit move, so not quite 2
+  vel.i.x = maths::cos(angle) / (1 << 6);
+  vel.i.y = maths::sin(angle) / (1 << 6);
+
+  u8 metadata = 0;
+  metadata |= hurts_player ? BULLET_METADATA_HURTS_PLAYER : 0;
+  s_bullet_metadata.add() = metadata;
+
+  return true;
+}
+
 const MenuScreen *play_menu_update(u32 dt) {
+#if 1
+  static i32 s_fps_ticks;
+  static i32 s_fps_timer;
+  ++s_fps_ticks;
+  s_fps_timer += dt;
+  if (s_fps_timer > Funcs98::ticks_per_sec()) {
+    Funcs98::clear_screen();
+    printf("FPS: %u\n", s_fps_ticks);
+    s_fps_ticks = 0;
+    s_fps_timer = 0;
+  }
+#endif
+
+#if 1
+  static i32 s_spawner;
   s_spawner += dt;
   if (s_spawner >= 0) {
-    s_spawner = -Funcs98::ticks_per_sec() / 10;
-
-    Vec2_16 *pos = s_bullet_positions.try_add();
-    if (pos) {
-      const u8 angle = (rand() >> 4);
-      pos->i.x = (rand() >> 4) % PLAY_AREA_WIDTH;
-      pos->i.y = (rand() >> 4) % PLAY_AREA_HEIGHT;
-      Vec2_8 &vel = s_bullet_velocities.add();
-      vel.i.x = maths::cos(angle) / (1 << 6);
-      vel.i.y = maths::sin(angle) / (1 << 6);
+    const u8 angle = (rand() >> 4);
+    const u16 x = (rand() >> 4) % PLAY_AREA_WIDTH;
+    const u16 y = (rand() >> 4) % PLAY_AREA_HEIGHT;
+    if (emit_bullet(x, y, angle, true)) {
+      s_spawner = -Funcs98::ticks_per_sec() / 20;
     }
   }
+#endif
 
+  const u32 keyboard_state = read_keyboard_state();
+  if (keyboard_state & KB_STATE_Q) {
+    return &g_main_menu;
+  }
 
   Vec2_8 velocity;
   velocity.i.x = velocity.i.y = 0;
+  bool player_moved = false;
 
-  if (kbhit_98()) {
-      const char ch = getch();
-      switch (ch) {
-// TODO: this isn't the right way of detecting input
-        case KEY_UP: case 'W': case 'w':
-          break;
-        case KEY_DOWN: case 'S': case 's':
-          break;
-        case KEY_LEFT: case 'A': case 'a':
-          break;
-        case KEY_RIGHT: case 'D': case 'd':
-          break;
+  if (keyboard_state & (KB_STATE_W | KB_STATE_UP)) {
+    //if (s_player_position.u.y) // TODO: clamp
+    velocity.i.y = -SHIP_MOVE_SPEED;
+    player_moved = true;
+  }
+  if (keyboard_state & (KB_STATE_S | KB_STATE_DOWN)) {
+    velocity.i.y = SHIP_MOVE_SPEED;
+    player_moved = true;
+  }
+  if (keyboard_state & (KB_STATE_A | KB_STATE_LEFT)) {
+    velocity.i.x = -SHIP_MOVE_SPEED;
+    player_moved = true;
+  }
+  if (keyboard_state & (KB_STATE_D | KB_STATE_RIGHT)) {
+    velocity.i.x = SHIP_MOVE_SPEED;
+    player_moved = true;
+  }
 
-        case KEY_ENTER: case KEY_SPACE: case 'E': case 'e':
-          break;
+  // Redraw the player immediately.
+  if (player_moved) {
+    Vec2_16 pos = s_player_position;
+    gpu::undraw_quad(
+      PLAY_AREA_BORDER_X + pos.i.x - 1, PLAY_AREA_BORDER_Y + pos.i.y - 1,
+      PLAY_AREA_BORDER_X + pos.i.x + 2, PLAY_AREA_BORDER_Y + pos.i.y + 2
+    );
+    pos.i.x += velocity.i.x;
+    pos.i.y += velocity.i.y;
+    gpu::draw_quad(
+      PLAY_AREA_BORDER_X + pos.i.x - 1, PLAY_AREA_BORDER_Y + pos.i.y - 1,
+      PLAY_AREA_BORDER_X + pos.i.x + 2, PLAY_AREA_BORDER_Y + pos.i.y + 2,
+      GAME_PALETTE_WHITE
+    );
+    s_player_position = pos;
+  }
 
-        case KEY_ESCAPE: case 'Q': case 'q':
-          return &g_main_menu;
-      }
+  if (keyboard_state & (KB_STATE_ENTER | KB_STATE_E | KB_STATE_SPACE)) {
+    emit_bullet(s_player_position.u.x, s_player_position.u.y, 0, false);
   }
 
   //
@@ -176,6 +246,7 @@ const MenuScreen *play_menu_update(u32 dt) {
       if ((pos.u.x > PLAY_AREA_WIDTH) | (pos.u.y > PLAY_AREA_HEIGHT)) {
         s_bullet_velocities.erase_at(i);
         s_bullet_positions.erase_at(i);
+        s_bullet_metadata.erase_at(i);
         --count;
         --i;
         continue;
@@ -192,14 +263,17 @@ const MenuScreen *play_menu_update(u32 dt) {
   {
     const u32 count = s_bullet_positions.count;
     const Vec2_16 *positions = s_bullet_positions.raw;
+    const u8 *metadatas = s_bullet_metadata.raw;
+
     for (u32 i = 0; i < count; i++) {
-      const Vec2_16 pos = positions[i];
+      const Vec2_16 pos = *positions++;
+      const u8 metadata = *metadatas++;
 
       // Draw the thingy.
       gpu::draw_quad(
         PLAY_AREA_BORDER_X + pos.i.x - 1, PLAY_AREA_BORDER_Y + pos.i.y - 1,
         PLAY_AREA_BORDER_X + pos.i.x + 2, PLAY_AREA_BORDER_Y + pos.i.y + 2,
-        GAME_PALETTE_WHITE
+        (metadata & BULLET_METADATA_HURTS_PLAYER) ? GAME_PALETTE_RED : GAME_PALETTE_YELLOW
       );
     }
   }
