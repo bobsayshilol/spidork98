@@ -20,6 +20,7 @@ DEPS	= \
 	..\\libpc98\\funcs.h	\
 	..\\libpc98\\gpuscrn.h	\
 	..\\libpc98\\images.h	\
+	..\\libpc98\\keyboard.h	\
 	..\\libpc98\\logs.h		\
 	..\\libpc98\\macros.h	\
 	..\\libpc98\\maths.h	\
