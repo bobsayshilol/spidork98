@@ -2,6 +2,7 @@
 #include "menus.h"
 #include "pal_fade.h"
 #include "unordvec.h"
+#include "loading.h"
 
 #include "funcs.h"
 #include "images.h"
@@ -12,6 +13,8 @@
 
 #include <conio.h>
 #include <cstdio>
+
+#define DEBUG_PRINT_FPS 0
 
 namespace game {
 namespace menus {
@@ -76,6 +79,45 @@ Vec2_16 s_player_position;
 
 //
 
+void tick_loader(LoadingProgress::E) {
+  // TODO: loading screen for music and stuff
+
+  // Make sure to tick the audio system since we're blocking in here.
+  soundsystem::update();
+}
+
+const MenuScreen *run_loading() {
+  // Note: this is blocking!
+  loading_screen(tick_loader);
+  gpu::enable_text_layer(DEBUG_PRINT_FPS);
+  s_game_state = GameState::Playing;
+  return &g_playing_menu;
+}
+
+//
+
+bool emit_bullet(u16 x, u16 y, u8 angle, bool hurts_player) {
+  Vec2_16 *pos = s_bullet_positions.try_add();
+  if (!pos) {
+    return false;
+  }
+  pos->u.x = x;
+  pos->u.y = y;
+
+  Vec2_8 &vel = s_bullet_velocities.add();
+  STATIC_ASSERT(BULLET_MOVE_SPEED == 2); // 1 bit sign + 1 bit move, so not quite 2
+  vel.i.x = maths::cos(angle) / (1 << 6);
+  vel.i.y = maths::sin(angle) / (1 << 6);
+
+  u8 metadata = 0;
+  metadata |= hurts_player ? BULLET_METADATA_HURTS_PLAYER : 0;
+  s_bullet_metadata.add() = metadata;
+
+  return true;
+}
+
+//
+
 void play_menu_enter() {
   logging::print(logging::Level::Info, "Entering gameplay menu, level %u", g_level_selected);
 
@@ -101,35 +143,26 @@ void play_menu_enter() {
   gpu::g_draw_to = gpu::DrawTo::Front;
   gpu::clear(GAME_PALETTE_BLACK);
 
-  // TODO: loading screen for music and stuff, should happen in update loop
-
-  gpu::enable_text_layer(true);
+  s_game_state = GameState::Loading;
 
   flush_kb_buffer();
 }
 
-bool emit_bullet(u16 x, u16 y, u8 angle, bool hurts_player) {
-  Vec2_16 *pos = s_bullet_positions.try_add();
-  if (!pos) {
-    return false;
-  }
-  pos->u.x = x;
-  pos->u.y = y;
-
-  Vec2_8 &vel = s_bullet_velocities.add();
-  STATIC_ASSERT(BULLET_MOVE_SPEED == 2); // 1 bit sign + 1 bit move, so not quite 2
-  vel.i.x = maths::cos(angle) / (1 << 6);
-  vel.i.y = maths::sin(angle) / (1 << 6);
-
-  u8 metadata = 0;
-  metadata |= hurts_player ? BULLET_METADATA_HURTS_PLAYER : 0;
-  s_bullet_metadata.add() = metadata;
-
-  return true;
-}
-
 const MenuScreen *play_menu_update(u32 dt) {
-#if 1
+  // Handle loading and game over on the slower paths.
+  if (s_game_state != GameState::Playing) {
+    switch (s_game_state) {
+      case GameState::Playing:
+        break;
+      case GameState::Loading:
+        return run_loading();
+      case GameState::GameOver:
+        // TODO
+        break;
+    }
+  }
+
+#if DEBUG_PRINT_FPS
   static i32 s_fps_ticks;
   static i32 s_fps_timer;
   ++s_fps_ticks;

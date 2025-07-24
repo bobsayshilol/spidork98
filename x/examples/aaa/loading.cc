@@ -96,7 +96,8 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
     pos.dy++;
     if (pos.dy > pb_y) {
       num_hs--;
-      memmove(heights + idx, heights + idx + 1, (num_hs - idx) * sizeof(ChPos));
+      //memmove(heights + idx, heights + idx + 1, (num_hs - idx) * sizeof(ChPos));
+      heights[idx] = heights[num_hs];
     } else {
       ScreenPutChar_98(fill_char, COLOUR_GREEN, pos.x, pb_y + pos.dy);
       ScreenPutChar_98(fill_char, COLOUR_GREEN, pos.x, pb_y - pos.dy);
