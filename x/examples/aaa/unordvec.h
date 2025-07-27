@@ -8,7 +8,7 @@
 
 namespace game {
 
-#define DEBUG_CHECK_VECTOR 1
+#define DEBUG_CHECK_VECTOR 0
 
 template <typename T, u16 N>
 struct StaticUnorderedVector {

@@ -57,6 +57,7 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define GAME_PALETTE_RED (64 + 4)
 #define GAME_PALETTE_YELLOW (64 + 5)
 #define GAME_PALETTE_GREY (64 + 6)
+#define GAME_PALETTE_DAMAGED (64 + 7)
 
 //
 
@@ -83,6 +84,8 @@ StaticUnorderedVector<u8, MAX_BULLETS> s_bullet_metadata;
 
 #define MAX_HEALTH 3
 i8 s_player_health;
+#define PLAYER_IFRAMES 90 // ~1.5s @ 60fps
+u8 s_player_iframes;
 
 #define SHIP_WIDTH 16
 #define SHIP_HEIGHT 16
@@ -147,10 +150,14 @@ void tick_loader(LoadingProgress::E progress) {
         case 6:
           // TODO: actual images
           gpu::g_draw_to = gpu::DrawTo::Back;
-          gpu::draw_quad(0, 0, GPU_WIDTH, PLAY_AREA_BORDER_Y, GAME_PALETTE_GREY);
-          gpu::draw_quad(0, PLAY_AREA_BORDER_Y, PLAY_AREA_BORDER_X, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GAME_PALETTE_GREY);
-          gpu::draw_quad(PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, PLAY_AREA_BORDER_Y, GPU_WIDTH, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GAME_PALETTE_GREY);
-          gpu::draw_quad(0, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GPU_WIDTH, GPU_HEIGHT, GAME_PALETTE_GREY);
+          gpu::draw_quad(0,                                    0,                                     PLAY_AREA_BORDER_X,                   PLAY_AREA_BORDER_Y,                    GAME_PALETTE_DAMAGED);
+          gpu::draw_quad(PLAY_AREA_BORDER_X,                   0,                                     PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, PLAY_AREA_BORDER_Y,                    GAME_PALETTE_GREY);
+          gpu::draw_quad(PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, 0,                                     GPU_WIDTH,                            PLAY_AREA_BORDER_Y,                    GAME_PALETTE_DAMAGED);
+          gpu::draw_quad(0,                                    PLAY_AREA_BORDER_Y,                    PLAY_AREA_BORDER_X,                   PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GAME_PALETTE_GREY);
+          gpu::draw_quad(PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, PLAY_AREA_BORDER_Y,                    GPU_WIDTH,                            PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GAME_PALETTE_GREY);
+          gpu::draw_quad(0,                                    PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, PLAY_AREA_BORDER_X,                   GPU_HEIGHT,                            GAME_PALETTE_DAMAGED);
+          gpu::draw_quad(PLAY_AREA_BORDER_X,                   PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, GPU_HEIGHT,                            GAME_PALETTE_GREY);
+          gpu::draw_quad(PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GPU_WIDTH,                            GPU_HEIGHT,                            GAME_PALETTE_DAMAGED);
           gpu::g_draw_to = gpu::DrawTo::Front;
           break;
       }
@@ -193,6 +200,32 @@ const MenuScreen *run_loading() {
 
 //
 
+void show_game_over() {
+  Funcs98::clear_screen();
+
+  // Show a game over message.
+  const u8 num_cols = ScreenCols_98(); // 80
+  const u8 num_rows = ScreenRows_98(); // 24
+  const char game_over[] = "\xA2G A M E  O V E R\xA3";
+  const int y = num_rows / 2;
+  const int x = (num_cols - sizeof(game_over)) / 2;
+  ScreenPutString_98(game_over, COLOUR_WHITE, x, y);
+
+  flush_kb_buffer();
+}
+
+const MenuScreen *run_game_over() {
+  if (kbhit_98()) {
+    const int ch = getch();
+    if (ch == 'q' || ch == KEY_ESCAPE) {
+      return &g_main_menu;
+    }
+  }
+  return &g_playing_menu;
+}
+
+//
+
 bool emit_bullet(u16 x, u16 y, u8 angle, bool hurts_player) {
   Vec2_16 *pos = s_bullet_positions.try_add();
   if (!pos) {
@@ -220,6 +253,7 @@ void play_menu_enter() {
 
   // Reset gameplay state.
   s_player_health = MAX_HEALTH;
+  s_player_iframes = 0;
   s_player_position.i.x = PLAY_AREA_WIDTH / 2;
   s_player_position.i.y = PLAY_AREA_HEIGHT / 2;
   s_bullet_positions.clear();
@@ -240,6 +274,7 @@ void play_menu_enter() {
   gpu::set_palette_colour(GAME_PALETTE_RED, 255, 0, 0);
   gpu::set_palette_colour(GAME_PALETTE_YELLOW, 255, 255, 0);
   gpu::set_palette_colour(GAME_PALETTE_GREY, 127, 127, 127);
+  gpu::set_palette_colour(GAME_PALETTE_DAMAGED, 127, 127, 127);
 
   // Clear everything. We'll load images later.
   gpu::g_draw_to = gpu::DrawTo::Back;
@@ -261,8 +296,7 @@ const MenuScreen *play_menu_update(u32 dt) {
       case GameState::Loading:
         return run_loading();
       case GameState::GameOver:
-        // TODO
-        break;
+        return run_game_over();
     }
   }
 
@@ -324,6 +358,16 @@ const MenuScreen *play_menu_update(u32 dt) {
       velocity.i.x = SHIP_MOVE_SPEED;
       player_moved = true;
     }
+  }
+
+  //
+
+  // Display damage.
+  if (s_player_iframes > 0) {
+    unsigned t = --s_player_iframes;
+    t = (3 * 256 * (PLAYER_IFRAMES - t)) / PLAYER_IFRAMES;
+    const i8 s = maths::sin(t);
+    gpu::set_palette_colour(GAME_PALETTE_DAMAGED, 127 + s, 127 - s, 127 - s);
   }
 
   //
@@ -422,6 +466,8 @@ const MenuScreen *play_menu_update(u32 dt) {
   {
     u32 count = s_bullet_positions.count;
     const Vec2_16 *positions = s_bullet_positions.raw;
+    const u8 *metadatas = s_bullet_metadata.raw;
+    const Vec2_16 player_pos = s_player_position;
     for (u32 i = 0; i < count; i++) {
       const Vec2_16 pos = *positions;
 
@@ -435,8 +481,34 @@ const MenuScreen *play_menu_update(u32 dt) {
         continue;
       }
 
+      // Collision with the player.
+      const u8 metadata = *metadatas;
+      if (metadata & BULLET_METADATA_HURTS_PLAYER) {
+        const bool in_x = (player_pos.u.x <= pos.u.x) & (pos.u.x <= player_pos.u.x + SHIP_WIDTH);
+        const bool in_y = (player_pos.u.y <= pos.u.y) & (pos.u.y <= player_pos.u.y + SHIP_HEIGHT);
+        if (in_x & in_y) {
+          s_bullet_velocities.erase_at(i);
+          s_bullet_positions.erase_at(i);
+          s_bullet_metadata.erase_at(i);
+          --count;
+          --i;
+
+          // Do some damage if not in an iframe.
+          if (s_player_iframes == 0) {
+            if (--s_player_health <= 0) {
+              s_game_state = GameState::GameOver;
+              show_game_over();
+              break;
+            }
+            s_player_iframes = PLAYER_IFRAMES;
+          }
+          continue;
+        }
+      }
+
       // We kept this one, go to next.
       positions++;
+      metadatas++;
     }
   }
 
