@@ -37,7 +37,7 @@ struct StaticUnorderedVector {
 #if DEBUG_CHECK_VECTOR
     if (count > m_max_size) m_max_size = count;
 #endif
-    return raw[count];
+    return raw[count - 1];
   }
 
   FORCEINLINE T *try_add() {
@@ -48,7 +48,7 @@ struct StaticUnorderedVector {
 #if DEBUG_CHECK_VECTOR
     if (count > m_max_size) m_max_size = count;
 #endif
-    return &raw[count];
+    return &raw[count - 1];
   }
 
   FORCEINLINE void erase_at(u16 idx) {
