@@ -59,6 +59,13 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 
 //
 
+#define NUM_STARS 16
+Vec2_16 s_stars[NUM_STARS];
+
+#define STAR_SHIFT 1
+
+//
+
 #define BULLET_MOVE_SPEED 2
 
 // 12 per ring x 6 rings x 2 launchers = 144, 1/3 off screen
@@ -128,6 +135,12 @@ void play_menu_enter() {
   s_bullet_positions.clear();
   s_bullet_velocities.clear();
   s_bullet_metadata.clear();
+
+  for (int i = 0; i < NUM_STARS; i++) {
+    Vec2_16 &pos = s_stars[i];
+    pos.u.x = (( i * 5 * PLAY_AREA_WIDTH / 7 + ((rand() & 7) << 5) ) % PLAY_AREA_WIDTH) << STAR_SHIFT;
+    pos.u.y = (PLAY_AREA_HEIGHT * (2 * i + 1)) / (2 * NUM_STARS) + ((rand() & 3) << 2);
+  }
 
   // Probably a good enough palette.
   images::set_palette(images::default_palette_64);
@@ -215,7 +228,39 @@ const MenuScreen *play_menu_update(u32 dt) {
     player_moved = true;
   }
 
-  // Redraw the player immediately.
+  //
+
+  // Move the stars.
+  {
+    Vec2_16 *positions = s_stars;
+    for (u32 i = 0; i < NUM_STARS; i++) {
+      Vec2_16 &pos = *positions++;
+      const u16 y = PLAY_AREA_BORDER_Y + pos.u.y;
+      u16 x = PLAY_AREA_BORDER_X + (pos.u.x >> STAR_SHIFT);
+
+      // TODO: 2 function calls is really excessive for a single pixel
+      gpu::undraw_quad(
+        x, y,
+        x + 1, y + 1
+      );
+
+      pos.u.x--;
+      if (pos.u.x >= (PLAY_AREA_WIDTH << STAR_SHIFT)) {
+        pos.u.x = (PLAY_AREA_WIDTH << STAR_SHIFT) - 1;
+      }
+      x = PLAY_AREA_BORDER_X + (pos.u.x >> STAR_SHIFT);
+
+      gpu::draw_quad(
+        x, y,
+        x + 1, y + 1,
+        GAME_PALETTE_WHITE
+      );
+    }
+  }
+
+  //
+
+  // Redraw the player first.
   if (player_moved) {
     Vec2_16 pos = s_player_position;
     gpu::undraw_quad(
