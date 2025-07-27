@@ -137,11 +137,8 @@ void on_enter_pressed() {
       redraw_text_ui();
       break;
 
-    case SELECTION_TOGGLE_VOLUME:
-      break;
-
     case SELECTION_CREDITS:
-      //s_next_screen = &g_credits_menu;
+      s_next_screen = &g_credits_menu;
       break;
 
     case SELECTION_QUIT:

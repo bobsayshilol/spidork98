@@ -3,7 +3,7 @@ include ..\\libpc98\\flags.mk
 
 # What we're building
 DEPS	+= $(LIBPC98) game.h loading.h menus.h pal_fade.h unordvec.h
-OBJS	= main.o loading.o mn_main.o mn_splsh.o pal_fade.o mn_lvls.o mn_game.o
+OBJS	= main.o loading.o mn_main.o mn_splsh.o pal_fade.o mn_lvls.o mn_game.o mn_creds.o
 TARGET	= aaa.exe
 
 # Build it
