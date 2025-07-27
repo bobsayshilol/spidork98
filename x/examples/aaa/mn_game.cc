@@ -59,6 +59,9 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define GAME_PALETTE_GREY (64 + 6)
 #define GAME_PALETTE_DAMAGED (64 + 7)
 
+#define VOICE_HANDLE_GAME_BGM 0
+#define VOICE_HANDLE_GAME_OOF 1
+
 //
 
 #define NUM_STARS 16
@@ -126,7 +129,7 @@ void tick_loader(LoadingProgress::E progress) {
       switch (s_loader_tick) {
         // Load BGM.
         case 2:
-          if (!soundsystem::load_sound(VOICE_HANDLE_MENU_BGM, GAME_DATA_PATH("song2.pcm"), true)) {
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_BGM, GAME_DATA_PATH("song2.pcm"), true)) {
             logging::print(logging::Level::Warning, "Missing game bgm");
           }
           break;
@@ -174,15 +177,17 @@ void tick_loader(LoadingProgress::E progress) {
       ++s_loader_tick;
       switch (s_loader_tick) {
         // Load noises.
-        case 5:
-          // TODO: noises
+        case 2:
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_OOF, GAME_DATA_PATH("ow.pcm"), false)) {
+            logging::print(logging::Level::Warning, "Missing game oof");
+          }
         break;
       }
       break;
 
     case LoadingProgress::Done:
       // Kick off the bgm.
-      soundsystem::play(VOICE_HANDLE_MENU_BGM);
+      soundsystem::play(VOICE_HANDLE_GAME_BGM);
       break;
   }
 
@@ -495,6 +500,7 @@ const MenuScreen *play_menu_update(u32 dt) {
 
           // Do some damage if not in an iframe.
           if (s_player_iframes == 0) {
+            soundsystem::play(VOICE_HANDLE_GAME_OOF);
             if (--s_player_health <= 0) {
               s_game_state = GameState::GameOver;
               show_game_over();
