@@ -45,7 +45,7 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 
 //
 
-#define PLAY_AREA_BORDER_X 64
+#define PLAY_AREA_BORDER_X 48
 #define PLAY_AREA_BORDER_Y 32
 #define PLAY_AREA_WIDTH (GPU_WIDTH - PLAY_AREA_BORDER_X * 2)
 #define PLAY_AREA_HEIGHT (GPU_HEIGHT - PLAY_AREA_BORDER_Y * 2)
@@ -56,6 +56,7 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define GAME_PALETTE_DEBUG (64 + 3)
 #define GAME_PALETTE_RED (64 + 4)
 #define GAME_PALETTE_YELLOW (64 + 5)
+#define GAME_PALETTE_GREY (64 + 6)
 
 //
 
@@ -94,8 +95,89 @@ u32 s_since_last_shot;
 
 //
 
-void tick_loader(LoadingProgress::E) {
-  // TODO: loading screen for music and stuff
+int s_loader_tick;
+void tick_loader(LoadingProgress::E progress) {
+  switch (progress) {
+    case LoadingProgress::BarStart:
+      s_loader_tick = 0;
+      break;
+    case LoadingProgress::BarTick:
+      ++s_loader_tick;
+      // Fake some loading here to make it look like it's doing something.
+      if (s_loader_tick & 16) {
+        Funcs98::delay_ms(25);
+      } else if (s_loader_tick & 8) {
+        Funcs98::delay_ms(10);
+      }
+      break;
+
+    case LoadingProgress::FadeOutStart:
+      // Disable all the old audio.
+      for (int i = 0; i < MAX_SOUNDS; i++) {
+        soundsystem::free_handle(i);
+      }
+      s_loader_tick = 0;
+      break;
+    case LoadingProgress::FadeOutTick:
+      ++s_loader_tick;
+      switch (s_loader_tick) {
+        // Load BGM.
+        case 2:
+          if (!soundsystem::load_sound(VOICE_HANDLE_MENU_BGM, GAME_DATA_PATH("song2.pcm"), true)) {
+            logging::print(logging::Level::Warning, "Missing game bgm");
+          }
+          break;
+
+        // Load background.
+        case 4:
+          gpu::g_draw_to = gpu::DrawTo::Back;
+          {
+            images::ImageData background;
+            if (background.load(GAME_DATA_PATH("game_bg.img"))) {
+              images::draw_image(0, 0, background);
+            } else {
+              logging::print(logging::Level::Error, "Failed to load game background");
+              gpu::clear(GAME_PALETTE_BLACK);
+            }
+          }
+          gpu::g_draw_to = gpu::DrawTo::Front;
+          break;
+
+        // Load border images
+        case 6:
+          // TODO: actual images
+          gpu::g_draw_to = gpu::DrawTo::Back;
+          gpu::draw_quad(0, 0, GPU_WIDTH, PLAY_AREA_BORDER_Y, GAME_PALETTE_GREY);
+          gpu::draw_quad(0, PLAY_AREA_BORDER_Y, PLAY_AREA_BORDER_X, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GAME_PALETTE_GREY);
+          gpu::draw_quad(PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, PLAY_AREA_BORDER_Y, GPU_WIDTH, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GAME_PALETTE_GREY);
+          gpu::draw_quad(0, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GPU_WIDTH, GPU_HEIGHT, GAME_PALETTE_GREY);
+          gpu::g_draw_to = gpu::DrawTo::Front;
+          break;
+      }
+      break;
+
+    case LoadingProgress::FadeInStart:
+      // Copy backbuffer to front now that it's ready.
+      soundsystem::update();
+      gpu::wait_for_vsync();
+      gpu::undraw_quad(0, 0, GPU_WIDTH, GPU_HEIGHT);
+      s_loader_tick = 0;
+      break;
+    case LoadingProgress::FadeInTick:
+      ++s_loader_tick;
+      switch (s_loader_tick) {
+        // Load noises.
+        case 5:
+          // TODO: noises
+        break;
+      }
+      break;
+
+    case LoadingProgress::Done:
+      // Kick off the bgm.
+      soundsystem::play(VOICE_HANDLE_MENU_BGM);
+      break;
+  }
 
   // Make sure to tick the audio system since we're blocking in here.
   soundsystem::update();
@@ -157,6 +239,7 @@ void play_menu_enter() {
   gpu::set_palette_colour(GAME_PALETTE_DEBUG, 255, 0, 195);
   gpu::set_palette_colour(GAME_PALETTE_RED, 255, 0, 0);
   gpu::set_palette_colour(GAME_PALETTE_YELLOW, 255, 255, 0);
+  gpu::set_palette_colour(GAME_PALETTE_GREY, 127, 127, 127);
 
   // Clear everything. We'll load images later.
   gpu::g_draw_to = gpu::DrawTo::Back;
