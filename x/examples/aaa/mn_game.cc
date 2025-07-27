@@ -87,7 +87,7 @@ i8 s_player_health;
 #define SHIP_WIDTH 16
 #define SHIP_HEIGHT 16
 
-#define SHIP_MOVE_SPEED 3
+#define SHIP_MOVE_SPEED 2
 Vec2_16 s_player_position; // top left position
 
 #define PLAYER_SHOOT_TIMEOUT 10 // in frames
@@ -302,21 +302,28 @@ const MenuScreen *play_menu_update(u32 dt) {
   bool player_moved = false;
 
   if (keyboard_state & (KB_STATE_W | KB_STATE_UP)) {
-    //if (s_player_position.u.y) // TODO: clamp
-    velocity.i.y = -SHIP_MOVE_SPEED;
-    player_moved = true;
+    if (s_player_position.u.y > SHIP_MOVE_SPEED) {
+      velocity.i.y = -SHIP_MOVE_SPEED;
+      player_moved = true;
+    }
   }
   if (keyboard_state & (KB_STATE_S | KB_STATE_DOWN)) {
-    velocity.i.y = SHIP_MOVE_SPEED;
-    player_moved = true;
+    if (s_player_position.u.y < PLAY_AREA_HEIGHT - SHIP_MOVE_SPEED - SHIP_HEIGHT) {
+      velocity.i.y = SHIP_MOVE_SPEED;
+      player_moved = true;
+    }
   }
   if (keyboard_state & (KB_STATE_A | KB_STATE_LEFT)) {
-    velocity.i.x = -SHIP_MOVE_SPEED;
-    player_moved = true;
+    if (s_player_position.u.x > SHIP_MOVE_SPEED) {
+      velocity.i.x = -SHIP_MOVE_SPEED;
+      player_moved = true;
+    }
   }
   if (keyboard_state & (KB_STATE_D | KB_STATE_RIGHT)) {
-    velocity.i.x = SHIP_MOVE_SPEED;
-    player_moved = true;
+    if (s_player_position.u.x < PLAY_AREA_WIDTH - SHIP_MOVE_SPEED - SHIP_WIDTH) {
+      velocity.i.x = SHIP_MOVE_SPEED;
+      player_moved = true;
+    }
   }
 
   //
@@ -375,7 +382,7 @@ const MenuScreen *play_menu_update(u32 dt) {
 
   s_since_last_shot++;
   if (keyboard_state & (KB_STATE_ENTER | KB_STATE_E | KB_STATE_SPACE) && s_since_last_shot >= PLAYER_SHOOT_TIMEOUT) {
-    emit_bullet(s_player_position.u.x + 2 * SHIP_WIDTH, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false);
+    emit_bullet(s_player_position.u.x + 3 * SHIP_WIDTH / 2, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false);
     s_since_last_shot = 0;
   }
 
