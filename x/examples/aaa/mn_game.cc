@@ -84,6 +84,9 @@ i8 s_player_health;
 #define SHIP_MOVE_SPEED 3
 Vec2_16 s_player_position;
 
+#define PLAYER_SHOOT_TIMEOUT 10 // in frames
+u32 s_since_last_shot;
+
 //
 
 void tick_loader(LoadingProgress::E) {
@@ -277,8 +280,10 @@ const MenuScreen *play_menu_update(u32 dt) {
     s_player_position = pos;
   }
 
-  if (keyboard_state & (KB_STATE_ENTER | KB_STATE_E | KB_STATE_SPACE)) {
-    emit_bullet(s_player_position.u.x, s_player_position.u.y, 0, false);
+  s_since_last_shot++;
+  if (keyboard_state & (KB_STATE_ENTER | KB_STATE_E | KB_STATE_SPACE) && s_since_last_shot >= PLAYER_SHOOT_TIMEOUT) {
+    emit_bullet(s_player_position.u.x + 2 * SHIP_WIDTH, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false);
+    s_since_last_shot = 0;
   }
 
   //
