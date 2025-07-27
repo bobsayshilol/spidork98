@@ -66,7 +66,7 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
         //ScreenPutChar_98(loading_chars_l[loading_char_idx], COLOUR_GREEN, info_line_x - 2, info_line_y);
         //ScreenPutChar_98(loading_chars_r[loading_char_idx], COLOUR_GREEN, info_line_x + sizeof(info_line) + 1, info_line_y);
         //loading_char_idx = (loading_char_idx + 1) & 3;
-        Funcs98::delay_ms(50);
+        Funcs98::delay_ms(10);
         tick_progress(LoadingProgress::BarTick);
       }
 
@@ -132,6 +132,7 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
 
 
   // Remove them.
+  tick_progress(LoadingProgress::FadeInStart);
   num_hs = pb_w;
   for (int k = 0; k < num_hs; k++) {
     heights[k].x = pb_x + k;
@@ -142,7 +143,6 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
   next_dx = 0;
   do_next = 0;
 
-  tick_progress(LoadingProgress::FadeInStart);
   while (num_hs > 0) {
     const int idx = rand() % num_hs;
     ChPos & pos = heights[idx];
@@ -159,7 +159,7 @@ void loading_screen(void (*tick_progress)(LoadingProgress::E progress)) {
 
     // Spread them out.
     do_next++;
-    if (do_next > 20) { // ~40ms
+    if (do_next > 15) { // ~30ms
       do_next = 0;
       tick_progress(LoadingProgress::FadeInTick);
 
