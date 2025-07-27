@@ -67,12 +67,14 @@ Vec2_16 s_stars[NUM_STARS];
 //
 
 #define BULLET_MOVE_SPEED 2
+#define BULLET_SIZE 2 // width and height
 
 // 12 per ring x 6 rings x 2 launchers = 144, 1/3 off screen
-#define MAX_ENEMY_BULLETS 128
-StaticUnorderedVector<Vec2_16, MAX_ENEMY_BULLETS> s_bullet_positions;
-StaticUnorderedVector<Vec2_8, MAX_ENEMY_BULLETS> s_bullet_velocities;
-StaticUnorderedVector<u8, MAX_ENEMY_BULLETS> s_bullet_metadata;
+// From testing ~50 is max from the player with no modifiers.
+#define MAX_BULLETS 128
+StaticUnorderedVector<Vec2_16, MAX_BULLETS> s_bullet_positions;
+StaticUnorderedVector<Vec2_8, MAX_BULLETS> s_bullet_velocities;
+StaticUnorderedVector<u8, MAX_BULLETS> s_bullet_metadata;
 
 #define BULLET_METADATA_HURTS_PLAYER (1 << 0)
 
@@ -81,8 +83,11 @@ StaticUnorderedVector<u8, MAX_ENEMY_BULLETS> s_bullet_metadata;
 #define MAX_HEALTH 3
 i8 s_player_health;
 
+#define SHIP_WIDTH 16
+#define SHIP_HEIGHT 16
+
 #define SHIP_MOVE_SPEED 3
-Vec2_16 s_player_position;
+Vec2_16 s_player_position; // top left position
 
 #define PLAYER_SHOOT_TIMEOUT 10 // in frames
 u32 s_since_last_shot;
@@ -267,14 +272,14 @@ const MenuScreen *play_menu_update(u32 dt) {
   if (player_moved) {
     Vec2_16 pos = s_player_position;
     gpu::undraw_quad(
-      PLAY_AREA_BORDER_X + pos.i.x - 1, PLAY_AREA_BORDER_Y + pos.i.y - 1,
-      PLAY_AREA_BORDER_X + pos.i.x + 2, PLAY_AREA_BORDER_Y + pos.i.y + 2
+      PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
+      PLAY_AREA_BORDER_X + pos.i.x + SHIP_WIDTH, PLAY_AREA_BORDER_Y + pos.i.y + SHIP_HEIGHT
     );
     pos.i.x += velocity.i.x;
     pos.i.y += velocity.i.y;
     gpu::draw_quad(
-      PLAY_AREA_BORDER_X + pos.i.x - 1, PLAY_AREA_BORDER_Y + pos.i.y - 1,
-      PLAY_AREA_BORDER_X + pos.i.x + 2, PLAY_AREA_BORDER_Y + pos.i.y + 2,
+      PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
+      PLAY_AREA_BORDER_X + pos.i.x + SHIP_WIDTH, PLAY_AREA_BORDER_Y + pos.i.y + SHIP_HEIGHT,
       GAME_PALETTE_WHITE
     );
     s_player_position = pos;
@@ -297,8 +302,8 @@ const MenuScreen *play_menu_update(u32 dt) {
       // Undraw around current position to mask out the area we just moved from.
       // This does more work than it needs to, but meh.
       gpu::undraw_quad(
-        PLAY_AREA_BORDER_X + pos.i.x - 1, PLAY_AREA_BORDER_Y + pos.i.y - 1,
-        PLAY_AREA_BORDER_X + pos.i.x + 2, PLAY_AREA_BORDER_Y + pos.i.y + 2
+        PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
+        PLAY_AREA_BORDER_X + pos.i.x + BULLET_SIZE, PLAY_AREA_BORDER_Y + pos.i.y + BULLET_SIZE
       );
     }
   }
@@ -354,8 +359,8 @@ const MenuScreen *play_menu_update(u32 dt) {
 
       // Draw the thingy.
       gpu::draw_quad(
-        PLAY_AREA_BORDER_X + pos.i.x - 1, PLAY_AREA_BORDER_Y + pos.i.y - 1,
-        PLAY_AREA_BORDER_X + pos.i.x + 2, PLAY_AREA_BORDER_Y + pos.i.y + 2,
+        PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
+        PLAY_AREA_BORDER_X + pos.i.x + BULLET_SIZE, PLAY_AREA_BORDER_Y + pos.i.y + BULLET_SIZE,
         (metadata & BULLET_METADATA_HURTS_PLAYER) ? GAME_PALETTE_RED : GAME_PALETTE_YELLOW
       );
     }
