@@ -35,7 +35,7 @@
 
 namespace game {
 
-#define GAME_DATA_PATH(path) "aaa/" path
+#define GAME_DATA_PATH(path) "aaa/data/" path
 
 extern bool g_had_error;
 extern bool g_sound_enabled;
