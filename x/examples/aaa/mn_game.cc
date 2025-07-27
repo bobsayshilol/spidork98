@@ -196,7 +196,7 @@ const MenuScreen *play_menu_update(u32 dt) {
   }
 #endif
 
-#if 1
+#if 0
   static i32 s_spawner;
   s_spawner += dt;
   if (s_spawner >= 0) {
@@ -268,7 +268,7 @@ const MenuScreen *play_menu_update(u32 dt) {
 
   //
 
-  // Redraw the player first.
+  // Erase the old player position.
   if (player_moved) {
     Vec2_16 pos = s_player_position;
     gpu::undraw_quad(
@@ -277,12 +277,17 @@ const MenuScreen *play_menu_update(u32 dt) {
     );
     pos.i.x += velocity.i.x;
     pos.i.y += velocity.i.y;
+    s_player_position = pos;
+  }
+
+  // Always redraw the player so that bullets and other objects don't erase it.
+  {
+    const Vec2_16 pos = s_player_position;
     gpu::draw_quad(
       PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
       PLAY_AREA_BORDER_X + pos.i.x + SHIP_WIDTH, PLAY_AREA_BORDER_Y + pos.i.y + SHIP_HEIGHT,
       GAME_PALETTE_WHITE
     );
-    s_player_position = pos;
   }
 
   s_since_last_shot++;
