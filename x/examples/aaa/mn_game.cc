@@ -245,6 +245,11 @@ void tick_loader(LoadingProgress::E progress) {
       break;
 
     case LoadingProgress::Done:
+      // HACK: just restart the audio system to fix the desync issue.
+      if (g_sound_enabled) {
+        toggle_audio();
+        toggle_audio();
+      }
       // Kick off the bgm.
       soundsystem::play(VOICE_HANDLE_GAME_BGM);
       break;
