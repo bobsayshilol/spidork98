@@ -58,6 +58,10 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define GAME_PALETTE_YELLOW (64 + 5)
 #define GAME_PALETTE_GREY (64 + 6)
 #define GAME_PALETTE_DAMAGED (64 + 7)
+#define GAME_PALETTE_PLAYER_HEALTH_0 (64 + 8)
+#define GAME_PALETTE_PLAYER_HEALTH_1 (64 + 9)
+#define GAME_PALETTE_PLAYER_HEALTH_2 (64 + 10)
+#define GAME_PALETTE_PLAYER_HEALTH_3 (64 + 11)
 
 #define VOICE_HANDLE_GAME_BGM 0
 #define VOICE_HANDLE_GAME_OOF 1
@@ -85,9 +89,9 @@ StaticUnorderedVector<u8, MAX_BULLETS> s_bullet_metadata;
 
 //
 
-#define MAX_HEALTH 3
+#define MAX_HEALTH 4
 i8 s_player_health;
-#define PLAYER_IFRAMES 90 // ~1.5s @ 60fps
+#define PLAYER_IFRAMES 150 // ~2.5s @ 60fps
 u8 s_player_iframes;
 
 #define SHIP_WIDTH 32
@@ -170,6 +174,11 @@ void tick_loader(LoadingProgress::E progress) {
           gpu::draw_quad(0,                                    PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, PLAY_AREA_BORDER_X,                   GPU_HEIGHT,                            GAME_PALETTE_DAMAGED);
           gpu::draw_quad(PLAY_AREA_BORDER_X,                   PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, GPU_HEIGHT,                            GAME_PALETTE_GREY);
           gpu::draw_quad(PLAY_AREA_BORDER_X + PLAY_AREA_WIDTH, PLAY_AREA_BORDER_Y + PLAY_AREA_HEIGHT, GPU_WIDTH,                            GPU_HEIGHT,                            GAME_PALETTE_DAMAGED);
+
+          gpu::draw_quad(PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 2 * PLAY_AREA_HEIGHT / 8, 3 * PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 3 * PLAY_AREA_HEIGHT / 8, GAME_PALETTE_PLAYER_HEALTH_3);
+          gpu::draw_quad(PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 3 * PLAY_AREA_HEIGHT / 8, 3 * PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 4 * PLAY_AREA_HEIGHT / 8, GAME_PALETTE_PLAYER_HEALTH_2);
+          gpu::draw_quad(PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 4 * PLAY_AREA_HEIGHT / 8, 3 * PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 5 * PLAY_AREA_HEIGHT / 8, GAME_PALETTE_PLAYER_HEALTH_1);
+          gpu::draw_quad(PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 5 * PLAY_AREA_HEIGHT / 8, 3 * PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 6 * PLAY_AREA_HEIGHT / 8, GAME_PALETTE_PLAYER_HEALTH_0);
           gpu::g_draw_to = gpu::DrawTo::Front;
           break;
       }
@@ -248,7 +257,11 @@ void tick_loader(LoadingProgress::E progress) {
 const MenuScreen *run_loading() {
   // Note: this is blocking!
   loading_screen(tick_loader);
-  gpu::enable_text_layer(DEBUG_PRINT_FPS);
+
+  // We'll use this for health and goals.
+  gpu::enable_text_layer(true);
+  Funcs98::clear_screen();
+
   s_game_state = GameState::Playing;
   return g_had_error ? NULL : &g_playing_menu;
 }
@@ -280,6 +293,14 @@ const MenuScreen *run_game_over() {
 }
 
 //
+
+void update_health_palette() {
+  STATIC_ASSERT(MAX_HEALTH == 4);
+  for (int i = 0; i < MAX_HEALTH; i++) {
+    const bool red = s_player_health <= i;
+    gpu::set_palette_colour(GAME_PALETTE_PLAYER_HEALTH_0 + i, red ? 255 : 0, red ? 0 : 255, 0);
+  }
+}
 
 bool emit_bullet(u16 x, u16 y, u8 angle, bool hurts_player) {
   Vec2_16 *pos = s_bullet_positions.try_add();
@@ -330,6 +351,7 @@ void play_menu_enter() {
   gpu::set_palette_colour(GAME_PALETTE_YELLOW, 255, 255, 0);
   gpu::set_palette_colour(GAME_PALETTE_GREY, 127, 127, 127);
   gpu::set_palette_colour(GAME_PALETTE_DAMAGED, 127, 127, 127);
+  update_health_palette();
 
   // Clear everything. We'll load images later.
   gpu::g_draw_to = gpu::DrawTo::Back;
@@ -389,6 +411,8 @@ const MenuScreen *play_menu_update(u32 dt) {
   images::draw_sprite(s_x, s_y, s_bucko_sprite, s_bucko_mask);
 #endif
 
+  //
+
   const u32 keyboard_state = read_keyboard_state();
   if (keyboard_state & KB_STATE_Q) {
     return &g_main_menu;
@@ -428,7 +452,7 @@ const MenuScreen *play_menu_update(u32 dt) {
   // Display damage.
   if (s_player_iframes > 0) {
     unsigned t = --s_player_iframes;
-    t = (3 * 256 * (PLAYER_IFRAMES - t)) / PLAYER_IFRAMES;
+    t = ((PLAYER_IFRAMES / 30) * 256 * (PLAYER_IFRAMES - t)) / PLAYER_IFRAMES;
     const i8 s = maths::sin(t);
     gpu::set_palette_colour(GAME_PALETTE_DAMAGED, 127 + s, 127 - s, 127 - s);
   }
@@ -563,7 +587,9 @@ const MenuScreen *play_menu_update(u32 dt) {
           // Do some damage if not in an iframe.
           if (s_player_iframes == 0) {
             soundsystem::play(VOICE_HANDLE_GAME_OOF);
-            if (--s_player_health <= 0) {
+            --s_player_health;
+            update_health_palette();
+            if (s_player_health <= 0) {
               s_game_state = GameState::GameOver;
               show_game_over();
               break;
