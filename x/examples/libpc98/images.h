@@ -34,6 +34,12 @@ FASTCALL void set_palette(const Palette & palette);
 // x must be a multiple of 16.
 FASTCALL void draw_image(u16 x, u16 y, ImageData const & data);
 
+// Draw a sprite with a given mask.
+FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData const & mask);
+
+// Itchy.
+FASTCALL void free_scratch();
+
 // A predefined palette to use.
 struct Palette {
   u8 num_colours; // limited to IMAGES_MAX_PALETTE_SIZE

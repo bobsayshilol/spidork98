@@ -4,6 +4,7 @@
 #include "gpuscrn.h"
 #include "logs.h"
 #include "macros.h"
+#include "maths.h"
 #include "memory.h"
 
 #include <cstdlib>
@@ -18,6 +19,11 @@ const u8 s_invalid_data[16] = {
   8, 9, 10, 11, 12, 13, 14, 15,
 };
 STATIC_ASSERT((COUNT_OF(s_invalid_data) % SCANLINE_PART_WIDTH_16) == 0);
+
+//
+
+u8 * s_sprite_scratch_space;
+u32 s_sprite_scratch_size;
 
 //
 
@@ -97,6 +103,15 @@ bool load_common(const char *path, ImgType::E type, u16 &width, u16 &height, u16
     memory::free4(data);
     data = 0;
     return false;
+  }
+
+  // If this is a mask, convert it to one.
+  if (flags & 4) {
+    for (unsigned i = 0; i < size; i++) {
+      // 0 -> 1 -> 0x00
+      // 1 -> 0 -> 0xFF
+      data[i] = (1 - data[i]) - 1;
+    }
   }
 
   // All done.
@@ -256,6 +271,82 @@ FASTCALL void set_palette(const Palette & palette) {
 
 FASTCALL void draw_image(u16 x, u16 y, ImageData const & data) {
   draw_internal(x, x + data.m_width, y, y + data.m_height, data.m_data);
+}
+
+FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData const & mask) {
+  // Round down co-ords so that they're aligned.
+  const u16 x_base = x & ~static_cast<u16>(SCANLINE_PART_WIDTH_16 - 1);
+  const u16 dx = x - x_base;
+  const u16 w_base = sprite.m_width;
+  const u16 w = maths::pad_to<SCANLINE_PART_WIDTH_16>(w_base) + SCANLINE_PART_WIDTH_16;
+  const u16 h = sprite.m_height;
+
+  // Allocate if required.
+  const u32 full_size = w * h;
+  if (full_size > s_sprite_scratch_size) {
+    // Sanity check in here since it shouldn't happen often.
+    if (sprite.m_width != mask.m_width || sprite.m_height != mask.m_height) {
+      logging::print(logging::Level::Error, "Mask data doesn't match sprite data");
+      return;
+    }
+
+    free_scratch();
+    s_sprite_scratch_space = memory::alloc4<u8>(full_size);
+    if (!s_sprite_scratch_space) {
+      logging::print(logging::Level::Error, "Failed to allocate temporary sprite buffer");
+      return;
+    }
+
+    s_sprite_scratch_size = full_size;
+  }
+
+  // Copy the backbuffer to the scratch buffer.
+  {
+    gpu::g_draw_to = gpu::DrawTo::Back;
+    u8 *part_data = s_sprite_scratch_space;
+    for (u16 line = y; line < y + h; line++) {
+      for (u16 part = x_base >> 4; part < (x_base + w) >> 4; part++) {
+        gpu::read_scanline_part_16(line, part, part_data);
+        part_data += SCANLINE_PART_WIDTH_16;
+      }
+    }
+    gpu::g_draw_to = gpu::DrawTo::Front;
+  }
+
+  // Mask the backbuffer and add the sprite.
+  {
+    const u8 * mask_data = mask.m_data;
+    const u8 * sprite_data = sprite.m_data;
+    u8 * scratch_data = s_sprite_scratch_space;
+    for (u16 j = 0; j < h; j++) {
+      u8 * line_data = scratch_data + dx;
+      for (u16 i = 0; i < w_base; i++) {
+        const u8 m = *mask_data++;
+        const u8 s = *sprite_data++;
+        u8 & pal = *line_data++;
+        // If mask is set, select the sprite. Otherwise select the backbuffer.
+        pal = (pal & ~m) | (s & m);
+      }
+      scratch_data += w;
+    }
+  }
+
+  // Write it to the front buffer.
+  {
+    const u8 *part_data = s_sprite_scratch_space;
+    for (u16 line = y; line < y + h; line++) {
+      for (u16 part = x_base >> 4; part < (x_base + w) >> 4; part++) {
+        gpu::write_scanline_part_16(line, part, part_data);
+        part_data += SCANLINE_PART_WIDTH_16;
+      }
+    }
+  }
+}
+
+FASTCALL void free_scratch() {
+  memory::free4(s_sprite_scratch_space);
+  s_sprite_scratch_space = 0;
+  s_sprite_scratch_size = 0;
 }
 
 //
