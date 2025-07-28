@@ -493,7 +493,7 @@ const MenuScreen *play_menu_update(u32 dt) {
 
   s_since_last_shot++;
   if (keyboard_state & (KB_STATE_ENTER | KB_STATE_E | KB_STATE_SPACE) && s_since_last_shot >= PLAYER_SHOOT_TIMEOUT) {
-    emit_bullet(s_player_position.u.x + 3 * SHIP_WIDTH / 2, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false);
+    emit_bullet(s_player_position.u.x + SHIP_WIDTH + 3, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false);
     s_since_last_shot = 0;
   }
 
