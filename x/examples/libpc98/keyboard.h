@@ -15,6 +15,7 @@
 #define KB_STATE_Q (1 << 24)
 #define KB_STATE_W (1 << 25)
 #define KB_STATE_E (1 << 26)
+#define KB_STATE_T (1 << 28)
 #define KB_STATE_A (1 << 21)
 #define KB_STATE_S (1 << 22)
 #define KB_STATE_D (1 << 23)

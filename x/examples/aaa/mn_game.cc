@@ -575,7 +575,9 @@ const MenuScreen *play_menu_update(u32 dt) {
     }
   }
 
-  gpu::wait_for_vsync();
+  if (!(keyboard_state & KB_STATE_T)) {
+    gpu::wait_for_vsync();
+  }
   return &g_playing_menu;
 }
 
