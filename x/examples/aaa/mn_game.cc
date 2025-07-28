@@ -90,8 +90,10 @@ i8 s_player_health;
 #define PLAYER_IFRAMES 90 // ~1.5s @ 60fps
 u8 s_player_iframes;
 
-#define SHIP_WIDTH 16
+#define SHIP_WIDTH 32
 #define SHIP_HEIGHT 16
+images::ImageData s_ship_sprite;
+images::ImageData s_ship_mask;
 
 #define SHIP_MOVE_SPEED 2
 Vec2_16 s_player_position; // top left position
@@ -190,14 +192,12 @@ void tick_loader(LoadingProgress::E progress) {
           }
         break;
 
-        // Load moar sprites.
+        // Bucko sprite.
         case 10:
         if (!s_bucko_sprite.load(GAME_DATA_PATH("bucko.img"))) {
           logging::print(logging::Level::Error, "Failed to load bucko sprite");
         }
         break;
-
-        // Load moar sprites.
         case 15:
         if (!s_bucko_mask.load(GAME_DATA_PATH("bucko_m.img"))) {
           logging::print(logging::Level::Error, "Failed to load bucko mask");
@@ -208,6 +208,28 @@ void tick_loader(LoadingProgress::E progress) {
           s_bucko_mask.clear();
           s_bucko_sprite.clear();
           logging::print(logging::Level::Error, "Bad bucko sprite or mask size");
+          g_had_error = true;
+        }
+        break;
+
+        // Ship sprite.
+        case 20:
+        if (!s_ship_sprite.load(GAME_DATA_PATH("ship.img"))) {
+          logging::print(logging::Level::Error, "Failed to load ship sprite");
+        }
+        break;
+
+        case 25:
+        if (!s_ship_mask.load(GAME_DATA_PATH("ship_m.img"))) {
+          logging::print(logging::Level::Error, "Failed to load ship mask");
+        }
+        if (s_ship_mask.m_width != SHIP_WIDTH || s_ship_mask.m_height != SHIP_HEIGHT ||
+            s_ship_sprite.m_width != SHIP_WIDTH || s_ship_sprite.m_height != SHIP_HEIGHT)
+        {
+          s_ship_mask.clear();
+          s_ship_sprite.clear();
+          logging::print(logging::Level::Error, "Bad ship sprite or mask size");
+          g_had_error = true;
         }
         break;
       }
@@ -228,7 +250,7 @@ const MenuScreen *run_loading() {
   loading_screen(tick_loader);
   gpu::enable_text_layer(DEBUG_PRINT_FPS);
   s_game_state = GameState::Playing;
-  return &g_playing_menu;
+  return g_had_error ? NULL : &g_playing_menu;
 }
 
 //
@@ -458,11 +480,15 @@ const MenuScreen *play_menu_update(u32 dt) {
   // Always redraw the player so that bullets and other objects don't erase it.
   {
     const Vec2_16 pos = s_player_position;
+#if 1
+    images::draw_sprite(PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y, s_ship_sprite, s_ship_mask);
+#else
     gpu::draw_quad(
       PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
       PLAY_AREA_BORDER_X + pos.i.x + SHIP_WIDTH, PLAY_AREA_BORDER_Y + pos.i.y + SHIP_HEIGHT,
       GAME_PALETTE_WHITE
     );
+#endif
   }
 
   s_since_last_shot++;
@@ -590,6 +616,8 @@ void play_menu_leave() {
   // Cleanup sprites.
   s_bucko_sprite.clear();
   s_bucko_mask.clear();
+  s_ship_sprite.clear();
+  s_ship_mask.clear();
   images::free_scratch();
 
   // Reinstate the audio handles.
