@@ -101,6 +101,12 @@ u32 s_since_last_shot;
 
 //
 
+#define BUCKO_SPRITE_SIZE 16
+images::ImageData s_bucko_sprite;
+images::ImageData s_bucko_mask;
+
+//
+
 int s_loader_tick;
 void tick_loader(LoadingProgress::E progress) {
   switch (progress) {
@@ -128,18 +134,19 @@ void tick_loader(LoadingProgress::E progress) {
       ++s_loader_tick;
       switch (s_loader_tick) {
         // Load BGM.
-        case 2:
+        case 5:
           if (!soundsystem::load_sound(VOICE_HANDLE_GAME_BGM, GAME_DATA_PATH("song2.pcm"), true)) {
             logging::print(logging::Level::Warning, "Missing game bgm");
           }
           break;
 
         // Load background.
-        case 4:
+        case 10:
           gpu::g_draw_to = gpu::DrawTo::Back;
           {
             images::ImageData background;
             if (background.load(GAME_DATA_PATH("game_bg.img"))) {
+              soundsystem::update();
               images::draw_image(0, 0, background);
             } else {
               logging::print(logging::Level::Error, "Failed to load game background");
@@ -150,7 +157,7 @@ void tick_loader(LoadingProgress::E progress) {
           break;
 
         // Load border images
-        case 6:
+        case 15:
           // TODO: actual images
           gpu::g_draw_to = gpu::DrawTo::Back;
           gpu::draw_quad(0,                                    0,                                     PLAY_AREA_BORDER_X,                   PLAY_AREA_BORDER_Y,                    GAME_PALETTE_DAMAGED);
@@ -177,10 +184,31 @@ void tick_loader(LoadingProgress::E progress) {
       ++s_loader_tick;
       switch (s_loader_tick) {
         // Load noises.
-        case 2:
+        case 5:
           if (!soundsystem::load_sound(VOICE_HANDLE_GAME_OOF, GAME_DATA_PATH("ow.pcm"), false)) {
             logging::print(logging::Level::Warning, "Missing game oof");
           }
+        break;
+
+        // Load moar sprites.
+        case 10:
+        if (!s_bucko_sprite.load(GAME_DATA_PATH("bucko.img"))) {
+          logging::print(logging::Level::Error, "Failed to load bucko sprite");
+        }
+        break;
+
+        // Load moar sprites.
+        case 15:
+        if (!s_bucko_mask.load(GAME_DATA_PATH("bucko_m.img"))) {
+          logging::print(logging::Level::Error, "Failed to load bucko mask");
+        }
+        if (s_bucko_mask.m_width != BUCKO_SPRITE_SIZE || s_bucko_mask.m_height != BUCKO_SPRITE_SIZE ||
+            s_bucko_sprite.m_width != BUCKO_SPRITE_SIZE || s_bucko_sprite.m_height != BUCKO_SPRITE_SIZE)
+        {
+          s_bucko_mask.clear();
+          s_bucko_sprite.clear();
+          logging::print(logging::Level::Error, "Bad bucko sprite or mask size");
+        }
         break;
       }
       break;
@@ -329,6 +357,14 @@ const MenuScreen *play_menu_update(u32 dt) {
       s_spawner = -Funcs98::ticks_per_sec() / 20;
     }
   }
+#endif
+
+#if 0
+  static u32 s_x;
+  static u32 s_y;
+  s_x = (s_x + 2) & 255;
+  s_y = (s_y + 1) & 127;
+  images::draw_sprite(s_x, s_y, s_bucko_sprite, s_bucko_mask);
 #endif
 
   const u32 keyboard_state = read_keyboard_state();
@@ -548,6 +584,11 @@ void play_menu_leave() {
 #if DEBUG_CHECK_VECTOR
   s_bullet_positions.log("bullets");
 #endif
+
+  // Cleanup sprites.
+  s_bucko_sprite.clear();
+  s_bucko_mask.clear();
+  images::free_scratch();
 
   // Reinstate the audio handles.
   load_menu_audio();
