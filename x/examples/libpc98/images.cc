@@ -320,7 +320,14 @@ FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData cons
     u8 * scratch_data = s_sprite_scratch_space;
     for (u16 j = 0; j < h; j++) {
       u8 * line_data = scratch_data + dx;
-      for (u16 i = 0; i < w_base; i++) {
+      // Unrolled for perf.
+      for (u16 u = 0; u < (w_base & ~3U); u += 4) {
+        const u32 m = *reinterpret_cast<const u32*>(mask_data); mask_data += 4;
+        const u32 s = *reinterpret_cast<const u32*>(sprite_data); sprite_data += 4;
+        u32 & pal = *reinterpret_cast<u32*>(line_data); line_data += 4;
+        pal = (pal & ~m) | (s & m);
+      }
+      for (u16 i = 0; i < (w_base & 3); i++) {
         const u8 m = *mask_data++;
         const u8 s = *sprite_data++;
         u8 & pal = *line_data++;
