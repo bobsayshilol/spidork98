@@ -21,7 +21,7 @@ namespace menus {
 
 namespace {
 
-struct GameState { enum E { Loading, Playing, GameOver, }; };
+struct GameState { enum E { Loading, LoadingDone, Playing, GameOver, }; };
 GameState::E s_game_state;
 
 //
@@ -277,16 +277,13 @@ void tick_loader(LoadingProgress::E progress) {
   soundsystem::update();
 }
 
-const MenuScreen *run_loading() {
+void run_loading() {
   // Note: this is blocking!
   loading_screen(tick_loader);
 
   // We'll use this for health and goals.
   gpu::enable_text_layer(true);
   Funcs98::clear_screen();
-
-  s_game_state = GameState::Playing;
-  return g_had_error ? NULL : &g_playing_menu;
 }
 
 //
@@ -397,7 +394,12 @@ const MenuScreen *play_menu_update(u32 dt) {
       case GameState::Playing:
         break;
       case GameState::Loading:
-        return run_loading();
+        run_loading();
+        s_game_state = GameState::LoadingDone;
+        return g_had_error ? NULL : &g_playing_menu;
+      case GameState::LoadingDone: // hacky state so that dt isn't huge on first call
+        s_game_state = GameState::Playing;
+        return &g_playing_menu;
       case GameState::GameOver:
         return run_game_over();
     }
