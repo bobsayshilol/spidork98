@@ -116,6 +116,9 @@ images::ImageData s_bucko_mask;
 
 #define MAX_BUCKOS 4
 #define SHOW_BUCKOS_FOR (5 * 60) // in frames
+#define SPAWN_BUCKOS_EVERY (3 * Funcs98::ticks_per_sec()) // in ticks
+STATIC_ASSERT(SPAWN_BUCKOS_EVERY < 0x7FFFFF);
+i32 s_bucko_spawner_ticks;
 struct BuckoState { Vec2_16 pos; i16 frames_left; };
 StaticUnorderedVector<BuckoState, MAX_BUCKOS> s_bucko_states;
 
@@ -358,6 +361,7 @@ void play_menu_enter() {
   s_bullet_metadata.clear();
   s_bucko_states.clear();
   s_num_buckos_collected = 0;
+  s_bucko_spawner_ticks = SPAWN_BUCKOS_EVERY;
 
   for (int i = 0; i < NUM_STARS; i++) {
     Vec2_16 &pos = s_stars[i];
@@ -720,16 +724,19 @@ const MenuScreen *play_menu_update(u32 dt) {
 
   // Create new pickups.
   {
-    // TODO: timeout between spawns
-    BuckoState *state = s_bucko_states.try_add();
-    if (state) {
-      state->frames_left = SHOW_BUCKOS_FOR;
+    s_bucko_spawner_ticks -= dt;
+    if (s_bucko_spawner_ticks < 0) {
+      BuckoState *state = s_bucko_states.try_add();
+      if (state) {
+        s_bucko_spawner_ticks = SPAWN_BUCKOS_EVERY;
+        state->frames_left = SHOW_BUCKOS_FOR;
 
-      // TODO: don't spawn near player
-      const u16 x = (rand() >> 4) % PLAY_AREA_WIDTH;
-      const u16 y = (rand() >> 4) % PLAY_AREA_HEIGHT;
-      state->pos.u.x = x;
-      state->pos.u.y = y;
+        // TODO: don't spawn near player
+        const u16 x = (rand() >> 4) % PLAY_AREA_WIDTH;
+        const u16 y = (rand() >> 4) % PLAY_AREA_HEIGHT;
+        state->pos.u.x = x;
+        state->pos.u.y = y;
+      }
     }
   }
 
