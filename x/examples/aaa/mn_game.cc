@@ -78,7 +78,7 @@ Vec2_16 s_stars[NUM_STARS];
 
 //
 
-#define BULLET_MOVE_SPEED 2
+#define BULLET_MOVE_SPEED 4
 #define BULLET_SIZE 2 // width and height
 
 // 12 per ring x 6 rings x 2 launchers = 144, 1/3 off screen
@@ -124,6 +124,18 @@ StaticUnorderedVector<BuckoState, MAX_BUCKOS> s_bucko_states;
 
 #define NUM_BUCKOS_THIS_LEVEL (5 + g_level_selected * 5)
 u8 s_num_buckos_collected;
+
+//
+
+#define ENEMY_SPRITE_SIZE 32
+images::ImageData s_enemy_sprite;
+images::ImageData s_enemy_mask;
+
+#define MAX_ENEMIES 2
+struct EnemyState { Vec2_16 pos; Vec2_8 vel; i16 health; u8 angle; u8 last_shot; };
+StaticUnorderedVector<EnemyState, MAX_ENEMIES> s_enemy_states;
+
+#define ENEMY_SHOOT_TIMEOUT 6 // in frames
 
 //
 
@@ -297,10 +309,15 @@ void do_game_over(bool winner) {
   // Show a game over message.
   const u8 num_cols = ScreenCols_98(); // 80
   const u8 num_rows = ScreenRows_98(); // 24
-  const char *text = winner ? "\xA2Y O U   W I N\xA3" : "\xA2G A M E  O V E R\xA3";
-  const int y = num_rows / 2;
-  const int x = (num_cols - strlen(text)) / 2;
-  ScreenPutString_98(text, COLOUR_WHITE, x, y);
+  const char *text = winner ? "\xA2 Y O U   W I N \xA3" : "\xA2 G A M E  O V E R \xA3";
+  int y = num_rows / 2 - 1;
+  int x = (num_cols - strlen(text)) / 2;
+  ScreenPutString_98(text, COLOUR_GREEN, x, y);
+
+  text = "(Press Q or ESCAPE to return)";
+  y += 2;
+  x = (num_cols - strlen(text)) / 2;
+  ScreenPutString_98(text, COLOUR_GREEN, x, y);
 
   s_game_state = GameState::GameOver;
   flush_kb_buffer();
@@ -335,9 +352,9 @@ bool emit_bullet(u16 x, u16 y, u8 angle, bool hurts_player) {
   pos->u.y = y;
 
   Vec2_8 &vel = s_bullet_velocities.add();
-  STATIC_ASSERT(BULLET_MOVE_SPEED == 2); // 1 bit sign + 1 bit move, so not quite 2
-  vel.i.x = maths::cos(angle) / (1 << 6);
-  vel.i.y = maths::sin(angle) / (1 << 6);
+  STATIC_ASSERT(BULLET_MOVE_SPEED == 4); // 1 bit sign + 2 bit move
+  vel.i.x = maths::cos(angle) / (1 << 5);
+  vel.i.y = maths::sin(angle) / (1 << 5);
 
   u8 metadata = 0;
   metadata |= hurts_player ? BULLET_METADATA_HURTS_PLAYER : 0;
@@ -362,6 +379,25 @@ void play_menu_enter() {
   s_bucko_states.clear();
   s_num_buckos_collected = 0;
   s_bucko_spawner_ticks = SPAWN_BUCKOS_EVERY;
+  s_enemy_states.clear();
+
+  STATIC_ASSERT(NUM_LEVELS == 4);
+  switch (g_level_selected) {
+    case 0: {
+      EnemyState & enemy = s_enemy_states.add();
+      enemy.pos.u.x = PLAY_AREA_WIDTH * 3 / 4;
+      enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 3;
+      enemy.vel.i.x = 0;
+      enemy.vel.i.y = 1;
+      enemy.health = 10;
+      enemy.angle = 127;
+      enemy.last_shot = 0;
+    } break;
+
+    case 1: {
+
+    } break;
+  }
 
   for (int i = 0; i < NUM_STARS; i++) {
     Vec2_16 &pos = s_stars[i];
@@ -477,6 +513,11 @@ const MenuScreen *play_menu_update(u32 dt) {
       velocity.i.x = SHIP_MOVE_SPEED;
       player_moved = true;
     }
+  }
+  // Normalise movement vector.
+  if (velocity.u.x && velocity.u.y) {
+    velocity.i.x >>= 1;
+    velocity.i.y >>= 1;
   }
 
   //
@@ -646,6 +687,58 @@ const MenuScreen *play_menu_update(u32 dt) {
     }
   }
 
+  // Tick enemy logic and render them.
+  {
+    const u32 count = s_enemy_states.count;
+    EnemyState *states = s_enemy_states.raw;
+    for (u32 i = 0; i < count; i++) {
+      EnemyState state = *states;
+
+      u8 shoot_after = ENEMY_SHOOT_TIMEOUT;
+      u8 angle_delta = 256 >> 4; // 16 angles;
+
+      // Per-level logic.
+      if (g_level_selected == 0) {
+        // Shoot slower, less angles
+        shoot_after <<= 2;
+        angle_delta <<= 1;
+
+        // Level one bounces up and down.
+        if ((state.pos.u.y < PLAY_AREA_HEIGHT / 4) | (state.pos.u.y > PLAY_AREA_HEIGHT * 3 / 4)) {
+          state.vel.i.y = - state.vel.i.y;
+        }
+      }
+      
+      // Movement.
+      if (state.vel.u.x | state.vel.u.y) {
+        // Do the usual dance of undraw, move, draw.
+        gpu::undraw_quad(
+          PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
+          PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + state.pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + state.pos.i.y
+        );
+        state.pos.i.x += state.vel.i.x;
+        state.pos.i.y += state.vel.i.y;
+      }
+      //images::draw_sprite(PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y, s_enemy_sprite, s_enemy_mask);
+      gpu::draw_quad(
+        PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
+        PLAY_AREA_BORDER_X + state.pos.i.x + ENEMY_SPRITE_SIZE, PLAY_AREA_BORDER_Y + state.pos.i.y + ENEMY_SPRITE_SIZE,
+        GAME_PALETTE_GREY
+      );
+
+      // Shooting.
+      if (++state.last_shot >= shoot_after) {
+        if (emit_bullet(state.pos.u.x + ENEMY_SPRITE_SIZE / 2, state.pos.u.y + ENEMY_SPRITE_SIZE / 2, state.angle, true)) {
+          state.angle -= angle_delta;
+          state.last_shot = 0;
+        }
+      }
+
+      *states = state;
+      states++;
+    }
+  }
+
   //
 
   // Render bullets.
@@ -732,7 +825,7 @@ const MenuScreen *play_menu_update(u32 dt) {
         state->frames_left = SHOW_BUCKOS_FOR;
 
         // TODO: don't spawn near player
-        const u16 x = (rand() >> 4) % PLAY_AREA_WIDTH;
+        const u16 x = PLAY_AREA_WIDTH / 3 + ( (rand() >> 4) % (PLAY_AREA_WIDTH * 2 / 3) );
         const u16 y = (rand() >> 4) % PLAY_AREA_HEIGHT;
         state->pos.u.x = x;
         state->pos.u.y = y;
