@@ -66,7 +66,7 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 // TODO: pc beeper as fallback
 #define VOICE_HANDLE_GAME_BGM 0
 #define VOICE_HANDLE_GAME_OOF 1
-#define VOICE_HANDLE_GAME_PICKUP 2 // TODO: a sound for this
+#define VOICE_HANDLE_GAME_PICKUP 2
 #define VOICE_HANDLE_GAME_SHOOT 3 // pc beeper always?
 
 //
@@ -191,6 +191,13 @@ void tick_loader(LoadingProgress::E progress) {
           gpu::draw_quad(PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 4 * PLAY_AREA_HEIGHT / 8, 3 * PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 5 * PLAY_AREA_HEIGHT / 8, GAME_PALETTE_PLAYER_HEALTH_1);
           gpu::draw_quad(PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 5 * PLAY_AREA_HEIGHT / 8, 3 * PLAY_AREA_BORDER_X / 4, PLAY_AREA_BORDER_Y + 6 * PLAY_AREA_HEIGHT / 8, GAME_PALETTE_PLAYER_HEALTH_0);
           gpu::g_draw_to = gpu::DrawTo::Front;
+          break;
+
+        // Moar sounds.
+        case 20:
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_PICKUP, GAME_DATA_PATH("gotcha.pcm"), false)) {
+            logging::print(logging::Level::Warning, "Missing pickup sound");
+          }
           break;
       }
       break;
@@ -695,8 +702,11 @@ const MenuScreen *play_menu_update(u32 dt) {
       }
 
       // Chaos mode.
-      const int dx = ((bucko_state.frames_left * 5) & 7) - 3;
-      const int dy = ((bucko_state.frames_left * 3) & 7) - 3;
+      STATIC_ASSERT(SHOW_BUCKOS_FOR == 300);
+      const u16 t = bucko_state.frames_left;
+      const u16 m = (1 << (3 - (t >> 7))) - 1; // 300 / 2^7 < 3
+      const int dx = ((t * 5) & m) - (m >> 1);
+      const int dy = ((t * 3) & m) - (m >> 1);
 
       // Draw it.
       images::draw_sprite(PLAY_AREA_BORDER_X + bucko_state.pos.i.x + dx, PLAY_AREA_BORDER_Y + bucko_state.pos.i.y + dy, s_bucko_sprite, s_bucko_mask);
