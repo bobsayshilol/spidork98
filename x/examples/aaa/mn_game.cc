@@ -67,7 +67,11 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define VOICE_HANDLE_GAME_BGM 0
 #define VOICE_HANDLE_GAME_OOF 1
 #define VOICE_HANDLE_GAME_PICKUP 2
-#define VOICE_HANDLE_GAME_SHOOT 3 // pc beeper always?
+#define VOICE_HANDLE_GAME_BOOM 3
+
+// TODO: I should have added swappable audio voices/packed data
+#define do_beep_shoot()
+#define do_beep_hit()
 
 //
 
@@ -590,9 +594,10 @@ const MenuScreen *play_menu_update(u32 dt) {
 
   s_since_last_shot++;
   if (keyboard_state & (KB_STATE_ENTER | KB_STATE_E | KB_STATE_SPACE) && s_since_last_shot >= PLAYER_SHOOT_TIMEOUT) {
-    soundsystem::play(VOICE_HANDLE_GAME_SHOOT);
-    emit_bullet(s_player_position.u.x + SHIP_WIDTH + 3, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false);
-    s_since_last_shot = 0;
+    if (emit_bullet(s_player_position.u.x + SHIP_WIDTH + 3, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false)) {
+      do_beep_shoot();
+      s_since_last_shot = 0;
+    }
   }
 
   //
@@ -675,10 +680,43 @@ const MenuScreen *play_menu_update(u32 dt) {
 
       } else {
         // Collisions with enemies.
-        for (u32 e = 0; e < 1; e++) {
-          // TODO
+        u32 num_enemies = s_enemy_states.count;
+        EnemyState *enemy_states = s_enemy_states.raw;
+        bool collided = false;
+        for (u32 e = 0; e < num_enemies; e++) {
+          const Vec2_16 enemy_pos = enemy_states->pos;
+          collided =
+            (enemy_pos.i.x <= pos.i.x) & (pos.i.x <= enemy_pos.i.x + ENEMY_SPRITE_SIZE) &
+            (enemy_pos.i.y <= pos.i.y) & (pos.i.y <= enemy_pos.i.y + ENEMY_SPRITE_SIZE);
+          if (!collided) {
+            // We kept this one, go to next.
+            enemy_states++;
+            continue;
+          }
+          do_beep_hit();
+          if (--(enemy_states->health) == 0) {
+            soundsystem::play(VOICE_HANDLE_GAME_BOOM);
+            // Erase and remove the enemy.
+            gpu::undraw_quad(
+              PLAY_AREA_BORDER_X + enemy_pos.i.x, PLAY_AREA_BORDER_Y + enemy_pos.i.y,
+              PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + enemy_pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + enemy_pos.i.y
+            );
+            s_enemy_states.erase_at(e);
+            --num_enemies;
+            --e;
+          }
+          break;
         }
 
+        // Remove bullet.
+        if (collided) {
+          s_bullet_velocities.erase_at(i);
+          s_bullet_positions.erase_at(i);
+          s_bullet_metadata.erase_at(i);
+          --count;
+          --i;
+          continue;
+        }
       }
 
       // We kept this one, go to next.
