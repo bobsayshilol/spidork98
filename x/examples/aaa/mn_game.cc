@@ -63,8 +63,11 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define GAME_PALETTE_PLAYER_HEALTH_2 (64 + 10)
 #define GAME_PALETTE_PLAYER_HEALTH_3 (64 + 11)
 
+// TODO: pc beeper as fallback
 #define VOICE_HANDLE_GAME_BGM 0
 #define VOICE_HANDLE_GAME_OOF 1
+#define VOICE_HANDLE_GAME_PICKUP 2 // TODO: a sound for this
+#define VOICE_HANDLE_GAME_SHOOT 3 // pc beeper always?
 
 //
 
@@ -110,6 +113,14 @@ u32 s_since_last_shot;
 #define BUCKO_SPRITE_SIZE 16
 images::ImageData s_bucko_sprite;
 images::ImageData s_bucko_mask;
+
+#define MAX_BUCKOS 4
+#define SHOW_BUCKOS_FOR (5 * 60) // in frames
+struct BuckoState { Vec2_16 pos; i16 frames_left; };
+StaticUnorderedVector<BuckoState, MAX_BUCKOS> s_bucko_states;
+
+#define NUM_BUCKOS_THIS_LEVEL (5 + g_level_selected * 5)
+u8 s_num_buckos_collected;
 
 //
 
@@ -273,17 +284,18 @@ const MenuScreen *run_loading() {
 
 //
 
-void show_game_over() {
+void do_game_over(bool winner) {
   Funcs98::clear_screen();
 
   // Show a game over message.
   const u8 num_cols = ScreenCols_98(); // 80
   const u8 num_rows = ScreenRows_98(); // 24
-  const char game_over[] = "\xA2G A M E  O V E R\xA3";
+  const char *text = winner ? "\xA2Y O U   W I N\xA3" : "\xA2G A M E  O V E R\xA3";
   const int y = num_rows / 2;
-  const int x = (num_cols - sizeof(game_over)) / 2;
-  ScreenPutString_98(game_over, COLOUR_WHITE, x, y);
+  const int x = (num_cols - strlen(text)) / 2;
+  ScreenPutString_98(text, COLOUR_WHITE, x, y);
 
+  s_game_state = GameState::GameOver;
   flush_kb_buffer();
 }
 
@@ -335,11 +347,13 @@ void play_menu_enter() {
   // Reset gameplay state.
   s_player_health = MAX_HEALTH;
   s_player_iframes = 0;
-  s_player_position.i.x = PLAY_AREA_WIDTH / 2;
+  s_player_position.i.x = PLAY_AREA_WIDTH / 8;
   s_player_position.i.y = PLAY_AREA_HEIGHT / 2;
   s_bullet_positions.clear();
   s_bullet_velocities.clear();
   s_bullet_metadata.clear();
+  s_bucko_states.clear();
+  s_num_buckos_collected = 0;
 
   for (int i = 0; i < NUM_STARS; i++) {
     Vec2_16 &pos = s_stars[i];
@@ -522,6 +536,7 @@ const MenuScreen *play_menu_update(u32 dt) {
 
   s_since_last_shot++;
   if (keyboard_state & (KB_STATE_ENTER | KB_STATE_E | KB_STATE_SPACE) && s_since_last_shot >= PLAYER_SHOOT_TIMEOUT) {
+    soundsystem::play(VOICE_HANDLE_GAME_SHOOT);
     emit_bullet(s_player_position.u.x + SHIP_WIDTH + 3, s_player_position.u.y + SHIP_HEIGHT / 2, 0, false);
     s_since_last_shot = 0;
   }
@@ -580,9 +595,10 @@ const MenuScreen *play_menu_update(u32 dt) {
       // Collision with the player.
       const u8 metadata = *metadatas;
       if (metadata & BULLET_METADATA_HURTS_PLAYER) {
-        const bool in_x = (player_pos.u.x <= pos.u.x) & (pos.u.x <= player_pos.u.x + SHIP_WIDTH);
-        const bool in_y = (player_pos.u.y <= pos.u.y) & (pos.u.y <= player_pos.u.y + SHIP_HEIGHT);
-        if (in_x & in_y) {
+        const bool collided =
+          (player_pos.i.x <= pos.i.x) & (pos.i.x <= player_pos.i.x + SHIP_WIDTH) &
+          (player_pos.i.y <= pos.i.y) & (pos.i.y <= player_pos.i.y + SHIP_HEIGHT);
+        if (collided) {
           s_bullet_velocities.erase_at(i);
           s_bullet_positions.erase_at(i);
           s_bullet_metadata.erase_at(i);
@@ -595,14 +611,20 @@ const MenuScreen *play_menu_update(u32 dt) {
             --s_player_health;
             update_health_palette();
             if (s_player_health <= 0) {
-              s_game_state = GameState::GameOver;
-              show_game_over();
+              do_game_over(false);
               break;
             }
             s_player_iframes = PLAYER_IFRAMES;
           }
           continue;
         }
+
+      } else {
+        // Collisions with enemies.
+        for (u32 e = 0; e < 1; e++) {
+          // TODO
+        }
+
       }
 
       // We kept this one, go to next.
@@ -613,7 +635,7 @@ const MenuScreen *play_menu_update(u32 dt) {
 
   //
 
-  // Render.
+  // Render bullets.
   {
     const u32 count = s_bullet_positions.count;
     const Vec2_16 *positions = s_bullet_positions.raw;
@@ -631,6 +653,75 @@ const MenuScreen *play_menu_update(u32 dt) {
       );
     }
   }
+
+  //
+
+  // Collide with pickups.
+  {
+    u32 count = s_bucko_states.count;
+    BuckoState *bucko_states = s_bucko_states.raw;
+    const Vec2_16 player_pos = s_player_position;
+    for (u32 i = 0; i < count; i++) {
+      --(bucko_states->frames_left);
+      const BuckoState bucko_state = *bucko_states;
+
+      // Did we hit it?
+      // +--+
+      // | +--+
+      // +--+ |
+      //   +--+
+      const bool collided =
+        (player_pos.i.x + SHIP_WIDTH  >= bucko_state.pos.i.x) & (bucko_state.pos.i.x + BUCKO_SPRITE_SIZE >= player_pos.i.x) &
+        (player_pos.i.y + SHIP_HEIGHT >= bucko_state.pos.i.y) & (bucko_state.pos.i.y + BUCKO_SPRITE_SIZE >= player_pos.i.y);
+      if (collided) {
+        soundsystem::play(VOICE_HANDLE_GAME_PICKUP);
+        if (++s_num_buckos_collected >= NUM_BUCKOS_THIS_LEVEL) {
+          do_game_over(true);
+          break;
+        }
+      }
+
+      // Took too long, remove it.
+      if (collided || bucko_state.frames_left <= 0) {
+        gpu::undraw_quad(
+          PLAY_AREA_BORDER_X + bucko_state.pos.i.x, PLAY_AREA_BORDER_Y + bucko_state.pos.i.y,
+          PLAY_AREA_BORDER_X + bucko_state.pos.i.x + BUCKO_SPRITE_SIZE, PLAY_AREA_BORDER_Y + bucko_state.pos.i.y + BUCKO_SPRITE_SIZE
+        );
+
+        s_bucko_states.erase_at(i);
+        count--;
+        i--;
+        continue;
+      }
+
+      // Chaos mode.
+      const int dx = ((bucko_state.frames_left * 5) & 7) - 3;
+      const int dy = ((bucko_state.frames_left * 3) & 7) - 3;
+
+      // Draw it.
+      images::draw_sprite(PLAY_AREA_BORDER_X + bucko_state.pos.i.x + dx, PLAY_AREA_BORDER_Y + bucko_state.pos.i.y + dy, s_bucko_sprite, s_bucko_mask);
+
+      // Go to next.
+      bucko_states++;
+    }
+  }
+
+  // Create new pickups.
+  {
+    // TODO: timeout between spawns
+    BuckoState *state = s_bucko_states.try_add();
+    if (state) {
+      state->frames_left = SHOW_BUCKOS_FOR;
+
+      // TODO: don't spawn near player
+      const u16 x = (rand() >> 4) % PLAY_AREA_WIDTH;
+      const u16 y = (rand() >> 4) % PLAY_AREA_HEIGHT;
+      state->pos.u.x = x;
+      state->pos.u.y = y;
+    }
+  }
+
+  //
 
   if (!(keyboard_state & KB_STATE_T)) {
     gpu::wait_for_vsync();
