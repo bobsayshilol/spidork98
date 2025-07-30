@@ -113,7 +113,7 @@ FORCEINLINE int bank_split_for_line(int line) {
     case 102: return 256;
     case 153: return 384;
     case 204: return 512;
-    case 255: return 0;
+    //case 256: return 0;
     case 307: return 128;
     case 358: return 256;
     default: return 0;
@@ -127,6 +127,7 @@ FORCEINLINE int next_bank_split_line(int line) {
   if (line <= 102) return 102;
   if (line <= 153) return 153;
   if (line <= 204) return 204;
+  if (line <= 256) return 256;
   if (line <= 307) return 307;
   if (line <= 358) return 358;
   return GPU_HEIGHT;
@@ -261,27 +262,71 @@ FASTCALL void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
   if (x0 > x1) utils::swap(x0, x1);
   if (y0 > y1) utils::swap(y0, y1);
 
-  // TODO: go a bank at a time filling them in
-  //const BankInfo first_bank = pixel_to_bank(x0, y0);
-  //const BankInfo last_bank = pixel_to_bank(x1, y1);
+  // Inclusive.
+  x1++;
+  const u32 x_len = x1 - x0;
 
-  // For now, basic but works.
-  int current_bank = -1;
-  int bank_start = 0;
-  for (int y = y0; y <= y1; y++) {
-    // TODO: read/write word size at a time
-    for (int x = x0; x <= x1; x++) {
-      // Change bank if we need to.
-      const BankInfo bank_info = pixel_to_bank(x, y);
-      if (bank_info.bank != current_bank) {
-        set_bank(Window::Window0, bank_info.bank);
-        current_bank = bank_info.bank;
-        bank_start = current_bank * WINDOW_BANK_SIZE;
-      }
-      // Set pixel.
-      const int addr = pixel_to_addr(x, y) - bank_start;
-      window0[addr] = pal_col;
+  // Do the work a word at a time.
+  const u32 pal_col4 =
+    (pal_col <<  0) |
+    (pal_col <<  8) |
+    (pal_col << 16) |
+    (pal_col << 24)
+  ;
+
+  // Go a bank at a time filling them in.
+  BankInfo bank_info = pixel_to_bank(0, y0);
+  int bank_start = bank_info.bank * WINDOW_BANK_SIZE;
+  set_bank(Window::Window0, bank_info.bank);
+
+  int y_span_start = y0;
+  while (y_span_start <= y1) {
+    // Determine where the current bank span ends.
+    int y_span_end = next_bank_split_line(y_span_start);
+    bool end_early = false;
+    if (y_span_end > y1) {
+      y_span_end = y1;
+      end_early = true;
     }
+
+    // Draw to this bank.
+    for (int y = y_span_start; y < y_span_end; y++) {
+      u8 volatile *addr = window0 + pixel_to_addr(x0, y) - bank_start;
+      u32 x = 0;
+      for (; x < (x_len & ~3U); x += 4) {
+        *reinterpret_cast<u32 volatile *>(addr) = pal_col4;
+        addr += 4;
+      }
+      for (; x < x_len; x++) {
+        *addr++ = pal_col;
+      }
+    }
+
+    if (end_early) {
+      break;
+    }
+
+    // Draw first part of split line.
+    const int x_split = bank_split_for_line(y_span_end);
+    int x = x0;
+    u8 volatile *addr = window0 + pixel_to_addr(x, y_span_end) - bank_start;
+    const int x1_split = utils::min(x_split, x1);
+    for (; x < x1_split; x++) {
+      *addr++ = pal_col;
+    }
+
+    // Change bank.
+    bank_info = pixel_to_bank(x_split, y_span_end);
+    bank_start = bank_info.bank * WINDOW_BANK_SIZE;
+    set_bank(Window::Window0, bank_info.bank);
+
+    // Draw the remainder.
+    addr = window0 + pixel_to_addr(x, y_span_end) - bank_start;
+    for (; x < x1; x++) {
+      *addr++ = pal_col;
+    }
+
+    y_span_start = y_span_end + 1;
   }
 }
 
@@ -297,41 +342,74 @@ FASTCALL void undraw_quad(int x0, int y0, int x1, int y1) {
   DrawTo::E old_draw_to = g_draw_to;
   g_draw_to = DrawTo::Front;
 
-  // TODO: go a bank at a time filling them in
-#if 0
-  //const BankInfo first_bank = pixel_to_bank(x0, y0);
-  //const BankInfo last_bank = pixel_to_bank(x1, y1);
-  int y_start = y0;
-  while (y_start < y1) {
-    int y_end = next_bank_split_line(y_start);
-    for (int y = y_start; y < y_end; y++) {
+  // Inclusive.
+  x1++;
+  const u32 x_len = x1 - x0;
 
+  // Go a bank at a time filling them in.
+  BankInfo bank_info = pixel_to_bank(0, y0);
+  int bank_start = bank_info.bank * WINDOW_BANK_SIZE;
+  // window0 is front, window1 is back.
+  set_bank(Window::Window0, bank_info.bank);
+  set_bank(Window::Window1, bank_info.bank + BACKBUFFER_BANK_OFFSET);
+
+  int y_span_start = y0;
+  while (y_span_start <= y1) {
+    // Determine where the current bank span ends.
+    int y_span_end = next_bank_split_line(y_span_start);
+    bool end_early = false;
+    if (y_span_end > y1) {
+      y_span_end = y1;
+      end_early = true;
     }
-    y_start = y_end;
-  }
 
-#else
-  // For now, basic but works.
-  int current_bank = -1;
-  int bank_start = 0;
-  for (int y = y0; y <= y1; y++) {
-    // TODO: read/write word size at a time
-    for (int x = x0; x <= x1; x++) {
-      // Change bank if we need to.
-      const BankInfo bank_info = pixel_to_bank(x, y);
-      if (bank_info.bank != current_bank) {
-        // window0 is front, window1 is back.
-        set_bank(Window::Window0, bank_info.bank);
-        set_bank(Window::Window1, bank_info.bank + BACKBUFFER_BANK_OFFSET);
-        current_bank = bank_info.bank;
-        bank_start = current_bank * WINDOW_BANK_SIZE;
+    // Draw to this bank.
+    for (int y = y_span_start; y < y_span_end; y++) {
+      const u16 offset = pixel_to_addr(x0, y) - bank_start;
+      u8 volatile *addr0 = window0 + offset;
+      const u8 volatile *addr1 = window1 + offset;
+      u32 x = 0;
+      for (; x < (x_len & ~3U); x += 4) {
+        *reinterpret_cast<u32 volatile *>(addr0) = *reinterpret_cast<const u32 volatile *>(addr1);
+        addr0 += 4;
+        addr1 += 4;
       }
-      // Copy pixel over.
-      const int addr = pixel_to_addr(x, y) - bank_start;
-      window0[addr] = window1[addr];
+      for (; x < x_len; x++) {
+        *addr0++ = *addr1++;
+      }
     }
+
+    if (end_early) {
+      break;
+    }
+
+    // Draw first part of split line.
+    const int x_split = bank_split_for_line(y_span_end);
+    int x = x0;
+    u16 offset = pixel_to_addr(x, y_span_end) - bank_start;
+    u8 volatile *addr0 = window0 + offset;
+    const u8 volatile *addr1 = window1 + offset;
+    const int x1_split = utils::min(x_split, x1);
+    for (; x < x1_split; x++) {
+      *addr0++ = *addr1++;
+    }
+
+    // Change bank.
+    bank_info = pixel_to_bank(x_split, y_span_end);
+    bank_start = bank_info.bank * WINDOW_BANK_SIZE;
+    set_bank(Window::Window0, bank_info.bank);
+    set_bank(Window::Window1, bank_info.bank + BACKBUFFER_BANK_OFFSET);
+
+    // Draw the remainder.
+    offset = pixel_to_addr(x, y_span_end) - bank_start;
+    addr0 = window0 + offset;
+    addr1 = window1 + offset;
+    for (; x < x1; x++) {
+      *addr0++ = *addr1++;
+    }
+
+    y_span_start = y_span_end + 1;
   }
-#endif
 
   g_draw_to = old_draw_to;
 }
