@@ -5,11 +5,12 @@
 #include "loading.h"
 
 #include "funcs.h"
-#include "images.h"
 #include "gpuscrn.h"
+#include "images.h"
+#include "keyboard.h"
 #include "logs.h"
 #include "maths.h"
-#include "keyboard.h"
+#include "utils.h"
 
 #include <conio.h>
 #include <cstdio>
@@ -136,10 +137,8 @@ images::ImageData s_enemy_sprite;
 images::ImageData s_enemy_mask;
 
 #define MAX_ENEMIES 2
-struct EnemyState { Vec2_16 pos; Vec2_8 vel; i16 health; u8 angle; u8 last_shot; };
+struct EnemyState { Vec2_16 pos; Vec2_8 vel; i16 health; u8 angle; u8 last_shot; u16 meta; };
 StaticUnorderedVector<EnemyState, MAX_ENEMIES> s_enemy_states;
-
-#define ENEMY_SHOOT_TIMEOUT 6 // in frames
 
 //
 
@@ -385,22 +384,36 @@ void play_menu_enter() {
   s_bucko_spawner_ticks = SPAWN_BUCKOS_EVERY;
   s_enemy_states.clear();
 
-  STATIC_ASSERT(NUM_LEVELS == 4);
-  switch (g_level_selected) {
-    case 0: {
-      EnemyState & enemy = s_enemy_states.add();
-      enemy.pos.u.x = PLAY_AREA_WIDTH * 3 / 4;
-      enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 3;
-      enemy.vel.i.x = 0;
-      enemy.vel.i.y = 1;
-      enemy.health = 10;
-      enemy.angle = 127;
-      enemy.last_shot = 0;
-    } break;
+  {
+    STATIC_ASSERT(NUM_LEVELS == 4);
+    EnemyState & enemy = s_enemy_states.add();
+    enemy.pos.u.x = PLAY_AREA_WIDTH * 3 / 4;
+    enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 2;
+    enemy.vel.i.x = 0;
+    enemy.vel.i.y = 0;
+    enemy.health = 10;
+    enemy.angle = 127; // facing left
+    enemy.last_shot = 0;
+    enemy.meta = (rand() >> 3);
+    switch (g_level_selected) {
+      case 0: {
+        enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 3;
+        enemy.vel.i.y = 1;
+      } break;
 
-    case 1: {
+      case 1: case 2: {
+        // TODO: randomise
+        enemy.pos.u.x = PLAY_AREA_WIDTH * 3 / 4;
+        enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 2;
+      } break;
 
-    } break;
+      case 3: {
+        EnemyState & enemy2 = s_enemy_states.add();
+        enemy2 = enemy;
+        enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 3;
+        enemy2.pos.u.y = PLAY_AREA_HEIGHT * 2 / 3;
+      } break;
+    }
   }
 
   for (int i = 0; i < NUM_STARS; i++) {
@@ -732,19 +745,72 @@ const MenuScreen *play_menu_update(u32 dt) {
     for (u32 i = 0; i < count; i++) {
       EnemyState state = *states;
 
-      u8 shoot_after = ENEMY_SHOOT_TIMEOUT;
-      u8 angle_delta = 256 >> 4; // 16 angles;
+      u8 shoot_after = 6; // in frames
+      u8 angle_delta = 64 + (16 / 4); // 4 directions + slowly rotating.
 
       // Per-level logic.
-      if (g_level_selected == 0) {
-        // Shoot slower, less angles
-        shoot_after <<= 2;
-        angle_delta <<= 1;
+      const u8 level = g_level_selected;
+      switch (level) {
+        // Tutorial.
+        case 0: {
+          // Shoot slower, no angles.
+          shoot_after = 30;
+          angle_delta = 0;
 
-        // Level one bounces up and down.
-        if ((state.pos.u.y < PLAY_AREA_HEIGHT / 4) | (state.pos.u.y > PLAY_AREA_HEIGHT * 3 / 4)) {
-          state.vel.i.y = - state.vel.i.y;
-        }
+          // Level one bounces up and down.
+          if ((state.pos.u.y < PLAY_AREA_HEIGHT / 4) | (state.pos.u.y > PLAY_AREA_HEIGHT * 3 / 4)) {
+            state.vel.i.y = -state.vel.i.y;
+          }
+        } break;
+
+        case 1:
+          // Just 4 directions.
+          angle_delta = 64;
+        case 2: case 3: {
+          // Get faster with each level.
+          shoot_after = 20 - (level << 2);
+
+          // Change movement direction about once a second.
+          //    64 - no of frames before movement change
+          //  1024 - no of changes before burst attack
+          //  2048 - "do burst attack" flag
+          ++state.meta;
+          if (state.meta & 64) {
+            state.meta += 64 + ((rand() >> 2) & 15);
+            state.meta &= ~2048U;
+
+            // Random walk looks bad.
+            //const u8 v_angle = (rand() >> 1);
+            //state.vel.i.x = maths::sin(v_angle) / (1 << 6);
+            //state.vel.i.y = maths::cos(v_angle) / (1 << 6);
+
+            // Pick another point and try and work out the rough direction.
+            const int x = PLAY_AREA_WIDTH / 3 - ENEMY_SPRITE_SIZE + ( (rand() >> 1) % (PLAY_AREA_WIDTH * 2 / 3) );
+            const int y = PLAY_AREA_HEIGHT / 8 - ENEMY_SPRITE_SIZE + ( (rand() >> 1) % (PLAY_AREA_HEIGHT * 7 / 8) );
+            int dx = x - state.pos.i.x;
+            int dy = y - state.pos.i.y;
+
+            // Normalise it.
+            if (dx < 0) { dx = -2; } else if (dx > 0) dx = 2;
+            if (dy < 0) { dy = -2; } else if (dy > 0) dy = 2;
+            if (dx && dy) {
+              dx >>= 1;
+              dy >>= 1;
+            }
+            state.vel.i.x = dx;
+            state.vel.i.y = dy;
+          }
+          // Burst attack every few seconds.
+          if (state.meta & 1024) {
+            state.meta ^= (1024 | 2048);
+            state.vel.i.x = 0;
+            state.vel.i.y = 0;
+          }
+          if ((level != 1) && (state.meta & 2048)) {
+            angle_delta = ~16;
+            shoot_after >>= 2;
+          }
+        } break;
       }
       
       // Movement.
@@ -754,6 +820,8 @@ const MenuScreen *play_menu_update(u32 dt) {
           PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
           PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + state.pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + state.pos.i.y
         );
+        //state.pos.i.x = utils::clamp<i16>(state.pos.i.x + state.vel.i.x, 0, PLAY_AREA_WIDTH - ENEMY_SPRITE_SIZE);
+        //state.pos.i.y = utils::clamp<i16>(state.pos.i.y + state.vel.i.y, 0, PLAY_AREA_HEIGHT - ENEMY_SPRITE_SIZE);
         state.pos.i.x += state.vel.i.x;
         state.pos.i.y += state.vel.i.y;
       }

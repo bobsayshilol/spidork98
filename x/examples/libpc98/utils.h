@@ -24,6 +24,11 @@ FORCEINLINE static T max(T l,T r) {
 }
 
 template <typename T>
+FORCEINLINE static T clamp(T x, T lo, T hi) {
+  return x > lo ? (x < hi ? x : hi) : lo;
+}
+
+template <typename T>
 static void randomise(T * p, int n) {
   for (int i = 0; i < n; i++) {
     const int j = rand() % (i + 1);
