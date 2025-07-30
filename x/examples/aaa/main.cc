@@ -13,6 +13,8 @@
 #include <cstring>
 
 #include <conio.h>
+#include <dpmi.h>
+#include <go32.h>
 
 namespace game {
 
@@ -54,6 +56,40 @@ void load_menu_audio() {
 
 namespace {
 
+void easter_egg() {
+  const unsigned char ee[10] = {
+    0x20, 0x41, 0x4D, 0x49, 0x20,
+    0x43, 0x55, 0x54, 0x45, 0x20,
+  };
+
+  for (int i = 1; i <= 10; i++) {
+    // Read current text using the transfer buffer.
+    __dpmi_regs regs;
+    regs.h.cl = 0x0C;
+    regs.x.ax = i;
+    regs.x.ds = __tb >> 4;
+    regs.x.dx = __tb & 0x0F;
+    __dpmi_int(0xDC, &regs);
+
+    // Update it.
+    unsigned char temp[16] = {};
+    dosmemget(__tb, 16, temp);
+    temp[1] = ' ';
+    temp[2] = ' ';
+    temp[3] = ee[i - 1];
+    temp[4] = ' ';
+    temp[5] = ' ';
+    dosmemput(temp, 16, __tb);
+
+    // Write it back
+    regs.h.cl = 0x0D;
+    regs.x.ax = i;
+    regs.x.ds = __tb >> 4;
+    regs.x.dx = __tb & 0x0F;
+    __dpmi_int(0xDC, &regs);
+  }
+}
+
 void play() {
   logging::init(LOG_FILE);
 
@@ -80,6 +116,8 @@ void play() {
   // No cursor unless we need it.
   _setcursortype_98(_NOCURSOR);
   DEFER(void *, p, NULL, (_setcursortype_98(_NORMALCURSOR)));
+
+  easter_egg();
 
   //
 
