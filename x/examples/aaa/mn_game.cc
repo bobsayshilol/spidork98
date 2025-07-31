@@ -119,25 +119,25 @@ u32 s_since_last_shot;
 images::ImageData s_bucko_sprite;
 images::ImageData s_bucko_mask;
 
-#define MAX_BUCKOS 4
-#define SHOW_BUCKOS_FOR (5 * 60) // in frames
-#define SPAWN_BUCKOS_EVERY (3 * Funcs98::ticks_per_sec()) // in ticks
-STATIC_ASSERT(SPAWN_BUCKOS_EVERY < 0x7FFFFF);
-i32 s_bucko_spawner_ticks;
+#define MAX_BUCKOS 10
+#define SHOW_BUCKOS_FOR (10 * 60) // in frames
 struct BuckoState { Vec2_16 pos; i16 frames_left; };
 StaticUnorderedVector<BuckoState, MAX_BUCKOS> s_bucko_states;
 
-#define NUM_BUCKOS_THIS_LEVEL (5 + g_level_selected * 5)
-u8 s_num_buckos_collected;
+//#define NUM_BUCKOS_THIS_LEVEL (5 + g_level_selected * 5)
+u16 s_num_buckos_collected;
+u16 s_num_buckos_spawned;
 
 //
+
+#define ENEMY_STARTING_HEALTH ((g_level_selected >= 2) ? 14 : 7)
 
 #define ENEMY_SPRITE_SIZE 32
 images::ImageData s_enemy_sprite;
 images::ImageData s_enemy_mask;
 
 #define MAX_ENEMIES 2
-struct EnemyState { Vec2_16 pos; Vec2_8 vel; i16 health; u8 angle; u8 last_shot; u16 meta; };
+struct EnemyState { Vec2_16 pos; Vec2_8 vel; u8 stage; u8 health; u8 angle; u8 last_shot; u16 meta; };
 StaticUnorderedVector<EnemyState, MAX_ENEMIES> s_enemy_states;
 
 //
@@ -312,10 +312,24 @@ void do_game_over(bool winner) {
   // Show a game over message.
   const u8 num_cols = ScreenCols_98(); // 80
   const u8 num_rows = ScreenRows_98(); // 24
-  const char *text = winner ? "\xA2 Y O U   W I N \xA3" : "\xA2 G A M E  O V E R \xA3";
+  const char *text = winner ? "\xA2 M I S S I O N   S U C C E S S F U L \xA3" : "\xA2 G A M E   O V E R \xA3";
   int y = num_rows / 2 - 1;
   int x = (num_cols - strlen(text)) / 2;
   ScreenPutString_98(text, COLOUR_GREEN, x, y);
+
+  if (winner) {
+    // Unlock the next level.
+    if ((g_unlocked_levels == g_level_selected) && ((g_unlocked_levels + 1) < NUM_LEVELS)) {
+      g_unlocked_levels++;
+    }
+
+    char temp[64];
+    sprintf(temp, "You rescued %u out of %u buckos!", s_num_buckos_collected, s_num_buckos_spawned);
+    text = temp;
+    y += 2;
+    x = (num_cols - strlen(text)) / 2;
+    ScreenPutString_98(text, COLOUR_GREEN, x, y);
+  }
 
   text = "(Press Q or ESCAPE to return)";
   y += 2;
@@ -381,7 +395,7 @@ void play_menu_enter() {
   s_bullet_metadata.clear();
   s_bucko_states.clear();
   s_num_buckos_collected = 0;
-  s_bucko_spawner_ticks = SPAWN_BUCKOS_EVERY;
+  s_num_buckos_spawned = 0;
   s_enemy_states.clear();
 
   {
@@ -391,7 +405,8 @@ void play_menu_enter() {
     enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 2;
     enemy.vel.i.x = 0;
     enemy.vel.i.y = 0;
-    enemy.health = 10;
+    enemy.stage = (g_level_selected << 1) + 1;
+    enemy.health = ENEMY_STARTING_HEALTH;
     enemy.angle = 127; // facing left
     enemy.last_shot = 0;
     enemy.meta = (rand() >> 3);
@@ -408,6 +423,7 @@ void play_menu_enter() {
       } break;
 
       case 3: {
+        enemy.stage = (2 << 1) + 1;
         EnemyState & enemy2 = s_enemy_states.add();
         enemy2 = enemy;
         enemy.pos.u.y = PLAY_AREA_HEIGHT * 1 / 3;
@@ -706,18 +722,37 @@ const MenuScreen *play_menu_update(u32 dt) {
             enemy_states++;
             continue;
           }
+
           do_beep_hit();
           if (--(enemy_states->health) == 0) {
-            soundsystem::play(VOICE_HANDLE_GAME_BOOM);
-            // Erase and remove the enemy.
-            gpu::undraw_quad(
-              PLAY_AREA_BORDER_X + enemy_pos.i.x, PLAY_AREA_BORDER_Y + enemy_pos.i.y,
-              PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + enemy_pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + enemy_pos.i.y
-            );
-            s_enemy_states.erase_at(e);
-            --num_enemies;
-            --e;
+            enemy_states->health = ENEMY_STARTING_HEALTH;
+
+            // Spawn buckos around the enemy.
+            const int dd[5] = { ENEMY_SPRITE_SIZE, 0, -ENEMY_SPRITE_SIZE, 0, ENEMY_SPRITE_SIZE };
+            for (int b = 0; b < 4; b++) {
+              BuckoState *bucko_state = s_bucko_states.try_add();
+              if (bucko_state) {
+                s_num_buckos_spawned++;
+                bucko_state->frames_left = SHOW_BUCKOS_FOR;
+                bucko_state->pos.i.x = enemy_pos.i.x + dd[b];
+                bucko_state->pos.i.y = enemy_pos.i.y + dd[b + 1];
+              }
+            }
+
+            if (--(enemy_states->stage) == 0) {
+              soundsystem::play(VOICE_HANDLE_GAME_BOOM);
+              // Erase and remove the enemy.
+              gpu::undraw_quad(
+                PLAY_AREA_BORDER_X + enemy_pos.i.x, PLAY_AREA_BORDER_Y + enemy_pos.i.y,
+                PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + enemy_pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + enemy_pos.i.y
+              );
+              s_enemy_states.erase_at(e);
+              --num_enemies;
+              --e;
+            }
           }
+
+          // We collided, don't try and collide again.
           break;
         }
 
@@ -887,9 +922,12 @@ const MenuScreen *play_menu_update(u32 dt) {
         (player_pos.i.y + SHIP_HEIGHT >= bucko_state.pos.i.y) & (bucko_state.pos.i.y + BUCKO_SPRITE_SIZE >= player_pos.i.y);
       if (collided) {
         soundsystem::play(VOICE_HANDLE_GAME_PICKUP);
-        if (++s_num_buckos_collected >= NUM_BUCKOS_THIS_LEVEL) {
-          do_game_over(true);
-          break;
+        ++s_num_buckos_collected;
+
+        // Give back some health.
+        if (s_player_health < MAX_HEALTH) {
+          s_player_health++;
+          update_health_palette();
         }
       }
 
@@ -907,8 +945,8 @@ const MenuScreen *play_menu_update(u32 dt) {
       }
 
       // Chaos mode.
-      STATIC_ASSERT(SHOW_BUCKOS_FOR == 300);
-      const u16 t = bucko_state.frames_left;
+      STATIC_ASSERT(SHOW_BUCKOS_FOR == 600);
+      const u16 t = bucko_state.frames_left >> 1;
       const u16 m = (1 << (3 - (t >> 7))) - 1; // 300 / 2^7 < 3
       const int dx = ((t * 5) & m) - (m >> 1);
       const int dy = ((t * 3) & m) - (m >> 1);
@@ -921,22 +959,11 @@ const MenuScreen *play_menu_update(u32 dt) {
     }
   }
 
-  // Create new pickups.
-  {
-    s_bucko_spawner_ticks -= dt;
-    if (s_bucko_spawner_ticks < 0) {
-      BuckoState *state = s_bucko_states.try_add();
-      if (state) {
-        s_bucko_spawner_ticks = SPAWN_BUCKOS_EVERY;
-        state->frames_left = SHOW_BUCKOS_FOR;
+  //
 
-        // TODO: don't spawn near player
-        const u16 x = PLAY_AREA_WIDTH / 3 + ( (rand() >> 4) % (PLAY_AREA_WIDTH * 2 / 3) );
-        const u16 y = (rand() >> 4) % PLAY_AREA_HEIGHT;
-        state->pos.u.x = x;
-        state->pos.u.y = y;
-      }
-    }
+  // Check for game over.
+  if (s_enemy_states.count == 0 && s_bucko_states.count == 0) {
+    do_game_over(true);
   }
 
   //

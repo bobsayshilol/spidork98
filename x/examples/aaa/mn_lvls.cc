@@ -22,17 +22,17 @@ namespace {
 #define SELECTED_COLOUR COLOUR_YELLOW
 #define UNSELECTED_COLOUR COLOUR_WHITE
 
-#define NUM_SELECTIONS (NUM_LEVELS + 1)
-#define SELECTION_BACK (NUM_SELECTIONS - 1)
+#define NUM_UNLOCKED_LEVELS (g_unlocked_levels + 1) // counting tutorial as level 0
+#define NUM_UI_ELEMS (NUM_UNLOCKED_LEVELS + 1)
+#define SELECTION_BACK (NUM_UI_ELEMS - 1)
 
 const char * const s_selection_texts[] = {
-  "T U T O R I A L",
-  "placeholder 1", // TODO: name these
-  "placeholder 2",
-  "placeholder 3",
-  "B A C K",
+  "T R A I N I N G",
+  "F I R S T   O P E R A T I O N",
+  "A   N E W   E N E M Y",
+  "O U T   O F   H A N D",
 };
-STATIC_ASSERT(COUNT_OF(s_selection_texts) == NUM_SELECTIONS);
+STATIC_ASSERT(COUNT_OF(s_selection_texts) == NUM_LEVELS);
 int s_selection_idx;
 
 //                            >|< about here is the limit (26 chars)
@@ -41,28 +41,50 @@ struct DescText {
   int num_lines;
 };
 const char * const s_tutorial_lines[] = {
-  "Tutorial text goes here or",
-  "something, but I need to",
-  "write it first or it'll be",
-  "this placeholder forever",
+  "Learn the controls against a",
+  "training dummy.",
+  "No time to write an in-level",
+  "tutorial, so:",
+  "Shoot the enemy until it drops",
+  "buckos, then swoop in and save",
+  "them. Some enemies will have",
+  "multiple stages.",
 };
-const char * const s_placeholder_lines[] = {
-  "placeholder",
-  "text",
-  "goes",
-  "here",
+const char * const s_level1_lines[] = {
+  "Aliens have been sighted",
+  "stealing buckos.",
+  "Head out there and stop the",
+  "aliens before they abduct",
+  "any more!",
 };
-const char * const s_back_lines[] = {
-  "Return to the MAIN MENU",
+const char * const s_level2_lines[] = {
+  "A new foe - the Highly Armoured",
+  "Weaponised Creature (H.A.W.C)",
+  "- has been spotted.",
+  "It appears to be abducting",
+  "buckos too!",
+};
+const char * const s_level3_lines[] = {
+  "H.A.W.C.s - two of them -",
+  "have been spotted on the",
+  "radar. It's up to you to",
+  "stop them!",
+  "(This is the last level)",
 };
 DescText const s_selection_descs[] = {
   { s_tutorial_lines, COUNT_OF(s_tutorial_lines), },
-  { s_placeholder_lines, COUNT_OF(s_placeholder_lines), },
-  { s_placeholder_lines, COUNT_OF(s_placeholder_lines), },
-  { s_placeholder_lines, COUNT_OF(s_placeholder_lines), },
-  { s_back_lines, COUNT_OF(s_back_lines), },
+  { s_level1_lines, COUNT_OF(s_level1_lines), },
+  { s_level2_lines, COUNT_OF(s_level2_lines), },
+  { s_level3_lines, COUNT_OF(s_level3_lines), },
 };
-STATIC_ASSERT(COUNT_OF(s_selection_descs) == NUM_SELECTIONS);
+STATIC_ASSERT(COUNT_OF(s_selection_descs) == NUM_LEVELS);
+
+const char * const s_back_lines[] = {
+  "Return to the MAIN MENU",
+};
+DescText const s_back_desc = {
+  s_back_lines, COUNT_OF(s_back_lines),
+};
 
 const MenuScreen *s_next_screen;
 
@@ -75,11 +97,11 @@ void redraw_text_ui() {
   // Screen sizes.
   const u8 num_cols = ScreenCols_98(); // 80
   const u8 num_rows = ScreenRows_98(); // 24
-  const u8 first_y = (num_rows - 2 * NUM_SELECTIONS) / 2;
+  const u8 first_y = (num_rows - 2 * NUM_UI_ELEMS) / 2;
 
   // Draw the selectables.
-  for (u8 i = 0; i < NUM_SELECTIONS; i++) {
-    const char *text = s_selection_texts[i];
+  for (u8 i = 0; i < NUM_UI_ELEMS; i++) {
+    const char *text = (i == SELECTION_BACK) ? "B A C K" : s_selection_texts[i];
     const int text_len = strlen(text);
     const int y = first_y + i * 2;
     const int x = num_cols / 4 - text_len / 2;
@@ -98,7 +120,7 @@ void redraw_text_ui() {
   const u8 desc_x = num_cols / 2 + 2;
 
   // Draw the desc.
-  const DescText selection_desc = s_selection_descs[s_selection_idx];
+  const DescText selection_desc = (s_selection_idx == SELECTION_BACK) ? s_back_desc : s_selection_descs[s_selection_idx];
   for (int line = 0; line < selection_desc.num_lines; line++) {
     const char *text = selection_desc.lines[line];
     const int y = desc_y + line;
@@ -145,11 +167,11 @@ const MenuScreen *level_select_update(u32) {
       bool did_thing = false;
       switch (ch) {
         case KEY_UP: case 'W': case 'w':
-          s_selection_idx = (s_selection_idx + NUM_SELECTIONS - 1) % NUM_SELECTIONS;
+          s_selection_idx = (s_selection_idx + NUM_UI_ELEMS - 1) % NUM_UI_ELEMS;
           did_thing = true;
           break;
         case KEY_DOWN: case 'S': case 's':
-          s_selection_idx = (s_selection_idx + 1) % NUM_SELECTIONS;
+          s_selection_idx = (s_selection_idx + 1) % NUM_UI_ELEMS;
           did_thing = true;
           break;
         case KEY_ENTER: case KEY_SPACE: case 'E': case 'e':
