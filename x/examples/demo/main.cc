@@ -179,20 +179,20 @@ void play() {
 
   // Setup the palette fader.
   FadeInPalette fader;
-  if (!fader.load("bg.pal")) {
+  if (!fader.load("demo/bg.pal")) {
     return;
   }
 
   // Load the background.
   images::ImageData bg_data;
-  if (!bg_data.load("bg.img")) {
+  if (!bg_data.load("demo/bg.img")) {
     printf("Failed to load background data\n");
     return;
   }
 
   // Load the animation.
   images::AnimationData anim_data;
-  if (!anim_data.load("ayy.ani")) {
+  if (!anim_data.load("demo/ayy.ani")) {
     printf("Failed to load animated sprite data\n");
     return;
   }

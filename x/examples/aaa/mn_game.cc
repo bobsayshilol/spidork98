@@ -14,8 +14,10 @@
 
 #include <conio.h>
 #include <cstdio>
+#include <dpmi.h>
+#include <go32.h>
 
-#define DEBUG_PRINT_FPS 0
+#define DEBUG_PRINT_FPS 1
 
 namespace game {
 namespace menus {
@@ -130,7 +132,7 @@ u16 s_num_buckos_spawned;
 
 //
 
-#define ENEMY_STARTING_HEALTH ((g_level_selected >= 2) ? 14 : 7)
+#define ENEMY_STARTING_HEALTH (g_level_selected > 0 ? (g_level_selected >= 2) ? 12 : 8 : 5)
 
 #define ENEMY_SPRITE_SIZE 32
 images::ImageData s_enemy_sprite;
@@ -145,9 +147,13 @@ StaticUnorderedVector<EnemyState, MAX_ENEMIES> s_enemy_states;
 int s_loader_tick;
 void tick_loader(LoadingProgress::E progress) {
   switch (progress) {
-    case LoadingProgress::BarStart:
+    case LoadingProgress::BarStart: {
       s_loader_tick = 0;
-      break;
+
+      _go32_dpmi_meminfo info;
+      _go32_dpmi_get_free_memory_information(&info);
+      logging::print(logging::Level::Info, "RAM available: %liB (%li pages)", info.available_memory, info.available_physical_pages);
+    } break;
     case LoadingProgress::BarTick:
       ++s_loader_tick;
       // Fake some loading here to make it look like it's doing something.
@@ -159,24 +165,19 @@ void tick_loader(LoadingProgress::E progress) {
       break;
 
     case LoadingProgress::FadeOutStart:
+      logging::print(logging::Level::Info, "FadeOutStart: %i", s_loader_tick);
+      s_loader_tick = 0;
+
       // Disable all the old audio.
       for (int i = 0; i < MAX_SOUNDS; i++) {
         soundsystem::free_handle(i);
       }
-      s_loader_tick = 0;
       break;
     case LoadingProgress::FadeOutTick:
       ++s_loader_tick;
       switch (s_loader_tick) {
-        // Load BGM.
-        case 5:
-          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_BGM, GAME_DATA_PATH("song2.pcm"), true)) {
-            logging::print(logging::Level::Warning, "Missing game bgm");
-          }
-          break;
-
         // Load background.
-        case 10:
+        case 5:
           gpu::g_draw_to = gpu::DrawTo::Back;
           {
             images::ImageData background;
@@ -192,7 +193,7 @@ void tick_loader(LoadingProgress::E progress) {
           break;
 
         // Load border images
-        case 15:
+        case 10:
           // TODO: actual images
           gpu::g_draw_to = gpu::DrawTo::Back;
           gpu::draw_quad(0,                                    0,                                     PLAY_AREA_BORDER_X,                   PLAY_AREA_BORDER_Y,                    GAME_PALETTE_DAMAGED);
@@ -211,39 +212,13 @@ void tick_loader(LoadingProgress::E progress) {
           gpu::g_draw_to = gpu::DrawTo::Front;
           break;
 
-        // Moar sounds.
-        case 20:
-          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_PICKUP, GAME_DATA_PATH("gotcha.pcm"), false)) {
-            logging::print(logging::Level::Warning, "Missing pickup sound");
-          }
-          break;
-      }
-      break;
-
-    case LoadingProgress::FadeInStart:
-      // Copy backbuffer to front now that it's ready.
-      soundsystem::update();
-      gpu::wait_for_vsync();
-      gpu::undraw_quad(0, 0, GPU_WIDTH, GPU_HEIGHT);
-      s_loader_tick = 0;
-      break;
-    case LoadingProgress::FadeInTick:
-      ++s_loader_tick;
-      switch (s_loader_tick) {
-        // Load noises.
-        case 5:
-          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_OOF, GAME_DATA_PATH("ow.pcm"), false)) {
-            logging::print(logging::Level::Warning, "Missing game oof");
-          }
-        break;
-
         // Bucko sprite.
-        case 10:
+        case 15:
         if (!s_bucko_sprite.load(GAME_DATA_PATH("bucko.img"))) {
           logging::print(logging::Level::Error, "Failed to load bucko sprite");
         }
         break;
-        case 15:
+        case 20:
         if (!s_bucko_mask.load(GAME_DATA_PATH("bucko_m.img"))) {
           logging::print(logging::Level::Error, "Failed to load bucko mask");
         }
@@ -258,13 +233,12 @@ void tick_loader(LoadingProgress::E progress) {
         break;
 
         // Ship sprite.
-        case 20:
+        case 25:
         if (!s_ship_sprite.load(GAME_DATA_PATH("ship.img"))) {
           logging::print(logging::Level::Error, "Failed to load ship sprite");
         }
         break;
-
-        case 25:
+        case 30:
         if (!s_ship_mask.load(GAME_DATA_PATH("ship_m.img"))) {
           logging::print(logging::Level::Error, "Failed to load ship mask");
         }
@@ -277,10 +251,79 @@ void tick_loader(LoadingProgress::E progress) {
           g_had_error = true;
         }
         break;
+
+        // Enemy sprite
+        case 35: {
+          const char *sprite_name = "";
+          switch (g_level_selected) {
+            case 0: sprite_name = GAME_DATA_PATH("train.img"); break;
+            case 1: sprite_name = GAME_DATA_PATH("alien.img"); break;
+            case 2: case 3: sprite_name = GAME_DATA_PATH("hawc.img"); break;
+          }
+          if (!s_enemy_sprite.load(sprite_name)) {
+            logging::print(logging::Level::Error, "Failed to load enemy sprite");
+          }
+        } break;
+        case 40: {
+          const char *sprite_mask = "";
+          switch (g_level_selected) {
+            case 0: sprite_mask = GAME_DATA_PATH("train_m.img"); break;
+            case 1: sprite_mask = GAME_DATA_PATH("alien_m.img"); break;
+            case 2: case 3: sprite_mask = GAME_DATA_PATH("hawc_m.img"); break;
+          }
+          if (!s_enemy_mask.load(sprite_mask)) {
+            logging::print(logging::Level::Error, "Failed to load enemy mask");
+          }
+          if (s_enemy_mask.m_width != ENEMY_SPRITE_SIZE || s_enemy_mask.m_height != ENEMY_SPRITE_SIZE ||
+              s_enemy_sprite.m_width != ENEMY_SPRITE_SIZE || s_enemy_sprite.m_height != ENEMY_SPRITE_SIZE)
+          {
+            s_enemy_mask.clear();
+            s_enemy_sprite.clear();
+            logging::print(logging::Level::Error, "Bad enemy sprite or mask size");
+            g_had_error = true;
+          }
+        } break;
       }
       break;
 
-    case LoadingProgress::Done:
+    case LoadingProgress::FadeInStart:
+      logging::print(logging::Level::Info, "FadeInStart: %i", s_loader_tick);
+      s_loader_tick = 0;
+
+      // Copy backbuffer to front now that it's ready.
+      soundsystem::update();
+      gpu::wait_for_vsync();
+      gpu::undraw_quad(0, 0, GPU_WIDTH, GPU_HEIGHT);
+      break;
+    case LoadingProgress::FadeInTick:
+      ++s_loader_tick;
+      switch (s_loader_tick) {
+        // Load noises.
+        case 5:
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_OOF, GAME_DATA_PATH("ow.pcm"), false)) {
+            logging::print(logging::Level::Warning, "Missing game oof");
+          }
+        break;
+
+        // Moar sounds.
+        case 10:
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_PICKUP, GAME_DATA_PATH("gotcha.pcm"), false)) {
+            logging::print(logging::Level::Warning, "Missing pickup sound");
+          }
+          break;
+
+        // Load BGM.
+        case 15:
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_BGM, GAME_DATA_PATH("song2.pcm"), true)) {
+            logging::print(logging::Level::Warning, "Missing game bgm");
+          }
+          break;
+      }
+      break;
+
+    case LoadingProgress::Done: {
+      logging::print(logging::Level::Info, "Done: %i", s_loader_tick);
+
       // HACK: just restart the audio system to fix the desync issue.
       if (g_sound_enabled) {
         toggle_audio();
@@ -288,7 +331,11 @@ void tick_loader(LoadingProgress::E progress) {
       }
       // Kick off the bgm.
       soundsystem::play(VOICE_HANDLE_GAME_BGM);
-      break;
+
+      _go32_dpmi_meminfo info;
+      _go32_dpmi_get_free_memory_information(&info);
+      logging::print(logging::Level::Info, "RAM left: %liB (%li pages)", info.available_memory, info.available_physical_pages);
+    } break;
   }
 
   // Make sure to tick the audio system since we're blocking in here.
@@ -830,8 +877,9 @@ const MenuScreen *play_menu_update(u32 dt) {
             //state.vel.i.y = maths::cos(v_angle) / (1 << 6);
 
             // Pick another point and try and work out the rough direction.
-            const int x = PLAY_AREA_WIDTH / 3 - ENEMY_SPRITE_SIZE + ( (rand() >> 1) % (PLAY_AREA_WIDTH * 2 / 3) );
-            const int y = PLAY_AREA_HEIGHT / 8 - ENEMY_SPRITE_SIZE + ( (rand() >> 1) % (PLAY_AREA_HEIGHT * 7 / 8) );
+            // Bodge at the end is so that the enemy doesn't move outside of the bounds.
+            const int x = PLAY_AREA_WIDTH / 3 + ( (rand() >> 1) % (PLAY_AREA_WIDTH * 2 / 3 - 2 * ENEMY_SPRITE_SIZE - 5) );
+            const int y = PLAY_AREA_HEIGHT / 8 + ( (rand() >> 1) % (PLAY_AREA_HEIGHT * 7 / 8 - 2 * ENEMY_SPRITE_SIZE - 5) );
             int dx = x - state.pos.i.x;
             int dy = y - state.pos.i.y;
 
@@ -861,6 +909,7 @@ const MenuScreen *play_menu_update(u32 dt) {
       // Movement.
       if (state.vel.u.x | state.vel.u.y) {
         // Do the usual dance of undraw, move, draw.
+        // TODO: is this a big perf hit?
         gpu::undraw_quad(
           PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
           PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + state.pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + state.pos.i.y
@@ -870,12 +919,15 @@ const MenuScreen *play_menu_update(u32 dt) {
         state.pos.i.x += state.vel.i.x;
         state.pos.i.y += state.vel.i.y;
       }
-      //images::draw_sprite(PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y, s_enemy_sprite, s_enemy_mask);
+#if 1
+      images::draw_sprite(PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y, s_enemy_sprite, s_enemy_mask);
+#else
       gpu::draw_quad(
         PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
         PLAY_AREA_BORDER_X + state.pos.i.x + ENEMY_SPRITE_SIZE, PLAY_AREA_BORDER_Y + state.pos.i.y + ENEMY_SPRITE_SIZE,
         GAME_PALETTE_GREY
       );
+#endif
 
       // Shooting.
       if (++state.last_shot >= shoot_after) {

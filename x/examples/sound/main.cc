@@ -80,8 +80,8 @@ bool play(pcm::SamplingRate::E pcm_rate, const char **filenames, int num_files, 
   }
 
   // Shutdown sound system.
-  for (soundsystem::Handle h = 0; h < num_files; h++) {
-    soundsystem::free_handle(h);
+  for (soundsystem::Handle v = 0; v < num_files; v++) {
+    soundsystem::free_handle(v);
   }
   soundsystem::shutdown();
   return true;
