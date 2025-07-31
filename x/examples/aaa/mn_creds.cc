@@ -15,7 +15,16 @@ namespace menus {
 namespace {
 
 const char * const s_text[] = {
-  "Design, code, music: me",
+  "(Lack of) Design: me",
+  "(Spaghetti) Code: me",
+  "(Doesn't sound like) Music: me",
+  "(Wonky) Pixel art: me",
+  "",
+  "Space images: NASA",
+  "Sound effects: Ami",
+  "Inspiration: Ami and the buckos",
+  "",
+  "For Buckojam 2025",
   "",
   "Press any key to return",
 };
