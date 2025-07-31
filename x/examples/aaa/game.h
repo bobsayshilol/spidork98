@@ -41,6 +41,7 @@ extern bool g_had_error;
 extern bool g_sound_enabled;
 extern u8 g_level_selected;
 extern u8 g_unlocked_levels;
+extern bool g_invincible;
 
 static FORCEINLINE void flush_kb_buffer() {
   while (kbhit_98()) getch();

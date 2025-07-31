@@ -22,6 +22,7 @@ bool g_had_error;
 bool g_sound_enabled;
 u8 g_level_selected;
 u8 g_unlocked_levels;
+bool g_invincible;
 
 #define LOG_FILE "gamelog.txt"
 

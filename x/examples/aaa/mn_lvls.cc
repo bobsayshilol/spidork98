@@ -43,6 +43,7 @@ struct DescText {
 const char * const s_tutorial_lines[] = {
   "Learn the controls against a",
   "training dummy.",
+  "",
   "No time to write an in-level",
   "tutorial, so:",
   "Shoot the enemy until it drops",
@@ -53,6 +54,7 @@ const char * const s_tutorial_lines[] = {
 const char * const s_level1_lines[] = {
   "Aliens have been sighted",
   "stealing buckos.",
+  "",
   "Head out there and stop the",
   "aliens before they abduct",
   "any more!",
@@ -61,14 +63,18 @@ const char * const s_level2_lines[] = {
   "A new foe - the Highly Armoured",
   "Weaponised Creature (H.A.W.C)",
   "- has been spotted.",
+  "",
   "It appears to be abducting",
   "buckos too!",
 };
 const char * const s_level3_lines[] = {
   "H.A.W.C.s - two of them -",
   "have been spotted on the",
-  "radar. It's up to you to",
-  "stop them!",
+  "radar.",
+  "",
+  "It's up to you to stop",
+  "them!",
+  "",
   "(This is the last level)",
 };
 DescText const s_selection_descs[] = {

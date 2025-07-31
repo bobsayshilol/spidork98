@@ -197,6 +197,14 @@ const MenuScreen *main_menu_update(u32) {
           s_next_screen = NULL;
           did_thing = true;
           break;
+
+        // Cheats.
+        case 'U': case 'u':
+          g_unlocked_levels = NUM_LEVELS - 1;
+          break;
+        case 'I': case 'i':
+          g_invincible = true;
+          break;
       }
       if (did_thing) {
         redraw_text_ui();

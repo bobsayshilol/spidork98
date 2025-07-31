@@ -696,7 +696,9 @@ const MenuScreen *play_menu_update(u32 dt) {
           // Do some damage if not in an iframe.
           if (s_player_iframes == 0) {
             soundsystem::play(VOICE_HANDLE_GAME_OOF);
-            --s_player_health;
+            if (!g_invincible) {
+              --s_player_health;
+            }
             update_health_palette();
             if (s_player_health <= 0) {
               do_game_over(false);
