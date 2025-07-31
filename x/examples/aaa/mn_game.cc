@@ -55,8 +55,8 @@ STATIC_ASSERT(sizeof(Vec2_16) == 4);
 #define GAME_PALETTE_BLACK (64 + 1)
 #define GAME_PALETTE_WHITE (64 + 2)
 #define GAME_PALETTE_DEBUG (64 + 3)
-#define GAME_PALETTE_RED (64 + 4)
-#define GAME_PALETTE_YELLOW (64 + 5)
+#define GAME_PALETTE_ENEMY_BULLET (64 + 4)
+#define GAME_PALETTE_PLAYER_BULLET (64 + 5)
 #define GAME_PALETTE_GREY (64 + 6)
 #define GAME_PALETTE_DAMAGED (64 + 7)
 #define GAME_PALETTE_PLAYER_HEALTH_0 (64 + 8)
@@ -443,8 +443,8 @@ void play_menu_enter() {
   gpu::set_palette_colour(GAME_PALETTE_BLACK, 0, 0, 0);
   gpu::set_palette_colour(GAME_PALETTE_WHITE, 255, 255, 255);
   gpu::set_palette_colour(GAME_PALETTE_DEBUG, 255, 0, 195);
-  gpu::set_palette_colour(GAME_PALETTE_RED, 255, 0, 0);
-  gpu::set_palette_colour(GAME_PALETTE_YELLOW, 255, 255, 0);
+  gpu::set_palette_colour(GAME_PALETTE_ENEMY_BULLET, 255, 255, 0);
+  gpu::set_palette_colour(GAME_PALETTE_PLAYER_BULLET, 255, 0, 255);
   gpu::set_palette_colour(GAME_PALETTE_GREY, 127, 127, 127);
   gpu::set_palette_colour(GAME_PALETTE_DAMAGED, 127, 127, 127);
   update_health_palette();
@@ -547,11 +547,13 @@ const MenuScreen *play_menu_update(u32 dt) {
       player_moved = true;
     }
   }
+#if 0
   // Normalise movement vector.
   if (velocity.u.x && velocity.u.y) {
     velocity.i.x >>= 1;
     velocity.i.y >>= 1;
   }
+#endif
 
   //
 
@@ -735,14 +737,20 @@ const MenuScreen *play_menu_update(u32 dt) {
               BuckoState *bucko_state = s_bucko_states.try_add();
               if (bucko_state) {
                 s_num_buckos_spawned++;
-                bucko_state->frames_left = SHOW_BUCKOS_FOR;
+                bucko_state->frames_left = SHOW_BUCKOS_FOR + 4 - (b << 1);
                 bucko_state->pos.i.x = enemy_pos.i.x + dd[b];
                 bucko_state->pos.i.y = enemy_pos.i.y + dd[b + 1];
               }
             }
 
+            // Fire off some death shots, 8 dirs.
+            for (int bul = 0; bul < 256; bul += 256 / 8) {
+              emit_bullet(enemy_pos.u.x, enemy_pos.u.y, bul, true);
+            }
+
             if (--(enemy_states->stage) == 0) {
               soundsystem::play(VOICE_HANDLE_GAME_BOOM);
+
               // Erase and remove the enemy.
               gpu::undraw_quad(
                 PLAY_AREA_BORDER_X + enemy_pos.i.x, PLAY_AREA_BORDER_Y + enemy_pos.i.y,
@@ -898,7 +906,7 @@ const MenuScreen *play_menu_update(u32 dt) {
       gpu::draw_quad(
         PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
         PLAY_AREA_BORDER_X + pos.i.x + BULLET_SIZE, PLAY_AREA_BORDER_Y + pos.i.y + BULLET_SIZE,
-        (metadata & BULLET_METADATA_HURTS_PLAYER) ? GAME_PALETTE_RED : GAME_PALETTE_YELLOW
+        (metadata & BULLET_METADATA_HURTS_PLAYER) ? GAME_PALETTE_ENEMY_BULLET : GAME_PALETTE_PLAYER_BULLET
       );
     }
   }

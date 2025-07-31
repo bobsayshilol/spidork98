@@ -45,7 +45,8 @@ void splash_menu_enter() {
   gpu::undraw_quad(0, 0, GPU_WIDTH, GPU_HEIGHT);
 
   // Load the palette.
-  g_palette_fader.target_palette() = images::default_palette_16;
+#define FLASHER_PALETTE_IDX 64
+  g_palette_fader.target_palette() = images::default_palette_64;
 
   // Start the fade in.
   g_palette_fader.start_fade_in(FADE_IN_TIME);
@@ -74,9 +75,9 @@ const MenuScreen *splash_menu_update(u32 dt) {
         s_continue_dir = 1;
       }
 
-      // We use channel 16 for the flasher.
+      // Flicker the flasher.
       const u8 flash_rgb = s_continue_tick * 255 / FLASHER_TIME; // >>8 has flickers, >>7 too dark
-      gpu::set_palette_colour(16, flash_rgb, flash_rgb, flash_rgb);
+      gpu::set_palette_colour(FLASHER_PALETTE_IDX, flash_rgb, flash_rgb, flash_rgb);
 
       if (kbhit_98()) {
         const int ch = getch();
