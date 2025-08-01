@@ -7,8 +7,6 @@
 #include "gpuscrn.h"
 #include "logs.h"
 
-#include <conio.h>
-
 namespace game {
 namespace menus {
 
@@ -59,7 +57,7 @@ void credits_menu_enter() {
 
 const MenuScreen *credits_menu_update(u32) {
   if (kbhit_98()) {
-    const int ch = getch();
+    const int ch = getch_98();
     if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == KEY_SPACE || ch == KEY_ENTER || ch == KEY_ESCAPE) {
       return &g_main_menu;
     }

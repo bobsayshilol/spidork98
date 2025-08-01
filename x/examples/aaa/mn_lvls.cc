@@ -10,8 +10,6 @@
 #include "pcm.h"
 #include "utils.h"
 
-#include <conio.h>
-
 // TODO: lots of stuff copied from the main menu
 
 namespace game {
@@ -169,7 +167,7 @@ void level_select_enter() {
 
 const MenuScreen *level_select_update(u32) {
   if (kbhit_98()) {
-      const char ch = getch();
+      const char ch = getch_98();
       bool did_thing = false;
       switch (ch) {
         case KEY_UP: case 'W': case 'w':

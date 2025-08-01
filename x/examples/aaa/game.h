@@ -6,7 +6,10 @@
 #include "sound.h"
 #include "types.h"
 
+#ifndef WEB_BUILD
 #include <conio.h>
+#define getch_98() getch()
+#endif
 
 // The colours in conio.h are lies.
 #define COLOUR_BLUE 0x1
@@ -44,7 +47,7 @@ extern u8 g_unlocked_levels;
 extern bool g_invincible;
 
 static FORCEINLINE void flush_kb_buffer() {
-  while (kbhit_98()) getch();
+  while (kbhit_98()) getch_98();
 }
 
 void toggle_audio();

@@ -3,6 +3,12 @@
 
 namespace memory {
 
+#ifdef WEB_BUILD
+typedef u64 Addr;
+#else
+typedef u32 Addr;
+#endif
+
 // Really lazy, doubt we'll hit allocation limits.
 //
 // | pad | size8 | data |
@@ -18,7 +24,7 @@ void *alloc4(size_t size) {
         return addr;
     }
 
-    const u8 alignment = reinterpret_cast<u32>(addr) & 3;
+    const u8 alignment = reinterpret_cast<Addr>(addr) & 3;
     const u8 size8 = 4 - alignment;
     addr += size8;
     addr[-1] = size8;

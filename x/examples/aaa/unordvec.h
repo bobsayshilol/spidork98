@@ -42,7 +42,7 @@ struct StaticUnorderedVector {
 
   FORCEINLINE T *try_add() {
     if (count >= N) {
-      return false;
+      return 0;
     }
     count++;
 #if DEBUG_CHECK_VECTOR

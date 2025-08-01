@@ -9,6 +9,10 @@
 
 #include <time.h>
 
+#ifdef WEB_BUILD
+#include "funcs.h"
+#endif
+
 namespace images {
 
 // Upper 128 are reserved

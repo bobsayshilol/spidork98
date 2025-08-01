@@ -12,10 +12,12 @@
 #include "maths.h"
 #include "utils.h"
 
-#include <conio.h>
 #include <cstdio>
+
+#ifndef WEB_BUILD
 #include <dpmi.h>
 #include <go32.h>
+#endif
 
 #define DEBUG_PRINT_FPS 1
 
@@ -150,9 +152,11 @@ void tick_loader(LoadingProgress::E progress) {
     case LoadingProgress::BarStart: {
       s_loader_tick = 0;
 
+#ifndef WEB_BUILD
       _go32_dpmi_meminfo info;
       _go32_dpmi_get_free_memory_information(&info);
       logging::print(logging::Level::Info, "RAM available: %liB (%li pages)", info.available_memory, info.available_physical_pages);
+#endif
     } break;
     case LoadingProgress::BarTick:
       ++s_loader_tick;
@@ -332,9 +336,11 @@ void tick_loader(LoadingProgress::E progress) {
       // Kick off the bgm.
       soundsystem::play(VOICE_HANDLE_GAME_BGM);
 
+#ifndef WEB_BUILD
       _go32_dpmi_meminfo info;
       _go32_dpmi_get_free_memory_information(&info);
       logging::print(logging::Level::Info, "RAM left: %liB (%li pages)", info.available_memory, info.available_physical_pages);
+#endif
     } break;
   }
 
@@ -389,7 +395,7 @@ void do_game_over(bool winner) {
 
 const MenuScreen *run_game_over() {
   if (kbhit_98()) {
-    const int ch = getch();
+    const int ch = getch_98();
     if (ch == 'q' || ch == KEY_ESCAPE) {
       return &g_main_menu;
     }
@@ -858,6 +864,7 @@ const MenuScreen *play_menu_update(u32 dt) {
         case 1:
           // Just 4 directions.
           angle_delta = 64;
+          // fallthrough
         case 2: case 3: {
           // Get faster with each level.
           shoot_after = 20 - (level << 2);

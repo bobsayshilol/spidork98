@@ -8,7 +8,11 @@
 #define CONCAT(a, b) CONCAT2(a, b)
 
 // Mark a function as passing by registers first.
+#ifndef WEB_BUILD
 #define FASTCALL __attribute__((regparm (3)))
+#else
+#define FASTCALL
+#endif
 
 // Force inline a function.
 #define FORCEINLINE __inline__
@@ -25,8 +29,12 @@
 
 // Count number of elements in an array.
 #define COUNT_OF(x) (_check_is_array(x), sizeof(x) / sizeof((x)[0]))
+#ifndef WEB_BUILD
 template <typename T, int N> static void _check_is_array(T const (&)[N]) {}
 template <typename T, int N> static void _check_is_array(T (&)[N]) {}
+#else
+#define _check_is_array(x) ((void)0)
+#endif
 
 // Defer some code until destruction.
 // Example:

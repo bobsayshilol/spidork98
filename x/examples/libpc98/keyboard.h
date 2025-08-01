@@ -1,6 +1,8 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+#ifndef WEB_BUILD
+
 #include <go32.h>
 #include <sys/farptr.h>
 
@@ -11,6 +13,13 @@
     (_farpeekb(_dos_ds, 0x052A + 6) <<  8) | /* ... .?>< */ \
     (_farpeekb(_dos_ds, 0x052A + 7) <<  0)   /* ..drlu.. */ \
   )
+
+#else
+
+#include "types.h"
+u32 read_keyboard_state();
+
+#endif
 
 #define KB_STATE_Q (1 << 24)
 #define KB_STATE_W (1 << 25)

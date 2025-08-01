@@ -10,8 +10,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <conio.h>
-
 namespace game {
 
 #if 1

@@ -3,6 +3,8 @@
 
 #include "macros.h"
 
+#ifndef WEB_BUILD
+
 extern "C" {
 #include <libc/pc9800.h>
 }
@@ -30,5 +32,42 @@ struct Funcs98 {
 };
 
 } // namespace
+
+#else
+
+#include <cstdlib>
+#include <cstring>
+#include <time.h>
+#include <unistd.h>
+
+#define ISPC98(x) 1
+
+#define ScreenCols_98() 80
+#define ScreenRows_98() 24
+
+void ScreenPutString_98(const char *text, unsigned colour, int x, int y);
+void ScreenPutChar_98(char text, unsigned colour, int x, int y);
+
+using uclock_t = clock_t;
+STATIC_ASSERT(sizeof(uclock_t) == sizeof(size_t));
+
+struct Funcs64 {
+  static const char *name() { return "Web"; }
+  static void clear_screen(); // TODO
+  static void delay_ms(unsigned msec) { usleep(msec * 1000); }
+  static void pc_beep(int freq); // TODO
+  static bool kb_hit(); // TODO
+  static uclock_t ticks() { return clock(); }
+  static uclock_t ticks_per_sec() { return CLOCKS_PER_SEC; }
+};
+
+using FuncsAT = Funcs64;
+using Funcs98 = Funcs64;
+
+// conio.h
+#define kbhit_98() Funcs64::kb_hit()
+int getch_98();
+
+#endif
 
 #endif

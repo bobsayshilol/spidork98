@@ -12,9 +12,10 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <conio.h>
+#ifndef WEB_BUILD
 #include <dpmi.h>
 #include <go32.h>
+#endif
 
 namespace game {
 
@@ -59,6 +60,7 @@ void load_menu_audio() {
 namespace {
 
 void easter_egg() {
+#ifndef WEB_BUILD
   const unsigned char ee[10] = {
     0x20, 0x41, 0x4D, 0x49, 0x20,
     0x43, 0x55, 0x54, 0x45, 0x20,
@@ -90,6 +92,7 @@ void easter_egg() {
     regs.x.dx = __tb & 0x0F;
     __dpmi_int(0xDC, &regs);
   }
+#endif
 }
 
 void play() {
@@ -115,9 +118,11 @@ void play() {
   load_menu_audio();
   // TODO: unload
 
+#ifndef WEB_BUILD
   // No cursor unless we need it.
   _setcursortype_98(_NOCURSOR);
   DEFER(void *, p, NULL, (_setcursortype_98(_NORMALCURSOR)));
+#endif
 
   easter_egg();
 

@@ -7,8 +7,6 @@
 #include "gpuscrn.h"
 #include "logs.h"
 
-#include <conio.h>
-
 namespace game {
 namespace menus {
 
@@ -80,7 +78,7 @@ const MenuScreen *splash_menu_update(u32 dt) {
       gpu::set_palette_colour(FLASHER_PALETTE_IDX, flash_rgb, flash_rgb, flash_rgb);
 
       if (kbhit_98()) {
-        const int ch = getch();
+        const int ch = getch_98();
         if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z') || ch == KEY_SPACE || ch == KEY_ENTER || ch == KEY_ESCAPE) {
           // Add the hidden colour.
           images::Palette & target_palette = g_palette_fader.target_palette();
