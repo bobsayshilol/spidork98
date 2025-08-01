@@ -2,6 +2,9 @@
 #include "keyboard.h"
 
 #include "web_common.h"
+
+#include <chrono>
+
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keyboard.h>
 
@@ -45,6 +48,12 @@ bool Funcs64::kb_hit() {
   return getch_98();
 }
 
+uclock_t Funcs64::ticks() {
+  auto now = std::chrono::system_clock::now();
+  static auto begin = now;
+  return std::chrono::duration_cast<std::chrono::microseconds>(now - begin).count();
+}
+
 //
 
 int getch_98() {
@@ -61,6 +70,7 @@ int getch_98() {
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_S]) return 's';
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_D]) return 'd';
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_RETURN]) return '\r';
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_KP_ENTER]) return '\r';
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_SPACE]) return ' ';
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_DOWN]) return 10;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_UP]) return 11;
@@ -85,6 +95,7 @@ u32 read_keyboard_state() {
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_S]) bits |= KB_STATE_S;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_D]) bits |= KB_STATE_D;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_RETURN]) bits |= KB_STATE_ENTER;
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_KP_ENTER]) bits |= KB_STATE_ENTER;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_SPACE]) bits |= KB_STATE_SPACE;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_DOWN]) bits |= KB_STATE_DOWN;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_UP]) bits |= KB_STATE_UP;

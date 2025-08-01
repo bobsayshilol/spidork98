@@ -53,12 +53,12 @@ STATIC_ASSERT(sizeof(uclock_t) == sizeof(size_t));
 
 struct Funcs64 {
   static const char *name() { return "Web"; }
-  static void clear_screen(); // TODO
+  static void clear_screen();
   static void delay_ms(unsigned msec) { usleep(msec * 1000); }
-  static void pc_beep(int freq); // TODO
-  static bool kb_hit(); // TODO
-  static uclock_t ticks() { return clock(); }
-  static uclock_t ticks_per_sec() { return CLOCKS_PER_SEC; }
+  static void pc_beep(int freq);
+  static bool kb_hit();
+  static uclock_t ticks();
+  static uclock_t ticks_per_sec() { return 1'000'000; }
 };
 
 using FuncsAT = Funcs64;

@@ -36,7 +36,7 @@ static FORCEINLINE i8 sin(u8 x) {
 }
 
 static FORCEINLINE i8 cos(u8 x) {
-  return sin(x - 64);
+  return sin(x + 64);
 }
 
 #endif
