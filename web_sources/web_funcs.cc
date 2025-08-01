@@ -11,29 +11,27 @@
 namespace {
 
 const bool *s_sdl_keys;
+bool s_last_sdl_keys[SDL_SCANCODE_COUNT];
 
 } // namespace
 
 void ScreenPutString_98(const char *text, unsigned colour, int x, int y) {
-  // TODO
-  (void)text;
-  (void)colour;
-  (void)x;
-  (void)y;
+  char ch;
+  while ((ch = *text) != '\0') {
+    ScreenPutChar_98(ch, colour, x, y);
+    text++;
+    x++;
+  }
 }
 
 void ScreenPutChar_98(char text, unsigned colour, int x, int y) {
-  // TODO
-  (void)text;
-  (void)colour;
-  (void)x;
-  (void)y;
+  web::print_text_layer(text, colour, x, y);
 }
 
 //
 
 void Funcs64::clear_screen() {
-  // TODO
+  web::clear_text_layer();
 }
 
 void Funcs64::pc_beep(int freq) {
@@ -42,6 +40,11 @@ void Funcs64::pc_beep(int freq) {
 }
 
 bool Funcs64::kb_hit() {
+  // Keyboard state isn't reallocated inside SDL, so copy before the pump.
+  if (s_sdl_keys) {
+    std::copy_n(s_sdl_keys, std::size(s_last_sdl_keys), std::begin(s_last_sdl_keys));
+  }
+
   // Refresh the keyboard state.
   SDL_PumpEvents();
   s_sdl_keys = SDL_GetKeyboardState(nullptr);
@@ -61,22 +64,26 @@ int getch_98() {
     return 0;
   }
 
+#define IF_WAS_PRESSED(scancode, ch) \
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_##scancode] && !s_last_sdl_keys[SDL_Scancode::SDL_SCANCODE_##scancode]) return ch
+
   // This is called right after kb_hit() so just read it off.
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_Q]) return 'q';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_W]) return 'w';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_E]) return 'e';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_T]) return 't';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_A]) return 'a';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_S]) return 's';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_D]) return 'd';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_RETURN]) return '\r';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_KP_ENTER]) return '\r';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_SPACE]) return ' ';
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_DOWN]) return 10;
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_UP]) return 11;
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_LEFT]) return 8;
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_RIGHT]) return 12;
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_ESCAPE]) return 27;
+  IF_WAS_PRESSED(Q, 'q');
+  IF_WAS_PRESSED(W, 'w');
+  IF_WAS_PRESSED(E, 'e');
+  IF_WAS_PRESSED(T, 't');
+  IF_WAS_PRESSED(A, 'a');
+  IF_WAS_PRESSED(S, 's');
+  IF_WAS_PRESSED(D, 'd');
+  IF_WAS_PRESSED(RETURN, '\r');
+  IF_WAS_PRESSED(KP_ENTER, '\r');
+  IF_WAS_PRESSED(SPACE, ' ');
+  IF_WAS_PRESSED(DOWN, 10);
+  IF_WAS_PRESSED(UP, 11);
+  IF_WAS_PRESSED(LEFT, 8);
+  IF_WAS_PRESSED(RIGHT, 12);
+  IF_WAS_PRESSED(ESCAPE, 27);
+
   return 0;
 }
 
