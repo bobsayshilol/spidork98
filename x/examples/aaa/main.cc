@@ -44,12 +44,12 @@ void toggle_audio() {
 
 void load_menu_audio() {
   soundsystem::free_handle(VOICE_HANDLE_MENU_BGM);
-  if (!soundsystem::load_sound(VOICE_HANDLE_MENU_BGM, GAME_DATA_PATH("song3.pcm"), true)) {
+  if (!soundsystem::load_sound(VOICE_HANDLE_MENU_BGM, GAME_DATA_PATH("SONG3.PCM"), true)) {
     logging::print(logging::Level::Warning, "Missing menu bgm");
   }
 
   soundsystem::free_handle(VOICE_HANDLE_MENU_CLICK);
-  if (!soundsystem::load_sound(VOICE_HANDLE_MENU_CLICK, GAME_DATA_PATH("boop.pcm"), false)) {
+  if (!soundsystem::load_sound(VOICE_HANDLE_MENU_CLICK, GAME_DATA_PATH("BOOP.PCM"), false)) {
     logging::print(logging::Level::Warning, "Missing click");
   }
 

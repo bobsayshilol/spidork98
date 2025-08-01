@@ -28,7 +28,7 @@ void splash_menu_enter() {
   // Draw the background to the backbuffer.
   {
     images::ImageData splash_bg;
-    if (!splash_bg.load(GAME_DATA_PATH("splash.img"))) {
+    if (!splash_bg.load(GAME_DATA_PATH("SPLASH.IMG"))) {
       logging::print(logging::Level::Error, "Failed to load splash screen image");
       g_had_error = true;
       return;

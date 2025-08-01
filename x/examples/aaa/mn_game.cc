@@ -185,7 +185,7 @@ void tick_loader(LoadingProgress::E progress) {
           gpu::g_draw_to = gpu::DrawTo::Back;
           {
             images::ImageData background;
-            if (background.load(GAME_DATA_PATH("game_bg.img"))) {
+            if (background.load(GAME_DATA_PATH("GAME_BG.IMG"))) {
               soundsystem::update();
               images::draw_image(0, 0, background);
             } else {
@@ -218,12 +218,12 @@ void tick_loader(LoadingProgress::E progress) {
 
         // Bucko sprite.
         case 15:
-        if (!s_bucko_sprite.load(GAME_DATA_PATH("bucko.img"))) {
+        if (!s_bucko_sprite.load(GAME_DATA_PATH("BUCKO.IMG"))) {
           logging::print(logging::Level::Error, "Failed to load bucko sprite");
         }
         break;
         case 20:
-        if (!s_bucko_mask.load(GAME_DATA_PATH("bucko_m.img"))) {
+        if (!s_bucko_mask.load(GAME_DATA_PATH("BUCKO_M.IMG"))) {
           logging::print(logging::Level::Error, "Failed to load bucko mask");
         }
         if (s_bucko_mask.m_width != BUCKO_SPRITE_SIZE || s_bucko_mask.m_height != BUCKO_SPRITE_SIZE ||
@@ -238,12 +238,12 @@ void tick_loader(LoadingProgress::E progress) {
 
         // Ship sprite.
         case 25:
-        if (!s_ship_sprite.load(GAME_DATA_PATH("ship.img"))) {
+        if (!s_ship_sprite.load(GAME_DATA_PATH("SHIP.IMG"))) {
           logging::print(logging::Level::Error, "Failed to load ship sprite");
         }
         break;
         case 30:
-        if (!s_ship_mask.load(GAME_DATA_PATH("ship_m.img"))) {
+        if (!s_ship_mask.load(GAME_DATA_PATH("SHIP_M.IMG"))) {
           logging::print(logging::Level::Error, "Failed to load ship mask");
         }
         if (s_ship_mask.m_width != SHIP_WIDTH || s_ship_mask.m_height != SHIP_HEIGHT ||
@@ -260,9 +260,9 @@ void tick_loader(LoadingProgress::E progress) {
         case 35: {
           const char *sprite_name = "";
           switch (g_level_selected) {
-            case 0: sprite_name = GAME_DATA_PATH("train.img"); break;
-            case 1: sprite_name = GAME_DATA_PATH("alien.img"); break;
-            case 2: case 3: sprite_name = GAME_DATA_PATH("hawc.img"); break;
+            case 0: sprite_name = GAME_DATA_PATH("TRAIN.IMG"); break;
+            case 1: sprite_name = GAME_DATA_PATH("ALIEN.IMG"); break;
+            case 2: case 3: sprite_name = GAME_DATA_PATH("HAWC.IMG"); break;
           }
           if (!s_enemy_sprite.load(sprite_name)) {
             logging::print(logging::Level::Error, "Failed to load enemy sprite");
@@ -271,9 +271,9 @@ void tick_loader(LoadingProgress::E progress) {
         case 40: {
           const char *sprite_mask = "";
           switch (g_level_selected) {
-            case 0: sprite_mask = GAME_DATA_PATH("train_m.img"); break;
-            case 1: sprite_mask = GAME_DATA_PATH("alien_m.img"); break;
-            case 2: case 3: sprite_mask = GAME_DATA_PATH("hawc_m.img"); break;
+            case 0: sprite_mask = GAME_DATA_PATH("TRAIN_M.IMG"); break;
+            case 1: sprite_mask = GAME_DATA_PATH("ALIEN_M.IMG"); break;
+            case 2: case 3: sprite_mask = GAME_DATA_PATH("HAWC_M.IMG"); break;
           }
           if (!s_enemy_mask.load(sprite_mask)) {
             logging::print(logging::Level::Error, "Failed to load enemy mask");
@@ -304,21 +304,21 @@ void tick_loader(LoadingProgress::E progress) {
       switch (s_loader_tick) {
         // Load noises.
         case 5:
-          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_OOF, GAME_DATA_PATH("ow.pcm"), false)) {
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_OOF, GAME_DATA_PATH("OW.PCM"), false)) {
             logging::print(logging::Level::Warning, "Missing game oof");
           }
         break;
 
         // Moar sounds.
         case 10:
-          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_PICKUP, GAME_DATA_PATH("gotcha.pcm"), false)) {
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_PICKUP, GAME_DATA_PATH("GOTCHA.PCM"), false)) {
             logging::print(logging::Level::Warning, "Missing pickup sound");
           }
           break;
 
         // Load BGM.
         case 15:
-          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_BGM, GAME_DATA_PATH("song2.pcm"), true)) {
+          if (!soundsystem::load_sound(VOICE_HANDLE_GAME_BGM, GAME_DATA_PATH("SONG2.PCM"), true)) {
             logging::print(logging::Level::Warning, "Missing game bgm");
           }
           break;
