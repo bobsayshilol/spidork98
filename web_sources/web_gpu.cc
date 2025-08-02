@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <array>
+#include <chrono>
 #include <memory>
 
 namespace gpu {
@@ -137,16 +138,19 @@ FASTCALL void shutdown() {
 }
 
 FASTCALL void wait_for_vsync() {
-  SDL_Surface * window_surface = SDL_GetWindowSurface(s_window.get());
-  SDL_BlitSurface(s_front_buffer.get(), nullptr, window_surface, nullptr);
-  if (s_text_enabled) {
-    SDL_BlitSurface(s_text_buffer.get(), nullptr, window_surface, nullptr);
-  }
-  SDL_UpdateWindowSurface(s_window.get());
+  SDL_PumpEvents();
+  web::update_screen();
 
   // Fake 60fps.
-  SDL_PumpEvents();
-  SDL_Delay(16);
+#ifndef __EMSCRIPTEN__
+  const auto now = std::chrono::system_clock::now();
+  static auto last_time = now;
+  const auto delay = std::chrono::duration_cast<std::chrono::milliseconds>((last_time + std::chrono::milliseconds(16) - now));
+  last_time = now;
+  if (delay > std::chrono::milliseconds(0)) {
+    SDL_Delay(delay.count());
+  }
+#endif
 }
 
 FASTCALL void enable_text_layer(bool show) {
@@ -292,6 +296,15 @@ void print_text_layer(char ch, u8 col, int x, int y) {
       pix[i] = rgba8888;
     }
   }
+}
+
+void update_screen() {
+  SDL_Surface * window_surface = SDL_GetWindowSurface(gpu::s_window.get());
+  SDL_BlitSurfaceScaled(gpu::s_front_buffer.get(), nullptr, window_surface, nullptr, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
+  if (gpu::s_text_enabled) {
+    SDL_BlitSurfaceScaled(gpu::s_text_buffer.get(), nullptr, window_surface, nullptr, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
+  }
+  SDL_UpdateWindowSurface(gpu::s_window.get());
 }
 
 } // namespace web

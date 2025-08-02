@@ -17,6 +17,8 @@
 #ifndef WEB_BUILD
 #include <dpmi.h>
 #include <go32.h>
+#else
+#include "web_common.h"
 #endif
 
 #define DEBUG_PRINT_FPS 1
@@ -346,6 +348,9 @@ void tick_loader(LoadingProgress::E progress) {
 
   // Make sure to tick the audio system since we're blocking in here.
   soundsystem::update();
+#ifdef WEB_BUILD
+  web::update_screen();
+#endif
 }
 
 void run_loading() {

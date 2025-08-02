@@ -22,7 +22,10 @@ add_library(libpc98
     web_sources/web_gpu.cc
     web_sources/web_pcm.cc
 )
-target_include_directories(libpc98 PUBLIC x/examples/libpc98)
+target_include_directories(libpc98 PUBLIC
+    x/examples/libpc98
+    web_sources
+)
 target_link_libraries(libpc98 PRIVATE SDL3::SDL3-static)
 
 add_executable(aaa
