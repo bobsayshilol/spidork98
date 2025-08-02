@@ -39,3 +39,6 @@ add_executable(aaa
     x/examples/aaa/pal_fade.cc
 )
 target_link_libraries(aaa libpc98)
+if (EMSCRIPTEN)
+    target_link_options(aaa PRIVATE --embed-file "${CMAKE_SOURCE_DIR}/aaa@/aaa")
+endif()

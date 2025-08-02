@@ -15,6 +15,16 @@
 #ifndef WEB_BUILD
 #include <dpmi.h>
 #include <go32.h>
+
+#elif defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#include <emscripten/html5.h>
+template <typename Func>
+static void run_at_fps(int fps, Func & func) {
+  emscripten_set_main_loop_arg([](void *arg){
+    (*static_cast<Func*>(arg))();
+  }, &func, fps, true);
+}
 #endif
 
 namespace game {
@@ -133,7 +143,12 @@ void play() {
   const menus::MenuScreen * current_menu = &menus::g_splash_menu;
   current_menu->enter();
 
-  while (current_menu && !g_had_error) {
+#ifdef __EMSCRIPTEN__
+  auto run_one = [&]
+#else
+  while (current_menu && !g_had_error)
+#endif
+  {
     // Calculate delta.
     const uclock_t now = Funcs98::ticks();
     const u32 dt = now - last_time; // ticks should be small enough to fit into 32bit
@@ -154,6 +169,10 @@ void play() {
       soundsystem::update();
     }
   }
+#ifdef __EMSCRIPTEN__
+  ;
+  run_at_fps(60, run_one);
+#endif
 }
 
 } // namespace

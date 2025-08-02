@@ -139,9 +139,11 @@ void on_enter_pressed() {
       s_next_screen = &g_credits_menu;
       break;
 
+#ifndef __EMSCRIPTEN__
     case SELECTION_QUIT:
       s_next_screen = NULL;
       break;
+#endif
   }
 }
 
@@ -191,10 +193,12 @@ const MenuScreen *main_menu_update(u32) {
           on_enter_pressed();
           did_thing = true;
           break;
+#ifndef __EMSCRIPTEN__
         case KEY_ESCAPE: case 'Q': case 'q':
           s_next_screen = NULL;
           did_thing = true;
           break;
+#endif
 
         // Cheats.
         case 'U': case 'u':

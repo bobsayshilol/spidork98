@@ -1,4 +1,9 @@
-option(BUILD_WITH_SANITIZERS "Enable sanitizers" ON)
+if (EMSCRIPTEN)
+    message(WARNING "Bug in SDL 3.2.4 with sanitizers enabled")
+    set(BUILD_WITH_SANITIZERS OFF)
+else()
+    option(BUILD_WITH_SANITIZERS "Enable sanitizers" ON)
+endif()
 
 # Language standards.
 set(CMAKE_C_STANDARD 20)

@@ -45,14 +45,21 @@ void print(Level::E level, const char *msg, ...) {
     }
 
     va_list args;
-    va_start(args, msg);
-
     const unsigned t_ms = static_cast<unsigned>(Funcs98::ticks() / (Funcs98::ticks_per_sec() / 1000));
+
     fprintf(s_log_file, "[%c][%u.%04u] ", static_cast<char>(level), t_ms / 1000, t_ms % 1000);
+    va_start(args, msg);
     vfprintf(s_log_file, msg, args);
+    va_end(args);
     fprintf(s_log_file, "\n");
 
+#ifdef WEB_BUILD
+    printf("[%c][%u.%04u] ", static_cast<char>(level), t_ms / 1000, t_ms % 1000);
+    va_start(args, msg);
+    vprintf(msg, args);
     va_end(args);
+    printf("\n");
+#endif
 }
 
 } // namespace logging
