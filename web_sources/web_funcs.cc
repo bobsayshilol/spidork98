@@ -40,15 +40,16 @@ void Funcs64::pc_beep(int freq) {
 }
 
 bool Funcs64::kb_hit() {
-  // Keyboard state isn't reallocated inside SDL, so copy before the pump.
-  if (s_sdl_keys) {
-    std::copy_n(s_sdl_keys, std::size(s_last_sdl_keys), std::begin(s_last_sdl_keys));
-  }
-
   // Refresh the keyboard state.
   SDL_PumpEvents();
   s_sdl_keys = SDL_GetKeyboardState(nullptr);
-  return getch_98();
+
+  for (int i = 0; i < SDL_Scancode::SDL_SCANCODE_COUNT; i++) {
+    if (s_sdl_keys[i] != s_last_sdl_keys[i]) {
+      return true;
+    }
+  }
+  return false;
 }
 
 uclock_t Funcs64::ticks() {
@@ -64,8 +65,15 @@ int getch_98() {
     return 0;
   }
 
-#define IF_WAS_PRESSED(scancode, ch) \
-  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_##scancode] && !s_last_sdl_keys[SDL_Scancode::SDL_SCANCODE_##scancode]) return ch
+#define IF_WAS_PRESSED(scancode, ch) do { \
+    const bool is_pressed = s_sdl_keys[SDL_Scancode::SDL_SCANCODE_##scancode]; \
+    bool & was_pressed = s_last_sdl_keys[SDL_Scancode::SDL_SCANCODE_##scancode]; \
+    const bool did_press = is_pressed && !was_pressed; \
+    was_pressed = is_pressed; \
+    if (did_press) { \
+      return ch; \
+    } \
+  } while (false)
 
   // This is called right after kb_hit() so just read it off.
   IF_WAS_PRESSED(Q, 'q');
@@ -75,6 +83,8 @@ int getch_98() {
   IF_WAS_PRESSED(A, 'a');
   IF_WAS_PRESSED(S, 's');
   IF_WAS_PRESSED(D, 'd');
+  IF_WAS_PRESSED(U, 'u');
+  IF_WAS_PRESSED(I, 'i');
   IF_WAS_PRESSED(RETURN, '\r');
   IF_WAS_PRESSED(KP_ENTER, '\r');
   IF_WAS_PRESSED(SPACE, ' ');
