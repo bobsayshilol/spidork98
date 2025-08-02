@@ -17,6 +17,10 @@
 #include <chrono>
 #include <memory>
 
+#ifdef __EMSCRIPTEN__
+#include "emscripten.h"
+#endif
+
 namespace gpu {
 
 namespace {
@@ -37,7 +41,9 @@ struct SDLDeleter {
 
 float get_window_scale() {
 #ifdef __EMSCRIPTEN__
-  return 1;
+  return EM_ASM_DOUBLE(
+    return document.getElementById('scaling_factor').value;
+  );
 #else
   return 2;
 #endif
