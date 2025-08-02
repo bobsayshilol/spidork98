@@ -12,6 +12,9 @@ set(CMAKE_CXX_STANDARD 23)
 # Faster builds.
 set(CMAKE_OPTIMIZE_DEPENDENCIES ON)
 
+# Always have assertions
+add_compile_options(-UNDEBUG)
+
 # Per-compiler flags.
 if (CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     add_compile_options(
@@ -53,19 +56,18 @@ if (EMSCRIPTEN)
     # Output as a HTML.
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     add_compile_options(
-        # SDL3 is experimental.
-        -Wno-error=experimental
+        -O3
     )
     add_link_options(
         # The linker also needs optimisations enabled.
         -O3
 
         # Debug checks
-        -sSTACK_OVERFLOW_CHECK=2
-        -sASSERTIONS=1
+        #-sSTACK_OVERFLOW_CHECK=2
+        #-sASSERTIONS=1
 
         # Source file mappings in debug data.
-        -gsource-map
+        #-gsource-map
 
         # Single HTML.
         -sSINGLE_FILE=1

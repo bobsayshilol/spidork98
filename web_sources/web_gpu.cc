@@ -35,6 +35,14 @@ struct SDLDeleter {
 
 //
 
+float get_window_scale() {
+#ifdef __EMSCRIPTEN__
+  return 1;
+#else
+  return 2;
+#endif
+}
+
 constexpr std::size_t MAX_PALETTE_SIZE = 256;
 
 std::unique_ptr<SDL_Window, SDLDeleter> s_window;
@@ -70,7 +78,7 @@ FASTCALL bool setup() {
     return false;
   }
 
-  s_window.reset(SDL_CreateWindow("SPIDORK98", GPU_WIDTH, GPU_HEIGHT, 0));
+  s_window.reset(SDL_CreateWindow("SPIDORK98", GPU_WIDTH * get_window_scale(), GPU_HEIGHT * get_window_scale(), 0));
   if (!s_window) {
     logging::print(logging::Level::Error, "Failed to create window: %s", SDL_GetError());
     return false;

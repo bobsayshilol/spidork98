@@ -40,5 +40,8 @@ add_executable(aaa
 )
 target_link_libraries(aaa libpc98)
 if (EMSCRIPTEN)
-    target_link_options(aaa PRIVATE --embed-file "${CMAKE_SOURCE_DIR}/aaa@/aaa")
+    target_link_options(aaa PRIVATE
+        --embed-file "${CMAKE_SOURCE_DIR}/aaa@/aaa"
+        --shell-file "${CMAKE_SOURCE_DIR}/web_sources/shell_minimal.html"
+    )
 endif()
