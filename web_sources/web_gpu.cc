@@ -52,6 +52,8 @@ constexpr std::size_t TEXT_CHAR_HEIGHT = GPU_HEIGHT / ScreenRows_98();
 bool s_text_enabled;
 std::unique_ptr<SDL_Surface, SDLDeleter> s_text_buffer;
 
+#include "web_font.h"
+
 } // namespace
 
 DrawTo::E g_draw_to;
@@ -273,11 +275,13 @@ void print_text_layer(char ch, u8 col, int x, int y) {
     ;
 
   // Draw the character.
-  (void)ch;
+  auto &char_data = gpu::get_font_data(ch);
   for (std::size_t j = 0; j < gpu::TEXT_CHAR_HEIGHT; j++) {
     u32 *const pix = corner + j * GPU_WIDTH;
+    u8 mask = char_data.rows[j];
     for (std::size_t i = 0; i < gpu::TEXT_CHAR_WIDTH; i++) {
-      pix[i] = rgba8888;
+      pix[i] = (mask & 0x80) ? rgba8888 : 0;
+      mask <<= 1;
     }
   }
 
@@ -285,7 +289,7 @@ void print_text_layer(char ch, u8 col, int x, int y) {
   if (underline) {
     u32 *const pix = corner + ((7 * gpu::TEXT_CHAR_HEIGHT - 8) / 8) * GPU_WIDTH;
     for (std::size_t i = 0; i < gpu::TEXT_CHAR_WIDTH; i++) {
-      pix[i] = 0; //rgba8888;
+      pix[i] = rgba8888;
     }
   }
 }
