@@ -18,6 +18,7 @@ struct AnimatedGif;
 struct AnimationData;
 struct ImageData;
 struct Palette;
+struct SpriteScratch; // see images2.h
 
 // Default palettes.
 extern const Palette default_palette_16;
@@ -36,9 +37,11 @@ FASTCALL void draw_image(u16 x, u16 y, ImageData const & data);
 
 // Draw a sprite with a given mask.
 FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData const & mask);
+FASTCALL void draw_sprite_64(u16 x, u16 y, ImageData const & sprite, ImageData const & mask, SpriteScratch & scratch);
 
 // Itchy.
 FASTCALL void free_scratch();
+FASTCALL void free_scratch_64(SpriteScratch & scratch);
 
 // A predefined palette to use.
 struct Palette {
