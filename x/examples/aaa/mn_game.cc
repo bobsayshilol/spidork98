@@ -931,10 +931,19 @@ const MenuScreen *play_menu_update(u32 dt) {
       if (state.vel.u.x | state.vel.u.y) {
         // Do the usual dance of undraw, move, draw.
         // TODO: is this a big perf hit?
+#if 1
+        // HACK: the overdraw of the sprites is enough to not need the undraw.
+        // Well, almost. HAWCs still need the first lines.
+        gpu::undraw_quad(
+          PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
+          PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y + 1
+        );
+#else
         gpu::undraw_quad(
           PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
           PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + state.pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + state.pos.i.y
         );
+#endif
         //state.pos.i.x = utils::clamp<i16>(state.pos.i.x + state.vel.i.x, 0, PLAY_AREA_WIDTH - ENEMY_SPRITE_SIZE);
         //state.pos.i.y = utils::clamp<i16>(state.pos.i.y + state.vel.i.y, 0, PLAY_AREA_HEIGHT - ENEMY_SPRITE_SIZE);
         state.pos.i.x += state.vel.i.x;
