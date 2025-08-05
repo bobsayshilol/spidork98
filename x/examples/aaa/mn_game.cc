@@ -483,6 +483,17 @@ void play_menu_enter() {
     Vec2_16 &pos = s_stars[i];
     pos.u.x = (( i * 5 * PLAY_AREA_WIDTH / 7 + ((rand() & 7) << 5) ) % PLAY_AREA_WIDTH) << STAR_SHIFT;
     pos.u.y = (PLAY_AREA_HEIGHT * (2 * i + 1)) / (2 * NUM_STARS) + ((rand() & 3) << 2);
+
+    // Don't put the stars on a line with a bank switch.
+    switch (pos.u.y) {
+      case 50: case 101: case 152: case 203: case 255: case 306: case 357:
+        pos.u.y++;
+      case 51: case 102: case 153: case 204: case 256: case 307: case 358:
+        pos.u.y++;
+        break;
+      default:
+        break;
+    }
   }
 
   // Probably a good enough palette.
@@ -620,25 +631,32 @@ const MenuScreen *play_menu_update(u32 dt) {
     for (u32 i = 0; i < NUM_STARS; i++) {
       Vec2_16 &pos = *positions++;
       const u16 y = PLAY_AREA_BORDER_Y + pos.u.y;
-      u16 x = PLAY_AREA_BORDER_X + (pos.u.x >> STAR_SHIFT);
 
-      // TODO: 2 function calls is really excessive for a single pixel
-      gpu::undraw_quad(
-        x, y,
-        x + 1, y + 1
-      );
-
+      // Move it.
+      u16 orig_x = pos.u.x;
       pos.u.x--;
       if (pos.u.x >= (PLAY_AREA_WIDTH << STAR_SHIFT)) {
         pos.u.x = (PLAY_AREA_WIDTH << STAR_SHIFT) - 1;
       }
-      x = PLAY_AREA_BORDER_X + (pos.u.x >> STAR_SHIFT);
+      u16 new_x = pos.u.x;
 
-      gpu::draw_quad(
-        x, y,
-        x + 1, y + 1,
-        GAME_PALETTE_WHITE
-      );
+      // Draw it.
+      orig_x = PLAY_AREA_BORDER_X + (orig_x >> STAR_SHIFT);
+      new_x = PLAY_AREA_BORDER_X + (new_x >> STAR_SHIFT);
+
+      // TODO: 2 function calls is really excessive for a single pixel
+      const bool needs_redraw = orig_x != new_x;
+      if (needs_redraw) {
+        gpu::undraw_quad(
+          orig_x, y,
+          orig_x + 1, y + 1
+        );
+        gpu::draw_quad(
+          new_x, y,
+          new_x + 1, y + 1,
+          GAME_PALETTE_WHITE
+        );
+      }
     }
   }
 
