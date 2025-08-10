@@ -7,6 +7,7 @@
 #include "funcs.h"
 #include "gpuscrn.h"
 #include "images.h"
+#include "images2.h"
 #include "keyboard.h"
 #include "logs.h"
 #include "maths.h"
@@ -112,6 +113,7 @@ u8 s_player_iframes;
 #define SHIP_HEIGHT 16
 images::ImageData s_ship_sprite;
 images::ImageData s_ship_mask;
+images::SpriteScratch s_ship_scratch;
 
 #define SHIP_MOVE_SPEED 2
 Vec2_16 s_player_position; // top left position
@@ -145,6 +147,7 @@ images::ImageData s_enemy_mask;
 #define MAX_ENEMIES 2
 struct EnemyState { Vec2_16 pos; Vec2_8 vel; u8 stage; u8 health; u8 angle; u8 last_shot; u16 meta; };
 StaticUnorderedVector<EnemyState, MAX_ENEMIES> s_enemy_states;
+images::SpriteScratch s_enemy_scratches[MAX_ENEMIES];
 
 //
 
@@ -494,6 +497,17 @@ void play_menu_enter() {
     Vec2_16 &pos = s_stars[i];
     pos.u.x = (( i * 5 * PLAY_AREA_WIDTH / 7 + ((rand() & 7) << 5) ) % PLAY_AREA_WIDTH) << STAR_SHIFT;
     pos.u.y = (PLAY_AREA_HEIGHT * (2 * i + 1)) / (2 * NUM_STARS) + ((rand() & 3) << 2);
+
+    // Don't put the stars on a line with a bank switch.
+    switch (pos.u.y) {
+      case 50: case 101: case 152: case 203: case 255: case 306: case 357:
+        pos.u.y++;
+      case 51: case 102: case 153: case 204: case 256: case 307: case 358:
+        pos.u.y++;
+        break;
+      default:
+        break;
+    }
   }
 
   // Probably a good enough palette.
@@ -631,25 +645,32 @@ const MenuScreen *play_menu_update(u32 dt) {
     for (u32 i = 0; i < NUM_STARS; i++) {
       Vec2_16 &pos = *positions++;
       const u16 y = PLAY_AREA_BORDER_Y + pos.u.y;
-      u16 x = PLAY_AREA_BORDER_X + (pos.u.x >> STAR_SHIFT);
 
-      // TODO: 2 function calls is really excessive for a single pixel
-      gpu::undraw_quad(
-        x, y,
-        x + 1, y + 1
-      );
-
+      // Move it.
+      u16 orig_x = pos.u.x;
       pos.u.x--;
       if (pos.u.x >= (PLAY_AREA_WIDTH << STAR_SHIFT)) {
         pos.u.x = (PLAY_AREA_WIDTH << STAR_SHIFT) - 1;
       }
-      x = PLAY_AREA_BORDER_X + (pos.u.x >> STAR_SHIFT);
+      u16 new_x = pos.u.x;
 
-      gpu::draw_quad(
-        x, y,
-        x + 1, y + 1,
-        GAME_PALETTE_WHITE
-      );
+      // Draw it.
+      orig_x = PLAY_AREA_BORDER_X + (orig_x >> STAR_SHIFT);
+      new_x = PLAY_AREA_BORDER_X + (new_x >> STAR_SHIFT);
+
+      // TODO: 2 function calls is really excessive for a single pixel
+      const bool needs_redraw = orig_x != new_x;
+      if (needs_redraw) {
+        gpu::undraw_quad(
+          orig_x, y,
+          orig_x + 1, y + 1
+        );
+        gpu::draw_quad(
+          new_x, y,
+          new_x + 1, y + 1,
+          GAME_PALETTE_WHITE
+        );
+      }
     }
   }
 
@@ -671,7 +692,7 @@ const MenuScreen *play_menu_update(u32 dt) {
   {
     const Vec2_16 pos = s_player_position;
 #if 1
-    images::draw_sprite(PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y, s_ship_sprite, s_ship_mask);
+    images::draw_sprite_64(PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y, s_ship_sprite, s_ship_mask, s_ship_scratch);
 #else
     gpu::draw_quad(
       PLAY_AREA_BORDER_X + pos.i.x, PLAY_AREA_BORDER_Y + pos.i.y,
@@ -922,17 +943,26 @@ const MenuScreen *play_menu_update(u32 dt) {
       if (state.vel.u.x | state.vel.u.y) {
         // Do the usual dance of undraw, move, draw.
         // TODO: is this a big perf hit?
+#if 1
+        // HACK: the overdraw of the sprites is enough to not need the undraw.
+        // Well, almost. HAWCs still need the first lines.
+        gpu::undraw_quad(
+          PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
+          PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y + 1
+        );
+#else
         gpu::undraw_quad(
           PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
           PLAY_AREA_BORDER_X + ENEMY_SPRITE_SIZE + state.pos.i.x, PLAY_AREA_BORDER_Y + ENEMY_SPRITE_SIZE + state.pos.i.y
         );
+#endif
         //state.pos.i.x = utils::clamp<i16>(state.pos.i.x + state.vel.i.x, 0, PLAY_AREA_WIDTH - ENEMY_SPRITE_SIZE);
         //state.pos.i.y = utils::clamp<i16>(state.pos.i.y + state.vel.i.y, 0, PLAY_AREA_HEIGHT - ENEMY_SPRITE_SIZE);
         state.pos.i.x += state.vel.i.x;
         state.pos.i.y += state.vel.i.y;
       }
 #if 1
-      images::draw_sprite(PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y, s_enemy_sprite, s_enemy_mask);
+      images::draw_sprite_64(PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y, s_enemy_sprite, s_enemy_mask, s_enemy_scratches[i]);
 #else
       gpu::draw_quad(
         PLAY_AREA_BORDER_X + state.pos.i.x, PLAY_AREA_BORDER_Y + state.pos.i.y,
@@ -1057,9 +1087,14 @@ void play_menu_leave() {
   // Cleanup sprites.
   s_bucko_sprite.clear();
   s_bucko_mask.clear();
+  s_enemy_sprite.clear();
+  s_enemy_mask.clear();
   s_ship_sprite.clear();
   s_ship_mask.clear();
   images::free_scratch();
+  images::free_scratch_64(s_ship_scratch);
+  images::free_scratch_64(s_enemy_scratches[0]);
+  images::free_scratch_64(s_enemy_scratches[1]);
 
   // Reinstate the audio handles.
   load_menu_audio();

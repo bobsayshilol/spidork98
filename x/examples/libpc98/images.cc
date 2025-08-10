@@ -275,10 +275,10 @@ FASTCALL void draw_image(u16 x, u16 y, ImageData const & data) {
 
 FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData const & mask) {
   // Round down co-ords so that they're aligned.
-  const u16 x_base = x & ~static_cast<u16>(SCANLINE_PART_WIDTH_16 - 1);
+  const u16 x_base = x & ~static_cast<u16>(SCANLINE_PART_WIDTH_32 - 1);
   const u16 dx = x - x_base;
-  const u16 w_base = sprite.m_width;
-  const u16 w = maths::pad_to<SCANLINE_PART_WIDTH_16>(w_base) + SCANLINE_PART_WIDTH_16;
+  const u16 w_base = sprite.m_width; // always 16 or 32
+  const u16 w = maths::pad_to<SCANLINE_PART_WIDTH_32>(w_base) + SCANLINE_PART_WIDTH_32;
   const u16 h = sprite.m_height;
 
   // Allocate if required.
@@ -287,6 +287,9 @@ FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData cons
     // Sanity check in here since it shouldn't happen often.
     if (sprite.m_width != mask.m_width || sprite.m_height != mask.m_height) {
       logging::print(logging::Level::Error, "Mask data doesn't match sprite data");
+      return;
+    } else if (sprite.m_width % 16) {
+      logging::print(logging::Level::Error, "Sprite width isn't a multiple of 16: %u", sprite.m_width);
       return;
     }
 
@@ -305,9 +308,9 @@ FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData cons
     gpu::g_draw_to = gpu::DrawTo::Back;
     u8 *part_data = s_sprite_scratch_space;
     for (u16 line = y; line < y + h; line++) {
-      for (u16 part = x_base >> 4; part < (x_base + w) >> 4; part++) {
-        gpu::read_scanline_part_16(line, part, part_data);
-        part_data += SCANLINE_PART_WIDTH_16;
+      for (u16 part = x_base >> 5; part < (x_base + w) >> 5; part++) {
+        gpu::read_scanline_part_32(line, part, part_data);
+        part_data += SCANLINE_PART_WIDTH_32;
       }
     }
     gpu::g_draw_to = gpu::DrawTo::Front;
@@ -342,9 +345,9 @@ FASTCALL void draw_sprite(u16 x, u16 y, ImageData const & sprite, ImageData cons
   {
     const u8 *part_data = s_sprite_scratch_space;
     for (u16 line = y; line < y + h; line++) {
-      for (u16 part = x_base >> 4; part < (x_base + w) >> 4; part++) {
-        gpu::write_scanline_part_16(line, part, part_data);
-        part_data += SCANLINE_PART_WIDTH_16;
+      for (u16 part = x_base >> 5; part < (x_base + w) >> 5; part++) {
+        gpu::write_scanline_part_32(line, part, part_data);
+        part_data += SCANLINE_PART_WIDTH_32;
       }
     }
   }

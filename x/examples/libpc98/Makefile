@@ -3,7 +3,7 @@ include ..\\libpc98\\flags.mk
 
 # What we're building
 DEPS	+=
-OBJS	= gpuscrn.o profile.o sincos.o pcm.o images.o memory.o sound.o logs.o
+OBJS	= gpuscrn.o profile.o sincos.o pcm.o images.o images2.o memory.o sound.o logs.o
 # pcmi.o
 TARGET	= libpc98.a
 

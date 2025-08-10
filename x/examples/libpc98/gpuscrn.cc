@@ -516,12 +516,12 @@ FASTCALL void write_scanline_part_16(u16 line, u16 part, const u8 *data) {
 
 FASTCALL void read_scanline_part_32(u16 line, u16 part, u8 *data) {
   STATIC_ASSERT(SCANLINE_PART_WIDTH_32 == 32);
-  scanline_part_copy<ReadOp>(line, data, part << 8, SCANLINE_PART_WIDTH_32);
+  scanline_part_copy<ReadOp>(line, data, part << 5, SCANLINE_PART_WIDTH_32);
 }
 
 FASTCALL void write_scanline_part_32(u16 line, u16 part, const u8 *data) {
   STATIC_ASSERT(SCANLINE_PART_WIDTH_32 == 32);
-  scanline_part_copy<WriteOp>(line, data, part << 8, SCANLINE_PART_WIDTH_32);
+  scanline_part_copy<WriteOp>(line, data, part << 5, SCANLINE_PART_WIDTH_32);
 }
 
 } // namespace gpu
