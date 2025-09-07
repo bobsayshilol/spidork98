@@ -1,0 +1,3 @@
+[submodule "x/examples/puzzles/puzzles"]
+	path = x/examples/puzzles/puzzles
+	url = https://git.tartarus.org/simon/puzzles.git
