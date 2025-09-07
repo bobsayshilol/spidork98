@@ -1,0 +1,795 @@
+diff --git a/dsf.c b/dsf.c
+index bed564f..d8284c4 100644
+--- a/dsf.c
++++ b/dsf.c
+@@ -58,7 +58,7 @@ static DSF *dsf_new_internal(int size, bool flip, bool min)
+ {
+     DSF *dsf;
+ 
+-    assert(0 < size && size <= DSF_MAX && "Bad dsf size");
++    assert(0 < size && (unsigned)size <= DSF_MAX && "Bad dsf size");
+ 
+     dsf = snew(DSF);
+     dsf->size = size;
+@@ -151,7 +151,7 @@ int dsf_canonify(DSF *dsf, int n)
+ {
+     size_t root;
+ 
+-    assert(0 <= n && n < dsf->size && "Overrun in dsf_canonify");
++    assert(0 <= n && (unsigned)n < dsf->size && "Overrun in dsf_canonify");
+ 
+     root = dsf_find_root(dsf, n);
+     dsf_path_compress(dsf, n, root);
+@@ -162,8 +162,8 @@ void dsf_merge(DSF *dsf, int n1, int n2)
+ {
+     size_t r1, r2, s1, s2, root;
+ 
+-    assert(0 <= n1 && n1 < dsf->size && "Overrun in dsf_merge");
+-    assert(0 <= n2 && n2 < dsf->size && "Overrun in dsf_merge");
++    assert(0 <= n1 && (unsigned)n1 < dsf->size && "Overrun in dsf_merge");
++    assert(0 <= n2 && (unsigned)n2 < dsf->size && "Overrun in dsf_merge");
+     assert(!dsf->flip && "dsf_merge on a flip dsf");
+ 
+     /* Find the root elements */
+@@ -238,7 +238,7 @@ int dsf_canonify_flip(DSF *dsf, int n, bool *inverse)
+     size_t root;
+     unsigned flip;
+ 
+-    assert(0 <= n && n < dsf->size && "Overrun in dsf_canonify_flip");
++    assert(0 <= n && (unsigned)n < dsf->size && "Overrun in dsf_canonify_flip");
+     assert(dsf->flip && "dsf_canonify_flip on a non-flip dsf");
+ 
+     root = dsf_find_root_flip(dsf, n, &flip);
+@@ -252,8 +252,8 @@ void dsf_merge_flip(DSF *dsf, int n1, int n2, bool inverse)
+     size_t r1, r2, s1, s2, root;
+     unsigned f1, f2;
+ 
+-    assert(0 <= n1 && n1 < dsf->size && "Overrun in dsf_merge_flip");
+-    assert(0 <= n2 && n2 < dsf->size && "Overrun in dsf_merge_flip");
++    assert(0 <= n1 && (unsigned)n1 < dsf->size && "Overrun in dsf_merge_flip");
++    assert(0 <= n2 && (unsigned)n2 < dsf->size && "Overrun in dsf_merge_flip");
+     assert(dsf->flip && "dsf_merge_flip on a non-flip dsf");
+ 
+     /* Find the root elements */
+diff --git a/grid.c b/grid.c
+index f7eb5db..c0aff9c 100644
+--- a/grid.c
++++ b/grid.c
+@@ -259,6 +259,8 @@ static void grid_try_svg(grid *g, int which)
+ /* Show the basic grid information, before doing grid_make_consistent */
+ static void grid_debug_basic(grid *g)
+ {
++    (void)g;
++
+     /* TODO: Maybe we should generate an SVG image of the dots and lines
+      * of the grid here, before grid_make_consistent.
+      * Would help with debugging grid generation. */
+@@ -288,6 +290,8 @@ static void grid_debug_basic(grid *g)
+ /* Show the derived grid information, computed by grid_make_consistent */
+ static void grid_debug_derived(grid *g)
+ {
++    (void)g;
++
+ #ifdef DEBUG_GRID
+     /* edges */
+     int i;
+@@ -1438,6 +1442,8 @@ static void grid_size_square(int width, int height,
+ 
+ static grid *grid_new_square(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     /* Side length */
+     int a = SQUARE_TILESIZE;
+@@ -1505,6 +1511,8 @@ static void grid_size_honeycomb(int width, int height,
+ 
+ static grid *grid_new_honeycomb(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = HONEY_A;
+     int b = HONEY_B;
+@@ -1579,6 +1587,10 @@ static void grid_size_triangular(int width, int height,
+ static const char *grid_validate_desc_triangular(grid_type type, int width,
+                                                  int height, const char *desc)
+ {
++    (void)type;
++    (void)width;
++    (void)height;
++
+     /*
+      * Triangular grids: an absent description is valid (indicating
+      * the old-style approach which had 'ears', i.e. triangles
+@@ -1785,6 +1797,8 @@ static void grid_size_snubsquare(int width, int height,
+ 
+ static grid *grid_new_snubsquare(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = SNUBSQUARE_A;
+     int b = SNUBSQUARE_B;
+@@ -1902,6 +1916,8 @@ static void grid_size_cairo(int width, int height,
+ 
+ static grid *grid_new_cairo(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = CAIRO_A;
+     int b = CAIRO_B;
+@@ -2013,6 +2029,8 @@ static void grid_size_greathexagonal(int width, int height,
+ 
+ static grid *grid_new_greathexagonal(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = GREATHEX_A;
+     int b = GREATHEX_B;
+@@ -2147,6 +2165,8 @@ static void grid_size_kagome(int width, int height,
+ 
+ static grid *grid_new_kagome(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = KAGOME_A;
+     int b = KAGOME_B;
+@@ -2247,6 +2267,8 @@ static void grid_size_octagonal(int width, int height,
+ 
+ static grid *grid_new_octagonal(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = OCTAGONAL_A;
+     int b = OCTAGONAL_B;
+@@ -2334,6 +2356,8 @@ static void grid_size_kites(int width, int height,
+ 
+ static grid *grid_new_kites(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = KITE_A;
+     int b = KITE_B;
+@@ -2466,6 +2490,8 @@ static void grid_size_floret(int width, int height,
+ 
+ static grid *grid_new_floret(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     /* Vectors for sides; weird numbers needed to keep puzzle aligned with window
+      * -py/px is close to tan(30 - atan(sqrt(3)/9))
+@@ -2575,6 +2601,8 @@ static void grid_size_dodecagonal(int width, int height,
+ 
+ static grid *grid_new_dodecagonal(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     int a = DODEC_A;
+     int b = DODEC_B;
+@@ -2659,6 +2687,8 @@ static void grid_size_greatdodecagonal(int width, int height,
+ 
+ static grid *grid_new_greatdodecagonal(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     /* Vector for side of triangle - ratio is close to sqrt(3) */
+     int a = DODEC_A;
+@@ -2778,6 +2808,8 @@ static void grid_size_greatgreatdodecagonal(int width, int height,
+ 
+ static grid *grid_new_greatgreatdodecagonal(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     /* Vector for side of triangle - ratio is close to sqrt(3) */
+     int a = DODEC_A;
+@@ -2952,6 +2984,8 @@ static void grid_size_compassdodecagonal(int width, int height,
+ 
+ static grid *grid_new_compassdodecagonal(int width, int height, const char *desc)
+ {
++    (void)desc;
++
+     int x, y;
+     /* Vector for side of triangle - ratio is close to sqrt(3) */
+     int a = DODEC_A;
+@@ -3324,7 +3358,7 @@ static char *grid_new_desc_penrose(grid_type type, int width, int height,
+ static const char *grid_desc_to_penrose_params(
+     const char *desc, int which, struct PenrosePatchParams *params)
+ {
+-    int i;
++    size_t i;
+ 
+     if (!*desc)
+         return "empty grid description";
+@@ -3508,8 +3542,11 @@ static void grid_size_hats(int width, int height,
+ static char *grid_new_desc_hats(
+     grid_type type, int width, int height, random_state *rs)
+ {
++    (void)type;
++
+     char *buf, *p;
+-    size_t bufmax, i;
++    ssize_t bufmax;
++    size_t i;
+     struct HatPatchParams hp;
+ 
+     hat_tiling_randomise(&hp, width, height, rs);
+@@ -3570,6 +3607,10 @@ static const char *grid_desc_to_hat_params(
+ static const char *grid_validate_desc_hats(
+     grid_type type, int width, int height, const char *desc)
+ {
++    (void)type;
++    (void)width;
++    (void)height;
++
+     struct HatPatchParams hp;
+     const char *error = NULL;
+ 
+@@ -3657,6 +3698,8 @@ static void grid_size_spectres(int width, int height,
+ static char *grid_new_desc_spectres(
+     grid_type type, int width, int height, random_state *rs)
+ {
++    (void)type;
++
+     char *buf;
+     size_t i;
+     struct SpectrePatchParams sp;
+@@ -3716,6 +3759,10 @@ static const char *grid_desc_to_spectre_params(
+ static const char *grid_validate_desc_spectres(
+     grid_type type, int width, int height, const char *desc)
+ {
++    (void)type;
++    (void)width;
++    (void)height;
++
+     struct SpectrePatchParams sp;
+     const char *error = NULL;
+ 
+diff --git a/hat.c b/hat.c
+index 176d1f0..169a346 100644
+--- a/hat.c
++++ b/hat.c
+@@ -610,11 +610,11 @@ static HatCoords *try_step_coords_metamap(
+     fprintf(stderr, "  try meta %-4d", (int)depth);
+     hat_coords_debug("", hc_in, "\n");
+ #endif
+-    unsigned meta_orig = hc_in->c[depth].index;
+-    unsigned meta2_orig = hc_in->c[depth+1].index;
++    int meta_orig = hc_in->c[depth].index;
++    int meta2_orig = hc_in->c[depth+1].index;
+     TileType meta3type = hc_in->c[depth+2].type;
+ 
+-    unsigned meta = meta_orig, meta2 = meta2_orig;
++    int meta = meta_orig, meta2 = meta2_orig;
+ 
+     while (true) {
+         const MetamapEntry *me;
+@@ -849,6 +849,8 @@ struct internal_ctx {
+ };
+ static void report_hat(void *vctx, Kite kite0, HatCoords *hc, int *coords)
+ {
++    (void)kite0;
++    (void)hc;
+     struct internal_ctx *ctx = (struct internal_ctx *)vctx;
+     ctx->external_cb(ctx->external_cbctx, 14, coords);
+ }
+diff --git a/latin.c b/latin.c
+index 7e38083..ca1c112 100644
+--- a/latin.c
++++ b/latin.c
+@@ -1084,6 +1084,9 @@ int latin_solver(digit *grid, int o, int maxdiff,
+ 
+ void latin_solver_debug(unsigned char *cube, int o)
+ {
++    (void)cube;
++    (void)o;
++
+ #ifdef STANDALONE_SOLVER
+     if (solver_show_working > 1) {
+         struct latin_solver ls, *solver = &ls;
+@@ -1116,6 +1119,9 @@ void latin_solver_debug(unsigned char *cube, int o)
+ 
+ void latin_debug(digit *sq, int o)
+ {
++    (void)sq;
++    (void)o;
++
+ #ifdef STANDALONE_SOLVER
+     if (solver_show_working) {
+         int x, y;
+diff --git a/loopgen.c b/loopgen.c
+index 05097fe..c2090d7 100644
+--- a/loopgen.c
++++ b/loopgen.c
+@@ -89,7 +89,7 @@ static bool can_colour_face(grid *g, char* board, int face_index,
+     int transitions;
+     bool current_state, s; /* equal or not-equal to 'colour' */
+     bool found_same_coloured_neighbour = false;
+-    assert(board[face_index] != colour);
++    assert(board[face_index] != (char)colour);
+ 
+     /* Can only consider a face for colouring if it's adjacent to a face
+      * with the same colour. */
+@@ -217,6 +217,8 @@ static bool can_colour_face(grid *g, char* board, int face_index,
+ static int face_num_neighbours(grid *g, char *board, grid_face *face,
+                                enum face_colour colour)
+ {
++    (void)g;
++
+     int colour_count = 0;
+     int i;
+     grid_face *f;
+diff --git a/loopgen.h b/loopgen.h
+index bab9581..21d0ee1 100644
+--- a/loopgen.h
++++ b/loopgen.h
+@@ -13,7 +13,7 @@ enum face_colour { FACE_WHITE, FACE_GREY, FACE_BLACK };
+ /* face should be of type grid_face* here. */
+ #define FACE_COLOUR(face) \
+     ( (face) == NULL ? FACE_BLACK : \
+-	  board[(face)->index] )
++	  (enum face_colour)board[(face)->index] )
+ 
+ typedef int (*loopgen_bias_fn_t)(void *ctx, char *board, int face);
+ 
+diff --git a/midend.c b/midend.c
+index 30fdf1b..39ea0c7 100644
+--- a/midend.c
++++ b/midend.c
+@@ -3180,7 +3180,7 @@ static const char *midend_deserialise_prefs(
+             sepstr[1] = '\0';
+ 
+             while (*p++) {
+-                int len = strcspn(p, sepstr);
++                size_t len = strcspn(p, sepstr);
+                 if (buf->len == len && !memcmp(p, buf->data, len)) {
+                     it->u.choices.selected = n;
+                     found = true;
+diff --git a/mines.c b/mines.c
+index 1b42721..0766088 100644
+--- a/mines.c
++++ b/mines.c
+@@ -128,7 +128,7 @@ static bool game_fetch_preset(int i, char **name, game_params **params)
+     game_params *ret;
+     char str[80];
+ 
+-    if (i < 0 || i >= lenof(mines_presets))
++    if (i < 0 || i >= (int)lenof(mines_presets))
+         return false;
+ 
+     ret = snew(game_params);
+@@ -196,7 +196,7 @@ static void decode_params(game_params *params, char const *string)
+ static char *encode_params(const game_params *params, bool full)
+ {
+     char ret[400];
+-    int len;
++    size_t len;
+ 
+     len = sprintf(ret, "%dx%d", params->w, params->h);
+     /*
+@@ -621,6 +621,8 @@ static void known_squares(int w, int h, struct squaretodo *std,
+ 			  open_cb open, void *openctx,
+ 			  int x, int y, int mask, bool mine)
+ {
++	(void)h;
++
+     int xx, yy, bit;
+ 
+     bit = 1;
+@@ -1016,7 +1018,7 @@ static int minesolve(int w, int h, int n, signed char *grid,
+ 	     * recursion at n=10 to avoid too much pain.
+ 	     */
+ 	    nsets = count234(ss->sets);
+-	    if (nsets <= lenof(setused)) {
++	    if (nsets <= (int)lenof(setused)) {
+ 		/*
+ 		 * Doing this with actual recursive function calls
+ 		 * would get fiddly because a load of local
+@@ -2021,6 +2023,8 @@ static bool *new_mine_layout(int w, int h, int n, int x, int y, bool unique,
+ static char *new_game_desc(const game_params *params, random_state *rs,
+ 			   char **aux, bool interactive)
+ {
++	(void)aux;
++
+     /*
+      * We generate the coordinates of an initial click even if they
+      * aren't actually used. This has the effect of harmonising the
+@@ -2113,7 +2117,7 @@ static const char *validate_desc(const game_params *params, const char *desc)
+ 	if (*desc == 'm' || *desc == 'u')
+ 	    desc++;
+ 	/* now just check length of remainder */
+-	if (strlen(desc) != (wh+3)/4)
++	if ((int)strlen(desc) != (wh+3)/4)
+ 	    return "Game description is wrong length";
+     }
+ 
+@@ -2383,6 +2387,9 @@ static void free_game(game_state *state)
+ static char *solve_game(const game_state *state, const game_state *currstate,
+                         const char *aux, const char **error)
+ {
++	(void)currstate;
++	(void)aux;
++
+     if (!state->layout->mines) {
+ 	*error = "Game has not been started yet";
+ 	return NULL;
+@@ -2393,6 +2400,7 @@ static char *solve_game(const game_state *state, const game_state *currstate,
+ 
+ static bool game_can_format_as_text_now(const game_params *params)
+ {
++	(void)params;
+     return true;
+ }
+ 
+@@ -2436,6 +2444,8 @@ struct game_ui {
+ 
+ static game_ui *new_ui(const game_state *state)
+ {
++	(void)state;
++
+     game_ui *ui = snew(game_ui);
+     ui->hx = ui->hy = -1;
+     ui->hradius = ui->validradius = 0;
+@@ -2468,6 +2478,8 @@ static char *encode_ui(const game_ui *ui)
+ static void decode_ui(game_ui *ui, const char *encoding,
+                       const game_state *state)
+ {
++	(void)state;
++
+     int p= 0;
+     sscanf(encoding, "D%d%n", &ui->deaths, &p);
+     if (encoding[p] == 'C')
+@@ -2477,6 +2489,8 @@ static void decode_ui(game_ui *ui, const char *encoding,
+ static void game_changed_state(game_ui *ui, const game_state *oldstate,
+                                const game_state *newstate)
+ {
++	(void)oldstate;
++
+     if (newstate->won)
+ 	ui->completed = true;
+ }
+@@ -2812,6 +2826,8 @@ static game_state *execute_move(const game_state *from, const char *move)
+ static void game_compute_size(const game_params *params, int tilesize,
+                               const game_ui *ui, int *x, int *y)
+ {
++	(void)ui;
++
+     /* Ick: fake up `ds->tilesize' for macro expansion purposes */
+     struct { int tilesize; } ads, *ds = &ads;
+     ads.tilesize = tilesize;
+@@ -2823,6 +2839,9 @@ static void game_compute_size(const game_params *params, int tilesize,
+ static void game_set_size(drawing *dr, game_drawstate *ds,
+                           const game_params *params, int tilesize)
+ {
++	(void)dr;
++	(void)params;
++
+     ds->tilesize = tilesize;
+ }
+ 
+@@ -2915,6 +2934,8 @@ static float *game_colours(frontend *fe, int *ncolours)
+ 
+ static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
+ {
++	(void)dr;
++
+     struct game_drawstate *ds = snew(struct game_drawstate);
+ 
+     ds->w = state->w;
+@@ -2932,6 +2953,8 @@ static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
+ 
+ static void game_free_drawstate(drawing *dr, game_drawstate *ds)
+ {
++	(void)dr;
++
+     sfree(ds->grid);
+     sfree(ds);
+ }
+@@ -3076,6 +3099,10 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
+                         int dir, const game_ui *ui,
+                         float animtime, float flashtime)
+ {
++	(void)oldstate;
++	(void)dir;
++	(void)animtime;
++
+     int x, y;
+     int mines, markers, closed, bg;
+     int cx = -1, cy = -1;
+@@ -3236,6 +3263,11 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
+ static float game_anim_length(const game_state *oldstate,
+                               const game_state *newstate, int dir, game_ui *ui)
+ {
++	(void)oldstate;
++	(void)newstate;
++	(void)dir;
++	(void)ui;
++
+     return 0.0F;
+ }
+ 
+@@ -3264,6 +3296,10 @@ static void game_get_cursor_location(const game_ui *ui,
+                                      const game_params *params,
+                                      int *x, int *y, int *w, int *h)
+ {
++	(void)ds;
++	(void)state;
++	(void)params;
++
+     if(ui->cur_visible) {
+         *x = COORD(ui->cur_x);
+         *y = COORD(ui->cur_y);
+diff --git a/misc.c b/misc.c
+index 8e96d67..44026b7 100644
+--- a/misc.c
++++ b/misc.c
+@@ -232,6 +232,8 @@ void colour_mix(const float src1[3], const float src2[3], float p, float dst[3])
+ void game_mkhighlight_specific(frontend *fe, float *ret,
+ 			       int background, int highlight, int lowlight)
+ {
++    (void)fe;
++
+     static const float black[3] = { 0.0F, 0.0F, 0.0F };
+     static const float white[3] = { 1.0F, 1.0F, 1.0F };
+     float db, dw;
+diff --git a/penrose.c b/penrose.c
+index 4d7dcc4..53e7293 100644
+--- a/penrose.c
++++ b/penrose.c
+@@ -108,18 +108,21 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return external(0, 0);
+               case 2: return internal('B', 1);
+             }
++            // fallthrough
+           case 'B':
+             switch (edge) {
+               case 0: return internal('U', 1);
+               case 1: return internal('A', 2);
+               case 2: return external(1, +1);
+             }
++            // fallthrough
+           case 'U':
+             switch (edge) {
+               case 0: return external(2, +1);
+               case 1: return internal('B', 0);
+               case 2: return external(1, -1);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -131,18 +134,21 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return external(2, -1);
+               case 2: return internal('B', 1);
+             }
++            // fallthrough
+           case 'B':
+             switch (edge) {
+               case 0: return external(1, +1);
+               case 1: return internal('A', 2);
+               case 2: return external(0, 0);
+             }
++            // fallthrough
+           case 'V':
+             switch (edge) {
+               case 0: return external(1, -1);
+               case 1: return external(2, +1);
+               case 2: return internal('A', 0);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -154,12 +160,14 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return external(2, 0);
+               case 2: return external(0, +1);
+             }
++            // fallthrough
+           case 'U':
+             switch (edge) {
+               case 0: return external(1, 0);
+               case 1: return internal('B', 0);
+               case 2: return external(0, -1);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -171,12 +179,14 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return external(0, -1);
+               case 2: return external(1, 0);
+             }
++            // fallthrough
+           case 'V':
+             switch (edge) {
+               case 0: return external(2, 0);
+               case 1: return external(0, +1);
+               case 2: return internal('A', 0);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -188,12 +198,14 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return internal('Y', 1);
+               case 2: return external(0, 0);
+             }
++            // fallthrough
+           case 'Y':
+             switch (edge) {
+               case 0: return external(2, 0);
+               case 1: return internal('C', 1);
+               case 2: return external(1, -1);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -205,12 +217,14 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return external(0, 0);
+               case 2: return internal('X', 2);
+             }
++            // fallthrough
+           case 'X':
+             switch (edge) {
+               case 0: return external(1, 0);
+               case 1: return external(2, +1);
+               case 2: return internal('D', 2);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -222,18 +236,21 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return internal('Y', 1);
+               case 2: return internal('X', 1);
+             }
++            // fallthrough
+           case 'X':
+             switch (edge) {
+               case 0: return external(1, 0);
+               case 1: return internal('C', 2);
+               case 2: return external(0, -1);
+             }
++            // fallthrough
+           case 'Y':
+             switch (edge) {
+               case 0: return external(0, +1);
+               case 1: return internal('C', 1);
+               case 2: return external(2, -1);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -245,18 +262,21 @@ static TransitionResult transition(char parent, char child, unsigned edge)
+               case 1: return internal('Y', 2);
+               case 2: return internal('X', 2);
+             }
++            // fallthrough
+           case 'X':
+             switch (edge) {
+               case 0: return external(0, -1);
+               case 1: return external(1, +1);
+               case 2: return internal('D', 2);
+             }
++            // fallthrough
+           case 'Y':
+             switch (edge) {
+               case 0: return external(2, 0);
+               case 1: return external(0, +1);
+               case 2: return internal('D', 1);
+             }
++            // fallthrough
+           default:
+             return fail();
+         }
+@@ -822,6 +842,8 @@ static bool inbounds(void *vctx, const PenroseTriangle *tri)
+ 
+ static void null_output_tile(void *vctx, const Point *vertices)
+ {
++  (void)vctx;
++  (void)vertices;
+ }
+ 
+ static void really_output_tile(void *vctx, const Point *vertices)
+diff --git a/ps.c b/ps.c
+index dd4b346..8089e5b 100644
+--- a/ps.c
++++ b/ps.c
+@@ -244,6 +244,8 @@ static void ps_line_dotted(drawing *dr, bool dotted)
+ static char *ps_text_fallback(drawing *dr, const char *const *strings,
+ 			      int nstrings)
+ {
++    (void)dr;
++
+     /*
+      * We can handle anything in ISO 8859-1, and we'll manually
+      * translate it out of UTF-8 for the purpose.
+@@ -367,6 +369,8 @@ static void ps_end_puzzle(drawing *dr)
+ 
+ static void ps_end_page(drawing *dr, int number)
+ {
++    (void)number;
++
+     psdata *ps = GET_HANDLE_AS_TYPE(dr, psdata);
+ 
+     fputs("restore grestore showpage\n", ps->fp);
+@@ -405,6 +409,7 @@ static const struct drawing_api ps_drawing = {
+     ps_line_width,
+     ps_line_dotted,
+     ps_text_fallback,
++    NULL /* draw_thick_line */
+ };
+ 
+ psdata *ps_init(FILE *outfile, bool colour)
+diff --git a/puzzles.h b/puzzles.h
+index e34f445..70e3ba5 100644
+--- a/puzzles.h
++++ b/puzzles.h
+@@ -836,7 +836,7 @@ extern const game *gamelist[];
+ extern const int gamecount;
+ /* Also pre-declare every individual 'struct game' we expect */
+ #define GAME(x) extern const game x;
+-#include "generated-games.h"
++//#include "generated-games.h"
+ #undef GAME
+ #else
+ extern const game thegame;
+diff --git a/random.c b/random.c
+index bd11f16..bb07e2a 100644
+--- a/random.c
++++ b/random.c
+@@ -293,7 +293,7 @@ void random_free(random_state *state)
+ char *random_state_encode(random_state *state)
+ {
+     char retbuf[256];
+-    int len = 0, i;
++    size_t len = 0, i;
+ 
+     for (i = 0; i < lenof(state->seedbuf); i++)
+ 	len += sprintf(retbuf+len, "%02x", state->seedbuf[i]);
+@@ -307,7 +307,7 @@ char *random_state_encode(random_state *state)
+ random_state *random_state_decode(const char *input)
+ {
+     random_state *state;
+-    int pos, byte, digits;
++    size_t pos, byte, digits;
+ 
+     state = snew(random_state);
+ 
+diff --git a/spectre.c b/spectre.c
+index ba72304..11c56de 100644
+--- a/spectre.c
++++ b/spectre.c
+@@ -357,8 +357,8 @@ void spectrectx_step_hex(SpectreContext *ctx, SpectreCoords *sc,
+     spectrectx_extend_coords(ctx, sc, depth+2);
+ 
+     assert(0 <= sc->c[depth].index);
+-    assert(sc->c[depth].index < num_subhexes(sc->c[depth].type));
+-    assert(0 <= edge);
++    assert(sc->c[depth].index < (int)num_subhexes(sc->c[depth].type));
++    //assert(0 <= edge);
+     assert(edge < 6);
+ 
+     h = &hexdata[sc->c[depth+1].type];
+@@ -410,8 +410,8 @@ void spectrectx_step(SpectreContext *ctx, SpectreCoords *sc,
+     const struct MapEntry *m;
+ 
+     assert(0 <= sc->index);
+-    assert(sc->index < num_spectres(sc->c[0].type));
+-    assert(0 <= edge);
++    assert(sc->index < (int)num_spectres(sc->c[0].type));
++    //assert(0 <= edge);
+     assert(edge < 14);
+ 
+     h = &hexdata[sc->c[0].type];
