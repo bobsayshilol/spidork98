@@ -7,6 +7,7 @@
 #include "macros.h"
 #include "maths.h"
 #include "memory.h"
+#include "utils.h"
 
 #include <cstdlib>
 #include <cstdio>
@@ -47,9 +48,12 @@ FASTCALL void draw_sprite_64(u16 img_x, u16 img_y, ImageData const & sprite, Ima
   // Copy the backbuffer to the scratch buffer if required.
   if ( (scratch.x_base != x_base) | (scratch.y_base != y_base))
   {
+    const u16 last_y = utils::min(y_base + scratch_h, GPU_HEIGHT);
+    STATIC_ASSERT((GPU_WIDTH % scratch_w) == 0);
+
     gpu::g_draw_to = gpu::DrawTo::Back;
     u8 *part_data = scratch.data;
-    for (u16 line = y_base; line < y_base + scratch_h; line++) {
+    for (u16 line = y_base; line < last_y; line++) {
       for (u16 part = x_base >> 5; part < (x_base + scratch_w) >> 5; part++) {
         gpu::read_scanline_part_32(line, part, part_data);
         part_data += SCANLINE_PART_WIDTH_32;
