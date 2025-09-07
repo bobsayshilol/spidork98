@@ -8,15 +8,18 @@ add_compile_definitions(WEB_BUILD)
 
 find_package(SDL3 REQUIRED COMPONENTS SDL3-static)
 
+
+# The main framework
 add_library(libpc98
-    #x/examples/libpc98/gpuscrn.cc
+    # Common
     x/examples/libpc98/images.cc
+    x/examples/libpc98/images2.cc
     x/examples/libpc98/logs.cc
     x/examples/libpc98/memory.cc
-    #x/examples/libpc98/pcm.cc
     x/examples/libpc98/profile.cc
     x/examples/libpc98/sound.cc
 
+    # Non-PC98 bits
     web_sources/web_common.cc
     web_sources/web_funcs.cc
     web_sources/web_gpu.cc

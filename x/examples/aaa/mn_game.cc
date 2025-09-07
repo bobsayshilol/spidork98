@@ -502,6 +502,7 @@ void play_menu_enter() {
     switch (pos.u.y) {
       case 50: case 101: case 152: case 203: case 255: case 306: case 357:
         pos.u.y++;
+        // fallthrough
       case 51: case 102: case 153: case 204: case 256: case 307: case 358:
         pos.u.y++;
         break;
