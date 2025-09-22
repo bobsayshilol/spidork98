@@ -190,7 +190,7 @@ FASTCALL void draw_quad(int x0, int y0, int x1, int y1, u8 pal_col) {
   auto *surface = get_current_surface();
   const SDL_Rect rect{
     .x = x0, .y = y0,
-    .w = x1 - x0, .h = y1 - y0,
+    .w = x1 - x0 + 1, .h = y1 - y0 + 1,
   };
   const bool success = SDL_FillSurfaceRect(surface, &rect, pal_col);
   assert(success);

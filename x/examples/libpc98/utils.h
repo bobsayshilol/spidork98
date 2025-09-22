@@ -1,6 +1,10 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "macros.h"
+
+#include <cstdlib>
+
 // libstdc++ is very broken due to 8.3 filenames, so this is a polyfill.
 //#include <utility>
 

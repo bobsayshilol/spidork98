@@ -1,3 +1,4 @@
+#include "utils.h"
 extern "C" {
 #include "puzzles.h"
 }
@@ -7,6 +8,8 @@ extern "C" {
 #include "logs.h"
 
 #include <stdarg.h>
+
+#define FE98_UNIMPLEMENTED() logging::print(logging::Level::Warning, "Unimplemented: %s", __func__)
 
 #define LOG_FILE "puzlog.txt"
 
@@ -19,10 +22,16 @@ extern "C" const game mines;
 // Frontend functions.
 //
 
-void frontend_default_colour(frontend *fe, float *output) {
-  // TODO
-  (void)fe;
-  (void)output;
+namespace {
+
+bool s_timer_active = false;
+
+} // namespace
+
+void frontend_default_colour(frontend *, float *output) {
+  output[0] = 0;
+  output[1] = 0;
+  output[2] = 0;
 }
 
 void get_random_seed(void **randseed, int *randseedsize) {
@@ -33,14 +42,12 @@ void get_random_seed(void **randseed, int *randseedsize) {
   *randseedsize = 1;
 }
 
-void deactivate_timer(frontend *fe) {
-  // TODO
-  (void)fe;
+void deactivate_timer(frontend *) {
+  s_timer_active = false;
 }
 
-void activate_timer(frontend *fe) {
-  // TODO
-  (void)fe;
+void activate_timer(frontend *) {
+  s_timer_active = true;
 }
 
 void fatal(const char *fmt, ...) {
@@ -73,15 +80,38 @@ void document_add_puzzle(document *doc, const game *game, game_params *par, game
   (void)ui;
   (void)st;
   (void)st2;
+  FE98_UNIMPLEMENTED();
 }
 
 
 
+//
+// Misc API functions
+//
+
 namespace {
+
+char *fe98_text_fallback(drawing *, const char *const *strings, int) {
+  FE98_UNIMPLEMENTED();
+  return dupstr(strings[0]);
+}
+
+void fe98_status_bar(drawing *dr, const char *text) {
+  // TODO
+  (void)dr;
+  (void)text;
+  FE98_UNIMPLEMENTED();
+}
+
+} // namespace
+
+
 
 //
 // Drawing
 //
+
+namespace {
 
 void fe98_draw_text(drawing *dr, int x, int y, int fonttype, int fontsize, int align, int colour, const char *text) {
   // TODO
@@ -93,16 +123,11 @@ void fe98_draw_text(drawing *dr, int x, int y, int fonttype, int fontsize, int a
   (void)align;
   (void)colour;
   (void)text;
+  FE98_UNIMPLEMENTED();
 }
 
-void fe98_draw_rect(drawing *dr, int x, int y, int w, int h, int colour) {
-  // TODO
-  (void)dr;
-  (void)x;
-  (void)y;
-  (void)w;
-  (void)h;
-  (void)colour;
+void fe98_draw_rect(drawing *, int x, int y, int w, int h, int colour) {
+  gpu::draw_quad(x, y, x + w, y + h, colour);
 }
 
 void fe98_draw_line(drawing *dr, int x1, int y1, int x2, int y2, int colour) {
@@ -113,15 +138,113 @@ void fe98_draw_line(drawing *dr, int x1, int y1, int x2, int y2, int colour) {
   (void)x2;
   (void)y2;
   (void)colour;
+  FE98_UNIMPLEMENTED();
 }
 
-void fe98_draw_polygon(drawing *dr, const int *coords, int npoints, int fillcolour, int outlinecolour) {
-  // TODO
-  (void)dr;
-  (void)coords;
-  (void)npoints;
-  (void)fillcolour;
-  (void)outlinecolour;
+#define FE98_DRAW_SHIFT 8
+
+FORCEINLINE void fe98_draw_triangle_half(int start_x, int end_x, int start_y, int end_y, int dsx, int dex, int fillcolour, int outlinecolour) {
+  int y = start_y;
+  while (y < end_y) {
+    const int sx = start_x >> FE98_DRAW_SHIFT;
+    const int ex = end_x >> FE98_DRAW_SHIFT;
+
+    gpu::draw_quad(sx, y, ex, y, fillcolour);
+    gpu::draw_quad(sx, y, sx, y, outlinecolour);
+    gpu::draw_quad(ex, y, ex, y, outlinecolour);
+
+    start_x += dsx;
+    end_x += dex;
+    ++y;
+  }
+}
+
+struct Point { int x, y; };
+
+void fe98_draw_triangle(Point (&pts)[3], int fillcolour, int outlinecolour) {
+  // TODO: move this (or polygon) into gpu so we don't have to draw_quad()
+
+  //
+  //          x <- p0
+  //         /|
+  //        / |
+  // p1 -> x--x <- m
+  //        \ |
+  //         \|
+  //          x <- p2
+  //
+
+  // Sort by y.
+  if (pts[1].y < pts[0].y) utils::swap(pts[1], pts[0]);
+  if (pts[2].y < pts[0].y) utils::swap(pts[2], pts[0]);
+  if (pts[2].y < pts[1].y) utils::swap(pts[2], pts[1]);
+
+  // All 3 points lie on a line, discard.
+  if (pts[0].y == pts[2].y) return;
+
+  const int start_y = pts[0].y;
+  const int mid_y = pts[1].y;
+  const int end_y = pts[2].y;
+
+  if (start_y == mid_y) {
+    // p0+p1 are flat on top.
+    int start_x = pts[0].x << FE98_DRAW_SHIFT;
+    int end_x = pts[1].x << FE98_DRAW_SHIFT;
+    if (end_x < start_x) utils::swap(end_x, start_x);
+    const int x2 = pts[2].x << FE98_DRAW_SHIFT;
+    const int dsx = (x2 - start_x) / (end_y - start_y);
+    const int dex = (x2 - end_x) / (end_y - start_y);
+    fe98_draw_triangle_half(start_x, end_x, start_y, end_y, dsx, dex, fillcolour, outlinecolour);
+
+  } else if (mid_y == end_y) {
+    // p1+p2 are flat on bottom
+    int start_x = pts[0].x << FE98_DRAW_SHIFT;
+    int end_x = start_x;
+    int x1 = pts[2].x << FE98_DRAW_SHIFT;
+    int x2 = pts[2].x << FE98_DRAW_SHIFT;
+    if (x2 < x1) utils::swap(x2, x1);
+    const int dsx = (x1 - start_x) / (end_y - start_y);
+    const int dex = (x2 - end_x) / (end_y - start_y);
+    fe98_draw_triangle_half(start_x, end_x, start_y, end_y, dsx, dex, fillcolour, outlinecolour);
+
+  } else {
+    // Find intersection point.
+    const int dmy = pts[2].y - pts[0].y;
+    const int dmx = pts[2].x - pts[0].x;
+    int m_x = pts[0].x + dmx * (pts[1].y - pts[0].y) / dmy;
+
+    // m is bigger.
+    if (m_x < pts[1].x) utils::swap(m_x, pts[1].x);
+
+    int start_x = pts[0].x << FE98_DRAW_SHIFT;
+    int end_x = start_x;
+
+    const int p1x = pts[1].x << FE98_DRAW_SHIFT;
+    const int p2x = pts[2].x << FE98_DRAW_SHIFT;
+    const int mx = m_x << FE98_DRAW_SHIFT;
+
+    const int dsx1 = (p1x - start_x) / (mid_y - start_y);
+    const int dex1 = (mx - end_x) / (mid_y - start_y);
+    const int dsx2 = (p2x - p1x) / (end_y - mid_y);
+    const int dex2 = (p2x - mx) / (end_y - mid_y);
+
+    fe98_draw_triangle_half(start_x, end_x, start_y, mid_y, dsx1, dex1, fillcolour, outlinecolour);
+    fe98_draw_triangle_half(p1x, mx, mid_y, end_y, dsx2, dex2, fillcolour, outlinecolour);
+  }
+}
+
+void fe98_draw_polygon(drawing *,const int *coords, int npoints, int fillcolour, int outlinecolour) {
+  // Decompose into tris because lazy.
+  Point pts[3];
+  for (int pt = 2; pt < npoints; pt++) {
+    pts[0].x = coords[0];
+    pts[0].y = coords[1];
+    pts[1].x = coords[2];
+    pts[1].y = coords[3];
+    pts[2].x = coords[2 * pt + 0];
+    pts[2].y = coords[2 * pt + 1];
+    fe98_draw_triangle(pts, fillcolour, outlinecolour);
+  }
 }
 
 void fe98_draw_circle(drawing *dr, int cx, int cy, int radius, int fillcolour, int outlinecolour) {
@@ -132,9 +255,22 @@ void fe98_draw_circle(drawing *dr, int cx, int cy, int radius, int fillcolour, i
   (void)radius;
   (void)fillcolour;
   (void)outlinecolour;
+  FE98_UNIMPLEMENTED();
 }
 
-//void draw_update(drawing *dr, int x, int y, int w, int h);
+void fe98_line_width(drawing *dr, float width) {
+  // TODO
+  (void)dr;
+  (void)width;
+  FE98_UNIMPLEMENTED();
+}
+
+void fe98_line_dotted(drawing *dr, bool dotted) {
+  // TODO
+  (void)dr;
+  (void)dotted;
+  FE98_UNIMPLEMENTED();
+}
 
 void fe98_clip(drawing *dr, int x, int y, int w, int h) {
   // TODO
@@ -143,27 +279,21 @@ void fe98_clip(drawing *dr, int x, int y, int w, int h) {
   (void)y;
   (void)w;
   (void)h;
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_unclip(drawing *dr) {
   // TODO
   (void)dr;
+  FE98_UNIMPLEMENTED();
 }
 
-void fe98_start_draw(drawing *dr) {
-  // TODO
-  (void)dr;
+void fe98_start_draw(drawing *) {
+  // Nothing to do
 }
 
-void fe98_end_draw(drawing *dr) {
-  // TODO
-  (void)dr;
-}
-
-void fe98_status_bar(drawing *dr, const char *text) {
-  // TODO
-  (void)dr;
-  (void)text;
+void fe98_end_draw(drawing *) {
+  // Nothing to do
 }
 
 } // namespace
@@ -184,6 +314,7 @@ blitter *fe98_blitter_new(drawing *dr, int w, int h) {
   blitter *bl = snew(blitter);
   bl->w = w;
   bl->h = h;
+  FE98_UNIMPLEMENTED();
   return bl;
 }
 
@@ -191,6 +322,7 @@ void fe98_blitter_free(drawing *dr, blitter *bl) {
   // TODO
   (void)dr;
   sfree(bl);
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_blitter_save(drawing *dr, blitter *bl, int x, int y) {
@@ -199,6 +331,7 @@ void fe98_blitter_save(drawing *dr, blitter *bl, int x, int y) {
   (void)bl;
   (void)x;
   (void)y;
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_blitter_load(drawing *dr, blitter *bl, int x, int y) {
@@ -207,18 +340,31 @@ void fe98_blitter_load(drawing *dr, blitter *bl, int x, int y) {
   (void)bl;
   (void)x;
   (void)y;
+  FE98_UNIMPLEMENTED();
 }
+
+} // namespace
+
+
+
+//
+// Printing
+//
+
+namespace {
 
 void fe98_begin_doc(drawing *dr, int pages) {
   // TODO
   (void)dr;
   (void)pages;
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_begin_page(drawing *dr, int number) {
   // TODO
   (void)dr;
   (void)number;
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_begin_puzzle(drawing *dr, float xm, float xc, float ym, float yc, int pw, int ph, float wmm) {
@@ -231,44 +377,27 @@ void fe98_begin_puzzle(drawing *dr, float xm, float xc, float ym, float yc, int 
   (void)pw;
   (void)ph;
   (void)wmm;
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_end_puzzle(drawing *dr) {
   // TODO
   (void)dr;
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_end_page(drawing *dr, int number) {
   // TODO
   (void)dr;
   (void)number;
+  FE98_UNIMPLEMENTED();
 }
 
 void fe98_end_doc(drawing *dr) {
   // TODO
   (void)dr;
+  FE98_UNIMPLEMENTED();
 }
-
-void fe98_line_width(drawing *dr, float width) {
-  // TODO
-  (void)dr;
-  (void)width;
-}
-
-void fe98_line_dotted(drawing *dr, bool dotted) {
-  // TODO
-  (void)dr;
-  (void)dotted;
-}
-
-char *fe98_text_fallback(drawing *dr, const char *const *strings, int nstrings) {
-  // TODO
-  (void)dr;
-  (void)nstrings;
-  return dupstr(strings[0]);
-}
-
-//void fe98_draw_thick_line(drawing *dr, float thickness, float x1, float y1, float x2, float y2, int colour);
 
 } // namespace
 
@@ -321,10 +450,35 @@ int main() {
   midend *me = midend_new(NULL, &mines, &drapi, NULL);
   midend_new_game(me);
 
-  int w = INT_MAX;
-  int h = INT_MAX;
+  // Setup the palette.
+  {
+    int num_colours = 0;
+    float *colours = midend_colours(me, &num_colours);
+    for (int i = 0; i < num_colours; i++) {
+      u8 r = colours[3 * i + 0] * 255;
+      u8 g = colours[3 * i + 1] * 255;
+      u8 b = colours[3 * i + 2] * 255;
+      gpu::set_palette_colour(i, r, g, b);
+    }
+    sfree(colours);
+  }
+
+  int w = GPU_WIDTH;
+  int h = GPU_HEIGHT;
   midend_size(me, &w, &h, false, 1);
-  midend_redraw(me);
+  midend_force_redraw(me);
+
+  for (int i = 0; i < 100; i++) {
+    // TODO: inputs
+
+    if (s_timer_active) {
+      const float dt = 0.1f;
+      midend_timer(me, dt);
+    }
+
+    midend_redraw(me);
+    gpu::wait_for_vsync();
+  }
 
   midend_free(me);
 
