@@ -1,0 +1,222 @@
+From: me <>
+Date: Thu, 25 Sep 2025 23:29:24 +0100
+Subject: [PATCH] Rename some global symbols that conflict with variable names
+
+
+diff --git a/drawing.c b/drawing.c
+index a754b06..1e91985 100644
+--- a/drawing.c
++++ b/drawing.c
+@@ -27,11 +27,14 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <assert.h>
++
++#define y1 y1_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y1
+ 
+ #include "puzzles.h"
+ 
+diff --git a/grid.c b/grid.c
+index 8634f26..1ae360c 100644
+--- a/grid.c
++++ b/grid.c
+@@ -8,16 +8,29 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#define index index_
+ #include <string.h>
++#undef index
+ #include <assert.h>
+ #include <ctype.h>
+ #include <float.h>
+ #include <limits.h>
++
++#define y0 y0_
++#define y1 y1_
++#define e e_
++#define m m_
++#define vector vector_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y0
++#undef y1
++#undef e
++#undef m
++#undef vector
+ 
+ #include "puzzles.h"
+ #include "tree234.h"
+diff --git a/hat.c b/hat.c
+index a9b267d..48d8746 100644
+--- a/hat.c
++++ b/hat.c
+@@ -19,11 +19,15 @@
+  */
+ 
+ #include <assert.h>
++
++#define y1 y1_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y1
++
+ #include <stdbool.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+diff --git a/latin.c b/latin.c
+index ca1c112..e89e4b1 100644
+--- a/latin.c
++++ b/latin.c
+@@ -1,5 +1,7 @@
+ #include <assert.h>
++#define index index_
+ #include <string.h>
++#undef index
+ #include <stdarg.h>
+ 
+ #include "puzzles.h"
+diff --git a/loopgen.c b/loopgen.c
+index ec319ec..558a72a 100644
+--- a/loopgen.c
++++ b/loopgen.c
+@@ -5,14 +5,19 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <stddef.h>
++#define index index_
+ #include <string.h>
++#undef index
+ #include <assert.h>
+ #include <ctype.h>
++
++#define y1 y1_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y1
+ 
+ #include "puzzles.h"
+ #include "tree234.h"
+diff --git a/mines.c b/mines.c
+index 5d1936d..cbb70ad 100644
+--- a/mines.c
++++ b/mines.c
+@@ -8,15 +8,21 @@
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
++#define index index_
+ #include <string.h>
++#undef index
++
+ #include <assert.h>
+ #include <ctype.h>
+ #include <limits.h>
++
++#define y1 y1_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y1
+ 
+ #include "tree234.h"
+ #include "puzzles.h"
+diff --git a/misc.c b/misc.c
+index ecef97f..88e980f 100644
+--- a/misc.c
++++ b/misc.c
+@@ -4,13 +4,21 @@
+ 
+ #include <assert.h>
+ #include <ctype.h>
++
++#define y0 y0_
++#define y1 y1_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y0
++#undef y1
++
+ #include <stdlib.h>
++#define index index_
+ #include <string.h>
++#undef index
+ #include <stdio.h>
+ 
+ #include "puzzles.h"
+diff --git a/pen-leg.c b/pen-leg.c
+index 54f5bef..2e87b43 100644
+--- a/pen-leg.c
++++ b/pen-leg.c
+@@ -13,12 +13,20 @@
+  */
+ 
+ #include <assert.h>
++#define index index_
+ #include <string.h>
++#undef index
++
++#define y0 y0_
++#define y1 y1_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y0
++#undef y1
++
+ #include <stdio.h>
+ 
+ #include "puzzles.h" /* for malloc routines, and PI */
+diff --git a/penrose.c b/penrose.c
+index d52f385..6448e5f 100644
+--- a/penrose.c
++++ b/penrose.c
+@@ -15,7 +15,9 @@
+ 
+ #include <assert.h>
+ #include <stddef.h>
++#define index index_
+ #include <string.h>
++#undef index
+ 
+ #include "puzzles.h"
+ #include "penrose.h"
+diff --git a/spectre.c b/spectre.c
+index 5125e72..38b3088 100644
+--- a/spectre.c
++++ b/spectre.c
+@@ -11,7 +11,9 @@
+  */
+ 
+ #include <assert.h>
++#define index index_
+ #include <string.h>
++#undef index
+ 
+ #include "puzzles.h"
+ #include "tree234.h"
+-- 
+2.47.1.windows.2
+

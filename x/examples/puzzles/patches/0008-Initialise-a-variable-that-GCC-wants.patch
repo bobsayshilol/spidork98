@@ -1,0 +1,23 @@
+From: me <>
+Date: Thu, 25 Sep 2025 23:35:54 +0100
+Subject: [PATCH] Initialise a variable that GCC wants
+
+
+diff --git a/misc.c b/misc.c
+index 325ff19..4fc095c 100644
+--- a/misc.c
++++ b/misc.c
+@@ -242,8 +242,9 @@ void game_mkhighlight_specific(frontend *fe, float *ret,
+ {
+     static const float black[3] = { 0.0F, 0.0F, 0.0F };
+     static const float white[3] = { 1.0F, 1.0F, 1.0F };
+-    float db, dw;
++    float db=0.f, dw;
+     int i;
++
+     /*
+      * New geometric highlight-generation algorithm: Draw a line from
+      * the base colour to white.  The point K distance along this line
+-- 
+2.47.1.windows.2
+

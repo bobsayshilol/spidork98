@@ -1,0 +1,696 @@
+From: me <>
+Date: Thu, 25 Sep 2025 23:34:20 +0100
+Subject: [PATCH] Rename variables and functions that shadow others
+
+
+diff --git a/grid.c b/grid.c
+index 1ae360c..f789161 100644
+--- a/grid.c
++++ b/grid.c
+@@ -1044,11 +1044,11 @@ void grid_find_incentre(grid_face *f)
+                      * simultaneously to obtain x,y,r. (We ignore r.)
+                      */
+                     double matrix[9], vector[3], vector2[3];
+-                    int m;
++                    int n;
+ 
+-                    for (m = 0; m < 3; m++) {
+-                        int x1 = edgedot1[m]->x, x2 = edgedot2[m]->x;
+-                        int y1 = edgedot1[m]->y, y2 = edgedot2[m]->y;
++                    for (n = 0; n < 3; n++) {
++                        int x1 = edgedot1[n]->x, x2 = edgedot2[n]->x;
++                        int y1 = edgedot1[n]->y, y2 = edgedot2[n]->y;
+                         int dx = x2-x1, dy = y2-y1;
+ 
+                         /*
+@@ -1056,10 +1056,10 @@ void grid_find_incentre(grid_face *f)
+                          *
+                          * => x dy - y dx - r |(dx,dy)| = (x1 dy - y1 dx)
+                          */
+-                        matrix[3*m+0] = dy;
+-                        matrix[3*m+1] = -dx;
+-                        matrix[3*m+2] = -sqrt((double)dx*dx+(double)dy*dy);
+-                        vector[m] = (double)x1*dy - (double)y1*dx;
++                        matrix[3*n+0] = dy;
++                        matrix[3*n+1] = -dx;
++                        matrix[3*n+2] = -sqrt((double)dx*dx+(double)dy*dy);
++                        vector[n] = (double)x1*dy - (double)y1*dx;
+                     }
+ 
+                     if (solve_3x3_matrix(matrix, vector, vector2)) {
+@@ -1243,11 +1243,11 @@ void grid_find_incentre(grid_face *f)
+                      */
+ 
+                     double matrix[4], vector[2], vector2[2];
+-                    int m;
++                    int n;
+ 
+-                    for (m = 0; m < 2; m++) {
+-                        int x1 = dots[m]->x, x2 = dots[m+1]->x;
+-                        int y1 = dots[m]->y, y2 = dots[m+1]->y;
++                    for (n = 0; n < 2; n++) {
++                        int x1 = dots[n]->x, x2 = dots[n+1]->x;
++                        int y1 = dots[n]->y, y2 = dots[n+1]->y;
+                         int dx = x2-x1, dy = y2-y1;
+ 
+                         /*
+@@ -1255,9 +1255,9 @@ void grid_find_incentre(grid_face *f)
+                          *
+                          * => 2x dx + 2y dy = dx^2+dy^2 + (2 x1 dx + 2 y1 dy)
+                          */
+-                        matrix[2*m+0] = 2*dx;
+-                        matrix[2*m+1] = 2*dy;
+-                        vector[m] = ((double)dx*dx + (double)dy*dy +
++                        matrix[2*n+0] = 2*dx;
++                        matrix[2*n+1] = 2*dy;
++                        vector[n] = ((double)dx*dx + (double)dy*dy +
+                                      2.0*x1*dx + 2.0*y1*dy);
+                     }
+ 
+@@ -1326,7 +1326,7 @@ void grid_find_incentre(grid_face *f)
+ #error No way to get maximum floating-point number.
+ #endif
+ #endif
+-                        int e, d;
++                        int d;
+ 
+                         /*
+                          * This point is inside the polygon, so now we check
+diff --git a/latin.c b/latin.c
+index e89e4b1..43fa605 100644
+--- a/latin.c
++++ b/latin.c
+@@ -1146,7 +1146,7 @@ void latin_debug(digit *sq, int o)
+ digit *latin_generate(int o, random_state *rs)
+ {
+     digit *sq;
+-    int *adjdata, *adjsizes, *matching;
++    int *adjdata, *adjsizes, *matching_;
+     int **adjlists;
+     void *scratch;
+     int i, j, k;
+@@ -1186,7 +1186,7 @@ digit *latin_generate(int o, random_state *rs)
+     adjdata = snewn(o*o, int);
+     adjlists = snewn(o, int *);
+     adjsizes = snewn(o, int);
+-    matching = snewn(o, int);
++    matching_ = snewn(o, int);
+ 
+     /*
+      * Now generate each row of the latin square.
+@@ -1213,7 +1213,7 @@ digit *latin_generate(int o, random_state *rs)
+ 	 * Run the matching algorithm.
+ 	 */
+ 	j = matching_with_scratch(scratch, o, o, adjlists, adjsizes,
+-                                  rs, matching, NULL);
++                                  rs, matching_, NULL);
+ 	assert(j == o);   /* by the above theorem, this must have succeeded */
+ 
+ 	/*
+@@ -1221,13 +1221,13 @@ digit *latin_generate(int o, random_state *rs)
+ 	 * square.
+ 	 */
+ 	for (j = 0; j < o; j++)
+-	    sq[row[i]*o + j] = matching[j] + 1;
++	    sq[row[i]*o + j] = matching_[j] + 1;
+     }
+ 
+     /*
+      * Done. Free our internal workspaces...
+      */
+-    sfree(matching);
++    sfree(matching_);
+     sfree(adjlists);
+     sfree(adjsizes);
+     sfree(adjdata);
+diff --git a/loopgen.c b/loopgen.c
+index 558a72a..4c4028c 100644
+--- a/loopgen.c
++++ b/loopgen.c
+@@ -357,7 +357,7 @@ void generate_loop(grid *g, char *board, random_state *rs,
+      * list of the infinite face's neighbours). */
+     for (i = 0; i < num_faces; i++) {
+         grid_face *f = g->faces[i];
+-        struct face_score *fs = face_scores + i;
++        fs = face_scores + i;
+         if (board[i] != FACE_GREY) continue;
+         /* We need the full colourability check here, it's not enough simply
+          * to check neighbourhood.  On some grids, a neighbour of the infinite
+@@ -400,7 +400,7 @@ void generate_loop(grid *g, char *board, random_state *rs,
+              * ordering in our tree234 (which is why we replace only
+              * if score > bestscore, not >=).
+              */
+-            int j, k;
++            int k;
+             struct face_score *best = NULL;
+             int score, bestscore = 0;
+ 
+diff --git a/midend.c b/midend.c
+index 39ea0c7..fbecb32 100644
+--- a/midend.c
++++ b/midend.c
+@@ -2217,8 +2217,6 @@ void midend_serialise(midend *me,
+          * are emitted unencoded for compatibility with older
+          * versions.
+          */
+-        int i;
+-
+         for (i = 0; me->seedstr[i]; i++)
+             if (me->seedstr[i] < 32 || me->seedstr[i] >= 127)
+                 break;
+@@ -2440,7 +2438,7 @@ static const char *midend_deserialise_internal(
+                 val = NULL;
+             } else if (!strcmp(key, "HEXSEED")) {
+                 unsigned char *tmp;
+-                int len = strlen(val) / 2;   /* length in bytes */
++                len = strlen(val) / 2;   /* length in bytes */
+                 tmp = hex2bin(val, len);
+                 sfree(data.seed);
+                 data.seed = snewn(len + 1, char);
+@@ -2461,7 +2459,7 @@ static const char *midend_deserialise_internal(
+                 val = NULL;
+             } else if (!strcmp(key, "AUXINFO")) {
+                 unsigned char *tmp;
+-                int len = strlen(val) / 2;   /* length in bytes */
++                len = strlen(val) / 2;   /* length in bytes */
+                 tmp = hex2bin(val, len);
+                 obfuscate_bitmap(tmp, len*8, true);
+ 
+@@ -2718,8 +2716,6 @@ static const char *midend_deserialise_internal(
+     if (data.ui)
+         me->ourgame->free_ui(data.ui);
+     if (data.states) {
+-        int i;
+-
+         for (i = 0; i < data.nstates; i++) {
+             if (data.states[i].state)
+                 me->ourgame->free_game(data.states[i].state);
+diff --git a/mines.c b/mines.c
+index cbb70ad..5975093 100644
+--- a/mines.c
++++ b/mines.c
+@@ -1220,7 +1220,6 @@ static int minesolve(int w, int h, int n, signed char *grid,
+ 	 */
+ 	if (perturb) {
+ 	    struct perturbations *ret;
+-	    struct set *s;
+ 
+ 	    nperturbs++;
+ 
+diff --git a/misc.c b/misc.c
+index 88e980f..325ff19 100644
+--- a/misc.c
++++ b/misc.c
+@@ -533,16 +533,16 @@ char *button2label(int button)
+ }
+ 
+ char *make_prefs_path(const char *dir, const char *sep,
+-                      const game *game, const char *suffix)
++                      const game *game_, const char *suffix)
+ {
+     size_t dirlen = strlen(dir);
+     size_t seplen = strlen(sep);
+-    size_t gamelen = strlen(game->name);
++    size_t gamelen = strlen(game_->name);
+     size_t suffixlen = strlen(suffix);
+     char *path, *p;
+     const char *q;
+ 
+-    if (!dir || !sep || !game || !suffix)
++    if (!dir || !sep || !game_ || !suffix)
+         return NULL;
+ 
+     path = snewn(dirlen + seplen + gamelen + suffixlen + 1, char);
+@@ -554,7 +554,7 @@ char *make_prefs_path(const char *dir, const char *sep,
+     memcpy(p, sep, seplen);
+     p += seplen;
+ 
+-    for (q = game->name; *q; q++)
++    for (q = game_->name; *q; q++)
+         if (*q != ' ')
+             *p++ = tolower((unsigned char)*q);
+ 
+diff --git a/pen-int.h b/pen-int.h
+index 984cd35..737050a 100644
+--- a/pen-int.h
++++ b/pen-int.h
+@@ -277,10 +277,10 @@ static inline Coord coord_mul(Coord a, Coord b)
+ static inline Coord coord_abs(Coord a)
+ {
+     int sign = coord_sign(a);
+-    Coord abs;
+-    abs.c1 = a.c1 * sign;
+-    abs.cr5 = a.cr5 * sign;
+-    return abs;
++    Coord abs_;
++    abs_.c1 = a.c1 * sign;
++    abs_.cr5 = a.cr5 * sign;
++    return abs_;
+ }
+ 
+ static inline int coord_cmp(Coord a, Coord b)
+diff --git a/pen-leg.c b/pen-leg.c
+index 2e87b43..df9cbe1 100644
+--- a/pen-leg.c
++++ b/pen-leg.c
+@@ -111,11 +111,11 @@
+  * considered identical. So leaving E out is vital.)
+  */
+ 
+-struct vector { int a, b, c, d; };
++struct penrose_vector { int a, b, c, d; };
+ 
+-static vector v_origin(void)
++static penrose_vector v_origin(void)
+ {
+-    vector v;
++    penrose_vector v;
+     v.a = v.b = v.c = v.d = 0;
+     return v;
+ }
+@@ -124,9 +124,9 @@ static vector v_origin(void)
+  * draw an isoceles triangle centred on the X axis. */
+ #ifdef TEST_VECTORS
+ 
+-static vector v_unit(void)
++static penrose_vector v_unit(void)
+ {
+-    vector v;
++    penrose_vector v;
+ 
+     v.b = 1;
+     v.a = v.c = v.d = 0;
+@@ -142,20 +142,20 @@ static vector v_unit(void)
+ 
+ /* These two are a bit rough-and-ready for now. Note that B/C are
+  * 18 degrees from the x-axis, and A/D are 54 degrees. */
+-double penrose_legacy_vx(vector *vs, int i)
++double penrose_legacy_vx(penrose_vector *vs, int i)
+ {
+     return (vs[i].a + vs[i].d) * COS54 +
+            (vs[i].b + vs[i].c) * COS18;
+ }
+ 
+-double penrose_legacy_vy(vector *vs, int i)
++double penrose_legacy_vy(penrose_vector *vs, int i)
+ {
+     return (vs[i].a - vs[i].d) * SIN54 +
+            (vs[i].b - vs[i].c) * SIN18;
+ 
+ }
+ 
+-static vector v_trans(vector v, vector trans)
++static penrose_vector v_trans(penrose_vector v, penrose_vector trans)
+ {
+     v.a += trans.a;
+     v.b += trans.b;
+@@ -164,9 +164,9 @@ static vector v_trans(vector v, vector trans)
+     return v;
+ }
+ 
+-static vector v_rotate_36(vector v)
++static penrose_vector v_rotate_36(penrose_vector v)
+ {
+-    vector vv;
++    penrose_vector vv;
+     vv.a = -v.d;
+     vv.b =  v.d + v.a;
+     vv.c = -v.d + v.b;
+@@ -174,7 +174,7 @@ static vector v_rotate_36(vector v)
+     return vv;
+ }
+ 
+-static vector v_rotate(vector v, int ang)
++static penrose_vector v_rotate(penrose_vector v, int ang)
+ {
+     int i;
+ 
+@@ -188,7 +188,7 @@ static vector v_rotate(vector v, int ang)
+ 
+ #ifdef TEST_VECTORS
+ 
+-static vector v_scale(vector v, int sc)
++static penrose_vector v_scale(penrose_vector v, int sc)
+ {
+     v.a *= sc;
+     v.b *= sc;
+@@ -199,9 +199,9 @@ static vector v_scale(vector v, int sc)
+ 
+ #endif
+ 
+-static vector v_growphi(vector v)
++static penrose_vector v_growphi(penrose_vector v)
+ {
+-    vector vv;
++    penrose_vector vv;
+     vv.a = v.a + v.b - v.d;
+     vv.b = v.c + v.d;
+     vv.c = v.a + v.b;
+@@ -209,9 +209,9 @@ static vector v_growphi(vector v)
+     return vv;
+ }
+ 
+-static vector v_shrinkphi(vector v)
++static penrose_vector v_shrinkphi(penrose_vector v)
+ {
+-    vector vv;
++    penrose_vector vv;
+     vv.a = v.b - v.d;
+     vv.b = v.c + v.d - v.b;
+     vv.c = v.a + v.b - v.c;
+@@ -221,7 +221,7 @@ static vector v_shrinkphi(vector v)
+ 
+ #ifdef TEST_VECTORS
+ 
+-static const char *v_debug(vector v)
++static const char *v_debug(penrose_vector v)
+ {
+     static char buf[255];
+     sprintf(buf,
+@@ -236,7 +236,7 @@ static const char *v_debug(vector v)
+  * Tiling routines.
+  */
+ 
+-static vector xform_coord(vector vo, int shrink, vector vtrans, int ang)
++static penrose_vector xform_coord(penrose_vector vo, int shrink, penrose_vector vtrans, int ang)
+ {
+     if (shrink < 0)
+         vo = v_shrinkphi(vo);
+@@ -253,16 +253,16 @@ static vector xform_coord(vector vo, int shrink, vector vtrans, int ang)
+ #define XFORM(n,o,s,a) vs[(n)] = xform_coord(v_edge, (s), vs[(o)], (a))
+ 
+ static int penrose_p2_small(penrose_legacy_state *state, int depth, int flip,
+-                            vector v_orig, vector v_edge);
++                            penrose_vector v_orig, penrose_vector v_edge);
+ 
+ static int penrose_p2_large(penrose_legacy_state *state, int depth, int flip,
+-                            vector v_orig, vector v_edge)
++                            penrose_vector v_orig, penrose_vector v_edge)
+ {
+-    vector vv_orig, vv_edge;
++    penrose_vector vv_orig, vv_edge;
+ 
+ #ifdef DEBUG_PENROSE
+     {
+-        vector vs[3];
++        penrose_vector vs[3];
+         vs[0] = v_orig;
+         XFORM(1, 0, 0, 0);
+         XFORM(2, 0, 0, -36*flip);
+@@ -272,7 +272,7 @@ static int penrose_p2_large(penrose_legacy_state *state, int depth, int flip,
+ #endif
+ 
+     if (flip > 0) {
+-        vector vs[4];
++        penrose_vector vs[4];
+ 
+         vs[0] = v_orig;
+         XFORM(1, 0, 0, -36);
+@@ -298,13 +298,13 @@ static int penrose_p2_large(penrose_legacy_state *state, int depth, int flip,
+ }
+ 
+ static int penrose_p2_small(penrose_legacy_state *state, int depth, int flip,
+-                            vector v_orig, vector v_edge)
++                            penrose_vector v_orig, penrose_vector v_edge)
+ {
+-    vector vv_orig;
++    penrose_vector vv_orig;
+ 
+ #ifdef DEBUG_PENROSE
+     {
+-        vector vs[3];
++        penrose_vector vs[3];
+         vs[0] = v_orig;
+         XFORM(1, 0, 0, 0);
+         XFORM(2, 0, -1, -36*flip);
+@@ -314,7 +314,7 @@ static int penrose_p2_small(penrose_legacy_state *state, int depth, int flip,
+ #endif
+ 
+     if (flip > 0) {
+-        vector vs[4];
++        penrose_vector vs[4];
+ 
+         vs[0] = v_orig;
+         XFORM(1, 0, 0, -72);
+@@ -338,16 +338,16 @@ static int penrose_p2_small(penrose_legacy_state *state, int depth, int flip,
+ }
+ 
+ static int penrose_p3_small(penrose_legacy_state *state, int depth, int flip,
+-                            vector v_orig, vector v_edge);
++                            penrose_vector v_orig, penrose_vector v_edge);
+ 
+ static int penrose_p3_large(penrose_legacy_state *state, int depth, int flip,
+-                            vector v_orig, vector v_edge)
++                            penrose_vector v_orig, penrose_vector v_edge)
+ {
+-    vector vv_orig;
++    penrose_vector vv_orig;
+ 
+ #ifdef DEBUG_PENROSE
+     {
+-        vector vs[3];
++        penrose_vector vs[3];
+         vs[0] = v_orig;
+         XFORM(1, 0, 1, 0);
+         XFORM(2, 0, 0, -36*flip);
+@@ -357,7 +357,7 @@ static int penrose_p3_large(penrose_legacy_state *state, int depth, int flip,
+ #endif
+ 
+     if (flip > 0) {
+-        vector vs[4];
++        penrose_vector vs[4];
+ 
+         vs[0] = v_orig;
+         XFORM(1, 0, 0, -36);
+@@ -386,13 +386,13 @@ static int penrose_p3_large(penrose_legacy_state *state, int depth, int flip,
+ }
+ 
+ static int penrose_p3_small(penrose_legacy_state *state, int depth, int flip,
+-                            vector v_orig, vector v_edge)
++                            penrose_vector v_orig, penrose_vector v_edge)
+ {
+-    vector vv_orig;
++    penrose_vector vv_orig;
+ 
+ #ifdef DEBUG_PENROSE
+     {
+-        vector vs[3];
++        penrose_vector vs[3];
+         vs[0] = v_orig;
+         XFORM(1, 0, 0, 0);
+         XFORM(2, 0, 0, -36*flip);
+@@ -402,7 +402,7 @@ static int penrose_p3_small(penrose_legacy_state *state, int depth, int flip,
+ #endif
+ 
+     if (flip > 0) {
+-        vector vs[4];
++        penrose_vector vs[4];
+ 
+         vs[0] = v_orig;
+         XFORM(1, 0, 0, -36);
+@@ -448,8 +448,8 @@ double penrose_legacy_side_length(double start_size, int depth)
+ 
+ int penrose_legacy(penrose_legacy_state *state, int which, int angle)
+ {
+-    vector vo = v_origin();
+-    vector vb = v_origin();
++    penrose_vector vo = v_origin();
++    penrose_vector vb = v_origin();
+ 
+     vo.b = vo.c = -state->start_size;
+     vo = v_shrinkphi(v_shrinkphi(vo));
+diff --git a/pen-leg.h b/pen-leg.h
+index 514fd8b..228f420 100644
+--- a/pen-leg.h
++++ b/pen-leg.h
+@@ -20,10 +20,10 @@
+ #define PHI 1.6180339887
+ #endif
+ 
+-typedef struct vector vector;
++typedef struct penrose_vector penrose_vector;
+ 
+-double penrose_legacy_vx(vector *vs, int i);
+-double penrose_legacy_vy(vector *vs, int i);
++double penrose_legacy_vx(penrose_vector *vs, int i);
++double penrose_legacy_vy(penrose_vector *vs, int i);
+ 
+ typedef struct penrose_legacy_state penrose_legacy_state;
+ 
+@@ -33,7 +33,7 @@ typedef struct penrose_legacy_state penrose_legacy_state;
+  * Parameters are state, vector array, npoints, depth.
+  * ctx is inside state.
+  */
+-typedef int (*tile_callback)(penrose_legacy_state *, vector *, int, int);
++typedef int (*tile_callback)(penrose_legacy_state *, penrose_vector *, int, int);
+ 
+ struct penrose_legacy_state {
+     int start_size;  /* initial side length */
+diff --git a/puzzles.h b/puzzles.h
+index 70e3ba5..f439ce8 100644
+--- a/puzzles.h
++++ b/puzzles.h
+@@ -10,7 +10,9 @@
+ #include <limits.h> /* for UINT_MAX */
+ #include <stdbool.h>
+ 
++#ifndef PI
+ #define PI 3.141592653589793238462643383279502884197169399
++#endif
+ #define ROOT2 1.414213562373095048801688724209698078569672
+ 
+ #define lenof(array) ( sizeof(array) / sizeof(*(array)) )
+@@ -388,7 +390,7 @@ void free_keys(key_label *keys, int nkeys);
+ void obfuscate_bitmap(unsigned char *bmp, int bits, bool decode);
+ char *fgetline(FILE *fp);
+ char *make_prefs_path(const char *dir, const char *sep,
+-                      const game *game, const char *suffix);
++                      const game *game_, const char *suffix);
+ int n_times_root_k(int n, int k);
+ 
+ /* allocates output each time. len is always in bytes of binary data.
+@@ -522,10 +524,10 @@ void dsf_reinit(DSF *dsf);
+  */
+ typedef struct tdq tdq;
+ tdq *tdq_new(int n);
+-void tdq_free(tdq *tdq);
+-void tdq_add(tdq *tdq, int k);
+-int tdq_remove(tdq *tdq);        /* returns -1 if nothing available */
+-void tdq_fill(tdq *tdq);         /* add everything to the tdq at once */
++void tdq_free(tdq *tdq_);
++void tdq_add(tdq *tdq_, int k);
++int tdq_remove(tdq *tdq_);        /* returns -1 if nothing available */
++void tdq_fill(tdq *tdq_);         /* add everything to the tdq at once */
+ 
+ /*
+  * laydomino.c
+@@ -573,7 +575,7 @@ void SHA_Simple(const void *p, int len, unsigned char *output);
+  */
+ document *document_new(int pw, int ph, float userscale);
+ void document_free(document *doc);
+-void document_add_puzzle(document *doc, const game *game, game_params *par,
++void document_add_puzzle(document *doc, const game *game_, game_params *par,
+ 			 game_ui *ui, game_state *st, game_state *st2);
+ int document_npages(const document *doc);
+ void document_begin(const document *doc, drawing *dr);
+diff --git a/spec-int.h b/spec-int.h
+index e43d30b..e1f1ea5 100644
+--- a/spec-int.h
++++ b/spec-int.h
+@@ -315,10 +315,10 @@ static inline Coord coord_mul(Coord a, Coord b)
+ static inline Coord coord_abs(Coord a)
+ {
+     int sign = coord_sign(a);
+-    Coord abs;
+-    abs.c1 = a.c1 * sign;
+-    abs.cr3 = a.cr3 * sign;
+-    return abs;
++    Coord abs_;
++    abs_.c1 = a.c1 * sign;
++    abs_.cr3 = a.cr3 * sign;
++    return abs_;
+ }
+ 
+ static inline int coord_cmp(Coord a, Coord b)
+diff --git a/tdq.c b/tdq.c
+index cf2535c..d5a594f 100644
+--- a/tdq.c
++++ b/tdq.c
+@@ -36,53 +36,53 @@ struct tdq {
+ tdq *tdq_new(int n)
+ {
+     int i;
+-    tdq *tdq = snew(struct tdq);
+-    tdq->queue = snewn(n, int);
+-    tdq->flags = snewn(n, bool);
++    tdq *tdq_ = snew(struct tdq);
++    tdq_->queue = snewn(n, int);
++    tdq_->flags = snewn(n, bool);
+     for (i = 0; i < n; i++) {
+-        tdq->queue[i] = 0;
+-        tdq->flags[i] = false;
++        tdq_->queue[i] = 0;
++        tdq_->flags[i] = false;
+     }
+-    tdq->n = n;
+-    tdq->ip = tdq->op = 0;
+-    return tdq;
++    tdq_->n = n;
++    tdq_->ip = tdq_->op = 0;
++    return tdq_;
+ }
+ 
+-void tdq_free(tdq *tdq)
++void tdq_free(tdq *tdq_)
+ {
+-    sfree(tdq->queue);
+-    sfree(tdq->flags);
+-    sfree(tdq);
++    sfree(tdq_->queue);
++    sfree(tdq_->flags);
++    sfree(tdq_);
+ }
+ 
+-void tdq_add(tdq *tdq, int k)
++void tdq_add(tdq *tdq_, int k)
+ {
+-    assert((unsigned)k < (unsigned)tdq->n);
+-    if (!tdq->flags[k]) {
+-        tdq->queue[tdq->ip] = k;
+-        tdq->flags[k] = true;
+-        if (++tdq->ip == tdq->n)
+-            tdq->ip = 0;
++    assert((unsigned)k < (unsigned)tdq_->n);
++    if (!tdq_->flags[k]) {
++        tdq_->queue[tdq_->ip] = k;
++        tdq_->flags[k] = true;
++        if (++tdq_->ip == tdq_->n)
++            tdq_->ip = 0;
+     }
+ }
+ 
+-int tdq_remove(tdq *tdq)
++int tdq_remove(tdq *tdq_)
+ {
+-    int ret = tdq->queue[tdq->op];
++    int ret = tdq_->queue[tdq_->op];
+ 
+-    if (!tdq->flags[ret])
++    if (!tdq_->flags[ret])
+         return -1;
+ 
+-    tdq->flags[ret] = false;
+-    if (++tdq->op == tdq->n)
+-        tdq->op = 0;
++    tdq_->flags[ret] = false;
++    if (++tdq_->op == tdq_->n)
++        tdq_->op = 0;
+ 
+     return ret;
+ }
+ 
+-void tdq_fill(tdq *tdq)
++void tdq_fill(tdq *tdq_)
+ {
+     int i;
+-    for (i = 0; i < tdq->n; i++)
+-        tdq_add(tdq, i);
++    for (i = 0; i < tdq_->n; i++)
++        tdq_add(tdq_, i);
+ }
+diff --git a/tree234.c b/tree234.c
+index ef2c3ff..7fc3802 100644
+--- a/tree234.c
++++ b/tree234.c
+@@ -1291,7 +1291,7 @@ static node234 *split234_internal(tree234 *t, int index) {
+ 
+ 	n = halves[half];
+ 	while (n) {
+-	    void (*toward)(node234 *n, int ki, int *k, int *index);
++	    void (*toward)(node234 * /*n*/, int /*ki*/, int * /*k*/, int * /*index*/);
+ 	    int ni, merge;
+ 
+ 	    /*
+-- 
+2.47.1.windows.2
+

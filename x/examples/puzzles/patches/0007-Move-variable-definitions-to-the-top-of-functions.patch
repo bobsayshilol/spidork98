@@ -1,0 +1,267 @@
+From: me <>
+Date: Thu, 25 Sep 2025 23:35:26 +0100
+Subject: [PATCH] Move variable definitions to the top of functions
+
+Old GCC needs this.
+
+diff --git a/drawing.c b/drawing.c
+index 1e91985..fd97913 100644
+--- a/drawing.c
++++ b/drawing.c
+@@ -68,13 +68,15 @@ typedef struct drawing_internal {
+ 
+ drawing *drawing_new(const drawing_api *api, midend *me, void *handle)
+ {
++    drawing_internal *dri;
++
+     if(api->version != DRAWING_API_VERSION) {
+ 	fatal("Drawing API version mismatch: expected: %d, actual: %d\n", DRAWING_API_VERSION, api->version);
+ 	/* shouldn't get here */
+ 	return NULL;
+     }
+ 
+-    drawing_internal *dri = snew(drawing_internal);
++    dri = snew(drawing_internal);
+     dri->pub.api = api;
+     dri->pub.handle = handle;
+     dri->colours = NULL;
+diff --git a/grid.c b/grid.c
+index f789161..e563417 100644
+--- a/grid.c
++++ b/grid.c
+@@ -76,6 +76,8 @@ void grid_free(grid *g)
+     }
+ }
+ 
++#ifndef FE98_BUILD
++
+ /* Used by the other grid generators.  Create a brand new grid with nothing
+  * initialised (all lists are NULL) */
+ static grid *grid_empty(void)
+@@ -91,6 +93,8 @@ static grid *grid_empty(void)
+     return g;
+ }
+ 
++#endif // FE98_BUILD
++
+ /* Helper function to calculate perpendicular distance from
+  * a point P to a line AB.  A and B mustn't be equal here.
+  *
+@@ -392,7 +396,12 @@ static int grid_edge_bydots_cmpfn(void *v1, void *v2)
+  * preconditions to grid_make_consistent() rather than the
+  * postconditions. (So call it first.)
+  */
+-static void grid_trim_vigorously(grid *g)
++#ifdef FE98_BUILD
++void grid_trim_vigorously(grid *g);
++#else // FE98_BUILD
++static
++#endif // FE98_BUILD
++void grid_trim_vigorously(grid *g)
+ {
+     int *dotpairs, *faces, *dots;
+     DSF *dsf;
+@@ -530,7 +539,12 @@ static void grid_trim_vigorously(grid *g)
+  *
+  * Output: grid is complete and valid with all relationships defined.
+  */
+-static void grid_make_consistent(grid *g)
++#ifdef FE98_BUILD
++void grid_make_consistent(grid *g);
++#else // FE98_BUILD
++static
++#endif // FE98_BUILD
++void grid_make_consistent(grid *g)
+ {
+     int i;
+     tree234 *incomplete_edges;
+@@ -819,6 +833,8 @@ static void grid_make_consistent(grid *g)
+     grid_debug_derived(g);
+ }
+ 
++#ifndef FE98_BUILD
++
+ /* Helpers for making grid-generation easier.  These functions are only
+  * intended for use during grid generation. */
+ 
+@@ -905,6 +921,8 @@ static void grid_face_set_dot(grid *g, grid_dot *d, int position)
+     last_face->dots[position] = d;
+ }
+ 
++#endif // FE98_BUILD
++
+ /*
+  * Helper routines for grid_find_incentre.
+  */
+@@ -1416,6 +1434,8 @@ void grid_find_incentre(grid_face *f)
+     f->iy = ybest + 0.5;
+ }
+ 
++#ifndef FE98_BUILD
++
+ /* ------ Generate various types of grid ------ */
+ 
+ /* General method is to generate faces, by calculating their dot coordinates.
+@@ -3924,3 +3944,5 @@ void grid_compute_size(grid_type type, int width, int height,
+ /* ----------- End of grid helpers ------------- */
+ 
+ /* vim: set shiftwidth=4 tabstop=8: */
++
++#endif // FE98_BUILD
+diff --git a/hat.c b/hat.c
+index 48d8746..7ee3ed1 100644
+--- a/hat.c
++++ b/hat.c
+@@ -523,8 +523,8 @@ void hatctx_extend_coords(HatContext *ctx, HatCoords *hc, size_t n)
+         hat_coords_make_space(ctx->prototype, n);
+         while (ctx->prototype->nc < n) {
+             TileType type = ctx->prototype->c[ctx->prototype->nc - 1].type;
+-            assert(ctx->prototype->c[ctx->prototype->nc - 1].index == -1);
+             const MetatilePossibleParent *parent;
++            assert(ctx->prototype->c[ctx->prototype->nc - 1].index == -1);
+ 
+             if (ctx->rs)
+                 parent = choose_mpp(ctx->rs, possible_parents[type],
+@@ -567,13 +567,19 @@ void hatctx_cleanup(HatContext *ctx)
+ static HatCoords *try_step_coords_kitemap(
+     HatContext *ctx, HatCoords *hc_in, KiteStep step)
+ {
++    unsigned kite;
++    unsigned hat;
++    unsigned meta;
++    TileType meta2type;
++    const KitemapEntry *ke;
++
+     hatctx_extend_coords(ctx, hc_in, 4);
+     hat_coords_debug("  try kitemap  ", hc_in, "\n");
+-    unsigned kite = hc_in->c[0].index;
+-    unsigned hat = hc_in->c[1].index;
+-    unsigned meta = hc_in->c[2].index;
+-    TileType meta2type = hc_in->c[3].type;
+-    const KitemapEntry *ke = &kitemap[meta2type][
++    kite = hc_in->c[0].index;
++    hat = hc_in->c[1].index;
++    meta = hc_in->c[2].index;
++    meta2type = hc_in->c[3].type;
++    ke = &kitemap[meta2type][
+         kitemap_index(step, kite, hat, meta)];
+     if (ke->kite >= 0) {
+         /*
+@@ -608,17 +614,22 @@ static HatCoords *try_step_coords_metamap(
+     HatContext *ctx, HatCoords *hc_in, KiteStep step, size_t depth)
+ {
+     HatCoords *hc_tmp = NULL, *hc_out;
++    int meta_orig;
++    int meta2_orig;
++    TileType meta3type;
++    int meta, meta2;
+ 
+     hatctx_extend_coords(ctx, hc_in, depth+3);
+ #ifdef HAT_COORDS_DEBUG
+     fprintf(stderr, "  try meta %-4d", (int)depth);
+     hat_coords_debug("", hc_in, "\n");
+ #endif
+-    int meta_orig = hc_in->c[depth].index;
+-    int meta2_orig = hc_in->c[depth+1].index;
+-    TileType meta3type = hc_in->c[depth+2].type;
++    meta_orig = hc_in->c[depth].index;
++    meta2_orig = hc_in->c[depth+1].index;
++    meta3type = hc_in->c[depth+2].type;
+ 
+-    int meta = meta_orig, meta2 = meta2_orig;
++    meta = meta_orig;
++    meta2 = meta2_orig;
+ 
+     while (true) {
+         const MetamapEntry *me;
+@@ -789,10 +800,10 @@ void maybe_report_hat(int w, int h, Kite kite, HatCoords *hc,
+      * kite_step operations below will go in the other direction.
+      */
+     if (hc->c[2].type == TT_H && hc->c[1].index == 3) {
+-        reversed = true;
+         Point tmp = kite.left;
+         kite.left = kite.right;
+         kite.right = tmp;
++        reversed = true;
+     }
+ 
+     vertices[0] = kite.centre;
+diff --git a/latin.c b/latin.c
+index 43fa605..65989f8 100644
+--- a/latin.c
++++ b/latin.c
+@@ -160,7 +160,7 @@ int latin_solver_set(struct latin_solver *solver,
+ #ifdef STANDALONE_SOLVER
+     char **names = solver->names;
+ #endif
+-    int i, j, n, count;
++    int i, j, n, count, first;
+     unsigned char *grid = scratch->grid;
+     unsigned char *rowidx = scratch->rowidx;
+     unsigned char *colidx = scratch->colidx;
+@@ -175,7 +175,7 @@ int latin_solver_set(struct latin_solver *solver,
+     memset(rowidx, true, o);
+     memset(colidx, true, o);
+     for (i = 0; i < o; i++) {
+-        int count = 0, first = -1;
++        count = 0, first = -1;
+         for (j = 0; j < o; j++)
+             if (solver->cube[start+i*step1+j*step2])
+                 first = j, count++;
+diff --git a/loopgen.c b/loopgen.c
+index 4c4028c..255d803 100644
+--- a/loopgen.c
++++ b/loopgen.c
+@@ -517,12 +517,13 @@ void generate_loop(grid *g, char *board, random_state *rs,
+     do_random_pass = false;
+ 
+     while (true) {
++        enum face_colour opp;
+         /* Remember whether a flip occurred during this pass */
+         bool flipped = false;
+ 
+         for (i = 0; i < num_faces; ++i) {
+-            int j = face_list[i];
+-            enum face_colour opp =
++            j = face_list[i];
++            opp =
+                 (board[j] == FACE_WHITE) ? FACE_BLACK : FACE_WHITE;
+             if (can_colour_face(g, board, j, opp)) {
+                 grid_face *face = g->faces[j];
+diff --git a/midend.c b/midend.c
+index fbecb32..2a257e5 100644
+--- a/midend.c
++++ b/midend.c
+@@ -2842,6 +2842,7 @@ const char *identify_game(char **name,
+ const char *midend_print_puzzle(midend *me, document *doc, bool with_soln)
+ {
+     game_state *soln = NULL;
++    game_ui *ui;
+ 
+     if (me->statepos < 1)
+ 	return "No game set up to print";/* _shouldn't_ happen! */
+@@ -2873,7 +2874,7 @@ const char *midend_print_puzzle(midend *me, document *doc, bool with_soln)
+      * want to keep, and we don't have to bother freeing soln if it
+      * was non-NULL.
+      */
+-    game_ui *ui = me->ourgame->new_ui(me->states[0].state);
++    ui = me->ourgame->new_ui(me->states[0].state);
+     midend_apply_prefs(me, ui);
+     document_add_puzzle(doc, me->ourgame,
+ 			me->ourgame->dup_params(me->curparams), ui,
+@@ -2885,10 +2886,11 @@ const char *midend_print_puzzle(midend *me, document *doc, bool with_soln)
+ static void midend_apply_prefs(midend *me, game_ui *ui)
+ {
+     struct midend_serialise_buf_read_ctx rctx[1];
++    const char *err;
+     rctx->ser = &me->be_prefs;
+     rctx->len = me->be_prefs.len;
+     rctx->pos = 0;
+-    const char *err = midend_deserialise_prefs(
++    err = midend_deserialise_prefs(
+         me, ui, midend_serialise_buf_read, rctx);
+     /* This should have come from our own serialise function, so
+      * it should never be invalid. */
+-- 
+2.47.1.windows.2
+

@@ -1,0 +1,87 @@
+From: me <>
+Date: Thu, 25 Sep 2025 23:07:31 +0100
+Subject: [PATCH] Update includes
+
+
+diff --git a/grid.c b/grid.c
+index c0aff9c..8634f26 100644
+--- a/grid.c
++++ b/grid.c
+@@ -22,7 +22,7 @@
+ #include "puzzles.h"
+ #include "tree234.h"
+ #include "grid.h"
+-#include "penrose-legacy.h"
++#include "pen-leg.h"
+ #include "penrose.h"
+ #include "hat.h"
+ #include "spectre.h"
+diff --git a/hat.c b/hat.c
+index 2c48e76..a9b267d 100644
+--- a/hat.c
++++ b/hat.c
+@@ -31,7 +31,7 @@
+ 
+ #include "puzzles.h"
+ #include "hat.h"
+-#include "hat-internal.h"
++#include "hat-int.h"
+ 
+ void hat_kiteenum_first(KiteEnum *s, int w, int h)
+ {
+@@ -199,7 +199,7 @@ bool hat_kiteenum_next(KiteEnum *s)
+ /*
+  * The actual tables.
+  */
+-#include "hat-tables.h"
++#include "hat-tab.h"
+ 
+ /*
+  * One set of tables that we write by hand: the permitted ways to
+diff --git a/pen-leg.c b/pen-leg.c
+index 709d68d..54f5bef 100644
+--- a/pen-leg.c
++++ b/pen-leg.c
+@@ -22,7 +22,7 @@
+ #include <stdio.h>
+ 
+ #include "puzzles.h" /* for malloc routines, and PI */
+-#include "penrose-legacy.h"
++#include "pen-leg.h"
+ 
+ /* -------------------------------------------------------
+  * 36-degree basis vector arithmetic routines.
+diff --git a/penrose.c b/penrose.c
+index 8d2d27e..d52f385 100644
+--- a/penrose.c
++++ b/penrose.c
+@@ -19,7 +19,7 @@
+ 
+ #include "puzzles.h"
+ #include "penrose.h"
+-#include "penrose-internal.h"
++#include "pen-int.h"
+ #include "tree234.h"
+ 
+ bool penrose_valid_letter(char c, int which)
+diff --git a/spectre.c b/spectre.c
+index 11c56de..5125e72 100644
+--- a/spectre.c
++++ b/spectre.c
+@@ -16,10 +16,10 @@
+ #include "puzzles.h"
+ #include "tree234.h"
+ 
+-#include "spectre-internal.h"
++#include "spec-int.h"
+ 
+-#include "spectre-tables-manual.h"
+-#include "spectre-tables-auto.h"
++#include "spectabm.h"
++#include "spectaba.h"
+ 
+ static const char *const letters =
+     #define STRINGIFY(x) #x
+-- 
+2.47.1.windows.2
+

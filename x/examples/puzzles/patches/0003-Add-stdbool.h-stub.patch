@@ -1,0 +1,34 @@
+From: me <>
+Date: Thu, 25 Sep 2025 22:20:20 +0100
+Subject: [PATCH] Add stdbool.h stub
+
+
+diff --git a/stdbool.h b/stdbool.h
+new file mode 100644
+index 0000000..68d0862
+--- /dev/null
++++ b/stdbool.h
+@@ -0,0 +1,20 @@
++#ifndef STDBOOL_H
++#define STDBOOL_H
++
++typedef unsigned char PuzzBool;
++
++#ifdef __cplusplus
++
++struct check_sizeof_bool {
++    char x[(sizeof(bool) == sizeof(PuzzBool)) ? 1 : -1];
++};
++
++#else
++
++typedef PuzzBool bool;
++#define true 1
++#define false 0
++
++#endif
++
++#endif
+-- 
+2.47.1.windows.2
+

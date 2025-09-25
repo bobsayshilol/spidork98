@@ -1,0 +1,28 @@
+From: me <>
+Date: Thu, 25 Sep 2025 23:42:03 +0100
+Subject: [PATCH] Remove dead code that conflicts with variable names
+
+
+diff --git a/pen-int.h b/pen-int.h
+index 737050a..8dd1917 100644
+--- a/pen-int.h
++++ b/pen-int.h
+@@ -5,6 +5,7 @@ static inline unsigned num_subtriangles(char t)
+     return (t == 'A' || t == 'B' || t == 'X' || t == 'Y') ? 3 : 2;
+ }
+ 
++#ifndef FE98_BUILD // penrose_sibling_edge_index()
+ static inline unsigned sibling_edge(char t)
+ {
+     switch (t) {
+@@ -13,6 +14,7 @@ static inline unsigned sibling_edge(char t)
+       default: return 0;
+     }
+ }
++#endif
+ 
+ /*
+  * Coordinate system for tracking Penrose-tile half-triangles.
+-- 
+2.47.1.windows.2
+

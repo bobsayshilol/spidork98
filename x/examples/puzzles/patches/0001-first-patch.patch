@@ -1,3 +1,8 @@
+From: me <>
+Date: Mon, 8 Sep 2025 22:48:09 +0100
+Subject: [PATCH] first patch
+
+
 diff --git a/dsf.c b/dsf.c
 index bed564f..d8284c4 100644
 --- a/dsf.c
@@ -255,7 +260,7 @@ index f7eb5db..c0aff9c 100644
      const char *error = NULL;
  
 diff --git a/hat.c b/hat.c
-index 176d1f0..169a346 100644
+index 176d1f0..2c48e76 100644
 --- a/hat.c
 +++ b/hat.c
 @@ -610,11 +610,11 @@ static HatCoords *try_step_coords_metamap(
@@ -273,15 +278,16 @@ index 176d1f0..169a346 100644
  
      while (true) {
          const MetamapEntry *me;
-@@ -849,6 +849,8 @@ struct internal_ctx {
- };
- static void report_hat(void *vctx, Kite kite0, HatCoords *hc, int *coords)
+@@ -851,6 +851,9 @@ static void report_hat(void *vctx, Kite kite0, HatCoords *hc, int *coords)
  {
-+    (void)kite0;
-+    (void)hc;
      struct internal_ctx *ctx = (struct internal_ctx *)vctx;
      ctx->external_cb(ctx->external_cbctx, 14, coords);
++
++    (void)kite0;
++    (void)hc;
  }
+ 
+ /*
 diff --git a/latin.c b/latin.c
 index 7e38083..ca1c112 100644
 --- a/latin.c
@@ -307,7 +313,7 @@ index 7e38083..ca1c112 100644
      if (solver_show_working) {
          int x, y;
 diff --git a/loopgen.c b/loopgen.c
-index 05097fe..c2090d7 100644
+index 05097fe..ec319ec 100644
 --- a/loopgen.c
 +++ b/loopgen.c
 @@ -89,7 +89,7 @@ static bool can_colour_face(grid *g, char* board, int face_index,
@@ -319,15 +325,16 @@ index 05097fe..c2090d7 100644
  
      /* Can only consider a face for colouring if it's adjacent to a face
       * with the same colour. */
-@@ -217,6 +217,8 @@ static bool can_colour_face(grid *g, char* board, int face_index,
- static int face_num_neighbours(grid *g, char *board, grid_face *face,
-                                enum face_colour colour)
- {
-+    (void)g;
-+
-     int colour_count = 0;
+@@ -221,6 +221,9 @@ static int face_num_neighbours(grid *g, char *board, grid_face *face,
      int i;
      grid_face *f;
+     grid_edge *e;
++
++    (void)g;
++
+     for (i = 0; i < face->order; i++) {
+         e = face->edges[i];
+         f = (e->face1 == face) ? e->face2 : e->face1;
 diff --git a/loopgen.h b/loopgen.h
 index bab9581..21d0ee1 100644
 --- a/loopgen.h
@@ -355,7 +362,7 @@ index 30fdf1b..39ea0c7 100644
                      it->u.choices.selected = n;
                      found = true;
 diff --git a/mines.c b/mines.c
-index 1b42721..0766088 100644
+index 1b42721..5d1936d 100644
 --- a/mines.c
 +++ b/mines.c
 @@ -128,7 +128,7 @@ static bool game_fetch_preset(int i, char **name, game_params **params)
@@ -376,15 +383,15 @@ index 1b42721..0766088 100644
  
      len = sprintf(ret, "%dx%d", params->w, params->h);
      /*
-@@ -621,6 +621,8 @@ static void known_squares(int w, int h, struct squaretodo *std,
- 			  open_cb open, void *openctx,
- 			  int x, int y, int mask, bool mine)
+@@ -623,6 +623,8 @@ static void known_squares(int w, int h, struct squaretodo *std,
  {
-+	(void)h;
-+
      int xx, yy, bit;
  
++    (void)h;
++
      bit = 1;
+ 
+     for (yy = 0; yy < 3; yy++)
 @@ -1016,7 +1018,7 @@ static int minesolve(int w, int h, int n, signed char *grid,
  	     * recursion at n=10 to avoid too much pain.
  	     */
@@ -394,15 +401,15 @@ index 1b42721..0766088 100644
  		/*
  		 * Doing this with actual recursive function calls
  		 * would get fiddly because a load of local
-@@ -2021,6 +2023,8 @@ static bool *new_mine_layout(int w, int h, int n, int x, int y, bool unique,
- static char *new_game_desc(const game_params *params, random_state *rs,
- 			   char **aux, bool interactive)
- {
-+	(void)aux;
+@@ -2035,6 +2037,8 @@ static char *new_game_desc(const game_params *params, random_state *rs,
+     int x = random_upto(rs, params->w);
+     int y = random_upto(rs, params->h);
+ 
++    (void)aux;
 +
      /*
-      * We generate the coordinates of an initial click even if they
-      * aren't actually used. This has the effect of harmonising the
+      * Override with params->first_click_[xy] if those are set. (For
+      * the same reason, we still generated the random numbers first.)
 @@ -2113,7 +2117,7 @@ static const char *validate_desc(const game_params *params, const char *desc)
  	if (*desc == 'm' || *desc == 'u')
  	    desc++;
@@ -416,8 +423,8 @@ index 1b42721..0766088 100644
  static char *solve_game(const game_state *state, const game_state *currstate,
                          const char *aux, const char **error)
  {
-+	(void)currstate;
-+	(void)aux;
++    (void)currstate;
++    (void)aux;
 +
      if (!state->layout->mines) {
  	*error = "Game has not been started yet";
@@ -426,93 +433,89 @@ index 1b42721..0766088 100644
  
  static bool game_can_format_as_text_now(const game_params *params)
  {
-+	(void)params;
++    (void)params;
      return true;
  }
  
-@@ -2436,6 +2444,8 @@ struct game_ui {
+@@ -2444,6 +2452,8 @@ static game_ui *new_ui(const game_state *state)
+     ui->flash_is_death = false;	       /* *shrug* */
+     ui->cur_x = ui->cur_y = 0;
+     ui->cur_visible = getenv_bool("PUZZLES_SHOW_CURSOR", false);
++
++    (void)state;
+     return ui;
+ }
  
- static game_ui *new_ui(const game_state *state)
- {
-+	(void)state;
-+
-     game_ui *ui = snew(game_ui);
-     ui->hx = ui->hy = -1;
-     ui->hradius = ui->validradius = 0;
-@@ -2468,6 +2478,8 @@ static char *encode_ui(const game_ui *ui)
- static void decode_ui(game_ui *ui, const char *encoding,
-                       const game_state *state)
- {
-+	(void)state;
-+
-     int p= 0;
+@@ -2472,11 +2482,15 @@ static void decode_ui(game_ui *ui, const char *encoding,
      sscanf(encoding, "D%d%n", &ui->deaths, &p);
      if (encoding[p] == 'C')
-@@ -2477,6 +2489,8 @@ static void decode_ui(game_ui *ui, const char *encoding,
+ 	ui->completed = true;
++
++    (void)state;
+ }
+ 
  static void game_changed_state(game_ui *ui, const game_state *oldstate,
                                 const game_state *newstate)
  {
-+	(void)oldstate;
++    (void)oldstate;
 +
      if (newstate->won)
  	ui->completed = true;
  }
-@@ -2812,6 +2826,8 @@ static game_state *execute_move(const game_state *from, const char *move)
- static void game_compute_size(const game_params *params, int tilesize,
-                               const game_ui *ui, int *x, int *y)
- {
-+	(void)ui;
+@@ -2818,11 +2832,16 @@ static void game_compute_size(const game_params *params, int tilesize,
+ 
+     *x = BORDER * 2 + TILE_SIZE * params->w;
+     *y = BORDER * 2 + TILE_SIZE * params->h;
 +
-     /* Ick: fake up `ds->tilesize' for macro expansion purposes */
-     struct { int tilesize; } ads, *ds = &ads;
-     ads.tilesize = tilesize;
-@@ -2823,6 +2839,9 @@ static void game_compute_size(const game_params *params, int tilesize,
++    (void)ui;
+ }
+ 
  static void game_set_size(drawing *dr, game_drawstate *ds,
                            const game_params *params, int tilesize)
  {
-+	(void)dr;
-+	(void)params;
++    (void)dr;
++    (void)params;
 +
      ds->tilesize = tilesize;
  }
  
-@@ -2915,6 +2934,8 @@ static float *game_colours(frontend *fe, int *ncolours)
- 
- static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
+@@ -2917,6 +2936,8 @@ static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
  {
-+	(void)dr;
-+
      struct game_drawstate *ds = snew(struct game_drawstate);
  
++    (void)dr;
++
      ds->w = state->w;
+     ds->h = state->h;
+     ds->started = false;
 @@ -2932,6 +2953,8 @@ static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
  
  static void game_free_drawstate(drawing *dr, game_drawstate *ds)
  {
-+	(void)dr;
++    (void)dr;
 +
      sfree(ds->grid);
      sfree(ds);
  }
-@@ -3076,6 +3099,10 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
-                         int dir, const game_ui *ui,
-                         float animtime, float flashtime)
- {
-+	(void)oldstate;
-+	(void)dir;
-+	(void)animtime;
-+
-     int x, y;
-     int mines, markers, closed, bg;
+@@ -3081,6 +3104,10 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
      int cx = -1, cy = -1;
+     bool cmoved;
+ 
++    (void)oldstate;
++    (void)dir;
++    (void)animtime;
++
+     if (flashtime) {
+ 	int frame = (int)(flashtime / FLASH_FRAME);
+ 	if (frame % 2)
 @@ -3236,6 +3263,11 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
  static float game_anim_length(const game_state *oldstate,
                                const game_state *newstate, int dir, game_ui *ui)
  {
-+	(void)oldstate;
-+	(void)newstate;
-+	(void)dir;
-+	(void)ui;
++    (void)oldstate;
++    (void)newstate;
++    (void)dir;
++    (void)ui;
 +
      return 0.0F;
  }
@@ -521,28 +524,28 @@ index 1b42721..0766088 100644
                                       const game_params *params,
                                       int *x, int *y, int *w, int *h)
  {
-+	(void)ds;
-+	(void)state;
-+	(void)params;
++    (void)ds;
++    (void)state;
++    (void)params;
 +
      if(ui->cur_visible) {
          *x = COORD(ui->cur_x);
          *y = COORD(ui->cur_y);
 diff --git a/misc.c b/misc.c
-index 8e96d67..44026b7 100644
+index 8e96d67..ecef97f 100644
 --- a/misc.c
 +++ b/misc.c
-@@ -232,6 +232,8 @@ void colour_mix(const float src1[3], const float src2[3], float p, float dst[3])
- void game_mkhighlight_specific(frontend *fe, float *ret,
- 			       int background, int highlight, int lowlight)
- {
-+    (void)fe;
+@@ -285,6 +285,8 @@ void game_mkhighlight_specific(frontend *fe, float *ret,
+             colour_mix(&ret[background*3], white, k/dw, &ret[highlight*3]);
+         }
+     }
 +
-     static const float black[3] = { 0.0F, 0.0F, 0.0F };
-     static const float white[3] = { 1.0F, 1.0F, 1.0F };
-     float db, dw;
++    (void)fe;
+ }
+ 
+ void game_mkhighlight(frontend *fe, float *ret,
 diff --git a/penrose.c b/penrose.c
-index 4d7dcc4..53e7293 100644
+index f8212fb..8d2d27e 100644
 --- a/penrose.c
 +++ b/penrose.c
 @@ -108,18 +108,21 @@ static TransitionResult transition(char parent, char child, unsigned edge)
@@ -703,27 +706,27 @@ index 4d7dcc4..53e7293 100644
  
  static void really_output_tile(void *vctx, const Point *vertices)
 diff --git a/ps.c b/ps.c
-index dd4b346..8089e5b 100644
+index dd4b346..c150b21 100644
 --- a/ps.c
 +++ b/ps.c
-@@ -244,6 +244,8 @@ static void ps_line_dotted(drawing *dr, bool dotted)
- static char *ps_text_fallback(drawing *dr, const char *const *strings,
- 			      int nstrings)
- {
+@@ -251,6 +251,8 @@ static char *ps_text_fallback(drawing *dr, const char *const *strings,
+     int i, maxlen;
+     char *ret;
+ 
 +    (void)dr;
 +
-     /*
-      * We can handle anything in ISO 8859-1, and we'll manually
-      * translate it out of UTF-8 for the purpose.
-@@ -367,6 +369,8 @@ static void ps_end_puzzle(drawing *dr)
- 
- static void ps_end_page(drawing *dr, int number)
- {
-+    (void)number;
-+
+     maxlen = 0;
+     for (i = 0; i < nstrings; i++) {
+ 	int len = strlen(strings[i]);
+@@ -370,6 +372,8 @@ static void ps_end_page(drawing *dr, int number)
      psdata *ps = GET_HANDLE_AS_TYPE(dr, psdata);
  
      fputs("restore grestore showpage\n", ps->fp);
++
++    (void)number;
+ }
+ 
+ static void ps_end_doc(drawing *dr)
 @@ -405,6 +409,7 @@ static const struct drawing_api ps_drawing = {
      ps_line_width,
      ps_line_dotted,
@@ -793,3 +796,6 @@ index ba72304..11c56de 100644
      assert(edge < 14);
  
      h = &hexdata[sc->c[0].type];
+-- 
+2.47.1.windows.2
+

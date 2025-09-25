@@ -1,0 +1,48 @@
+From: me <>
+Date: Mon, 8 Sep 2025 23:04:14 +0100
+Subject: [PATCH] File names
+
+
+diff --git a/draw-poly.c b/draw-ply.c
+similarity index 100%
+rename from draw-poly.c
+rename to draw-ply.c
+diff --git a/hat-internal.h b/hat-int.h
+similarity index 100%
+rename from hat-internal.h
+rename to hat-int.h
+diff --git a/hat-tables.h b/hat-tab.h
+similarity index 100%
+rename from hat-tables.h
+rename to hat-tab.h
+diff --git a/laydomino.c b/laydomin.c
+similarity index 100%
+rename from laydomino.c
+rename to laydomin.c
+diff --git a/penrose-internal.h b/pen-int.h
+similarity index 100%
+rename from penrose-internal.h
+rename to pen-int.h
+diff --git a/penrose-legacy.c b/pen-leg.c
+similarity index 100%
+rename from penrose-legacy.c
+rename to pen-leg.c
+diff --git a/penrose-legacy.h b/pen-leg.h
+similarity index 100%
+rename from penrose-legacy.h
+rename to pen-leg.h
+diff --git a/spectre-internal.h b/spec-int.h
+similarity index 100%
+rename from spectre-internal.h
+rename to spec-int.h
+diff --git a/spectre-tables-auto.h b/spectaba.h
+similarity index 100%
+rename from spectre-tables-auto.h
+rename to spectaba.h
+diff --git a/spectre-tables-manual.h b/spectabm.h
+similarity index 100%
+rename from spectre-tables-manual.h
+rename to spectabm.h
+-- 
+2.47.1.windows.2
+
