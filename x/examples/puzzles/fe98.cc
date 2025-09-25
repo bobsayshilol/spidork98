@@ -72,10 +72,10 @@ void debug_printf(const char *fmt, ...) {
   va_end(ap);
 }
 
-void document_add_puzzle(document *doc, const game *game, game_params *par, game_ui *ui, game_state *st, game_state *st2) {
+void document_add_puzzle(document *doc, const struct game *game_, game_params *par, game_ui *ui, game_state *st, game_state *st2) {
   // TODO
   (void)doc;
-  (void)game;
+  (void)game_;
   (void)par;
   (void)ui;
   (void)st;
@@ -418,7 +418,7 @@ int main() {
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
 
-  const drawing_api drapi {
+  const drawing_api drapi = {
     1,
     fe98_draw_text,
     fe98_draw_rect,
@@ -455,9 +455,9 @@ int main() {
     int num_colours = 0;
     float *colours = midend_colours(me, &num_colours);
     for (int i = 0; i < num_colours; i++) {
-      u8 r = colours[3 * i + 0] * 255;
-      u8 g = colours[3 * i + 1] * 255;
-      u8 b = colours[3 * i + 2] * 255;
+      u8 r = static_cast<u8>(colours[3 * i + 0] * 255);
+      u8 g = static_cast<u8>(colours[3 * i + 1] * 255);
+      u8 b = static_cast<u8>(colours[3 * i + 2] * 255);
       gpu::set_palette_colour(i, r, g, b);
     }
     sfree(colours);
