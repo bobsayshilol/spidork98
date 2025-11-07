@@ -149,9 +149,10 @@ FORCEINLINE void fe98_draw_triangle_half(int start_x, int end_x, int start_y, in
     const int sx = start_x >> FE98_DRAW_SHIFT;
     const int ex = end_x >> FE98_DRAW_SHIFT;
 
-    gpu::draw_quad(sx, y, ex, y, fillcolour);
-    gpu::draw_quad(sx, y, sx, y, outlinecolour);
-    gpu::draw_quad(ex, y, ex, y, outlinecolour);
+    // TODO: why are we inclusive on x but not y...
+    gpu::draw_quad(sx, y, ex, y + 1, fillcolour);
+    gpu::draw_quad(sx, y, sx, y + 1, outlinecolour);
+    gpu::draw_quad(ex, y, ex, y + 1, outlinecolour);
 
     start_x += dsx;
     end_x += dex;
@@ -235,6 +236,7 @@ void fe98_draw_triangle(Point (&pts)[3], int fillcolour, int outlinecolour) {
 
 void fe98_draw_polygon(drawing *,const int *coords, int npoints, int fillcolour, int outlinecolour) {
   // Decompose into tris because lazy.
+  // This is wrong: polygon isn't necessarily concave...
   Point pts[3];
   for (int pt = 2; pt < npoints; pt++) {
     pts[0].x = coords[0];
