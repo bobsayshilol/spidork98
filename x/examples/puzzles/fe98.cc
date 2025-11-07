@@ -9,6 +9,19 @@ extern "C" {
 
 #include <stdarg.h>
 
+// TODO: move these to a common conio wrapper
+#ifndef WEB_BUILD
+#include <conio.h>
+#define getch_98() getch()
+#endif
+#define KEY_UP 11
+#define KEY_DOWN 10
+#define KEY_LEFT 8
+#define KEY_RIGHT 12
+#define KEY_ENTER '\r'
+#define KEY_SPACE ' '
+#define KEY_ESCAPE 27
+
 #define FE98_UNIMPLEMENTED() logging::print(logging::Level::Warning, "Unimplemented: %s", __func__)
 
 #define LOG_FILE "puzlog.txt"
@@ -401,6 +414,59 @@ void fe98_end_doc(drawing *dr) {
   FE98_UNIMPLEMENTED();
 }
 
+
+
+//
+// Main loop
+//
+
+bool update_loop(midend *me) {
+  // Deal with input.
+  if (kbhit_98()) {
+    const char ch = getch_98();
+    switch (ch) {
+      case KEY_UP: case 'W': case 'w':
+        midend_process_key(me, 0, 0, CURSOR_UP);
+        break;
+      case KEY_DOWN: case 'S': case 's':
+        midend_process_key(me, 0, 0, CURSOR_DOWN);
+        break;
+      case KEY_LEFT: case 'A': case 'a':
+        midend_process_key(me, 0, 0, CURSOR_LEFT);
+        break;
+      case KEY_RIGHT: case 'D': case 'd':
+        midend_process_key(me, 0, 0, CURSOR_RIGHT);
+        break;
+      case KEY_ENTER: case 'E': case 'e':
+        midend_process_key(me, 0, 0, CURSOR_SELECT);
+        break;
+      case KEY_SPACE:
+        midend_process_key(me, 0, 0, CURSOR_SELECT2);
+        break;
+#ifndef __EMSCRIPTEN__
+      case KEY_ESCAPE: case 'Q': case 'q':
+        return false;
+#endif
+      case 'R': case 'r':
+        // TODO: restart game
+        break;
+    }
+  }
+
+  // Tick the timer.
+  if (s_timer_active) {
+    // TODO: proper dt
+    const float dt = 0.1f;
+    midend_timer(me, dt);
+  }
+
+  // Update the UI.
+  midend_redraw(me);
+  gpu::wait_for_vsync();
+
+  return true;
+}
+
 } // namespace
 
 
@@ -470,16 +536,11 @@ int main() {
   midend_size(me, &w, &h, false, 1);
   midend_force_redraw(me);
 
-  for (int i = 0; i < 100; i++) {
-    // TODO: inputs
-
-    if (s_timer_active) {
-      const float dt = 0.1f;
-      midend_timer(me, dt);
+  while (true) {
+    const bool finished = !update_loop(me);
+    if (finished) {
+      break;
     }
-
-    midend_redraw(me);
-    gpu::wait_for_vsync();
   }
 
   midend_free(me);
