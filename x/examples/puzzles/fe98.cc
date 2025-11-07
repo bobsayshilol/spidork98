@@ -533,7 +533,7 @@ int main() {
 
   int w = GPU_WIDTH;
   int h = GPU_HEIGHT;
-  midend_size(me, &w, &h, false, 1);
+  midend_size(me, &w, &h, true, 1);
   midend_force_redraw(me);
 
   while (true) {
