@@ -1,5 +1,6 @@
 #include "funcs.h"
 #include "keyboard.h"
+#include "mouse.h"
 
 #include "web_common.h"
 
@@ -7,6 +8,7 @@
 
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_mouse.h>
 
 namespace {
 
@@ -119,4 +121,26 @@ u32 read_keyboard_state() {
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_LEFT]) bits |= KB_STATE_LEFT;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_RIGHT]) bits |= KB_STATE_RIGHT;
   return bits;
+}
+
+//
+
+void mouse::init() {
+  SDL_GetRelativeMouseState(nullptr, nullptr);
+}
+
+void mouse::read_delta(i8 &dx, i8 &dy) {
+  float fdx = 0, fdy = 0;
+  SDL_GetRelativeMouseState(&fdx, &fdy);
+  dx = fdx;
+  dy = fdy;
+}
+
+mouse::ButtonsState mouse::read_buttons() {
+  ButtonsState state = 0;
+  const SDL_MouseButtonFlags flags = SDL_GetRelativeMouseState(nullptr, nullptr);
+  if (flags & SDL_BUTTON_LMASK) state |= Button::Left;
+  if (flags & SDL_BUTTON_MMASK) state |= Button::Middle;
+  if (flags & SDL_BUTTON_RMASK) state |= Button::Right;
+  return state;
 }

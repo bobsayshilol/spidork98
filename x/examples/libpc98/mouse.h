@@ -4,10 +4,12 @@
 #include "funcs.h"
 #include "types.h"
 
-#include <pc.h>
-
 #include <cstdio>
 #include <cstdlib>
+
+#ifndef WEB_BUILD
+#include <pc.h>
+#endif
 
 namespace mouse {
 
@@ -44,6 +46,14 @@ struct Button {
         Right = BIT_MOUSE_RIGHT,
     };
 };
+
+#ifdef WEB_BUILD
+
+void init();
+void read_delta(i8 &dx, i8 &dy);
+ButtonsState read_buttons();
+
+#else // WEB_BUILD
 
 static FORCEINLINE void init() {
   // Reset the mouse tracking.
@@ -85,11 +95,13 @@ static FORCEINLINE void read_delta(i8 &dx, i8 &dy) {
 }
 
 static FORCEINLINE ButtonsState read_buttons() {
-    return inportb(PORT_MOUSE_STATUS);
+    return ~inportb(PORT_MOUSE_STATUS);
 }
 
+#endif // WEB_BUILD
+
 static FORCEINLINE bool is_button_pressed(ButtonsState state, Button::E button) {
-    return !(state & static_cast<u8>(button));
+    return state & static_cast<u8>(button);
 }
 
 } // namespace mouse
