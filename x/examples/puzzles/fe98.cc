@@ -9,6 +9,18 @@ extern "C" {
 
 #include <stdarg.h>
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#include <emscripten/html5.h>
+template <typename Func>
+static void run_at_fps(int fps, Func & func) {
+  emscripten_set_main_loop_arg([](void *arg){
+    (*static_cast<Func*>(arg))();
+  }, &func, fps, true);
+}
+#endif
+
+
 // TODO: move these to a common conio wrapper
 #ifndef WEB_BUILD
 #include <conio.h>
@@ -536,12 +548,17 @@ int main() {
   midend_size(me, &w, &h, true, 1);
   midend_force_redraw(me);
 
+#if defined(__EMSCRIPTEN__)
+  auto run_one = [&]{ update_loop(me); };
+  run_at_fps(60, run_one);
+#else
   while (true) {
     const bool finished = !update_loop(me);
     if (finished) {
       break;
     }
   }
+#endif
 
   midend_free(me);
 
