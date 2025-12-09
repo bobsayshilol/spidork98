@@ -57,21 +57,21 @@ add_executable(puzzles
     # Common
     x/examples/puzzles/puzzles/combi.c
     x/examples/puzzles/puzzles/divvy.c
-    x/examples/puzzles/puzzles/draw-poly.c
+    x/examples/puzzles/puzzles/draw-ply.c
     x/examples/puzzles/puzzles/drawing.c
     x/examples/puzzles/puzzles/dsf.c
     x/examples/puzzles/puzzles/findloop.c
     x/examples/puzzles/puzzles/grid.c
     x/examples/puzzles/puzzles/hat.c
     x/examples/puzzles/puzzles/latin.c
-    x/examples/puzzles/puzzles/laydomino.c
+    x/examples/puzzles/puzzles/laydomin.c
     x/examples/puzzles/puzzles/loopgen.c
     x/examples/puzzles/puzzles/malloc.c
     x/examples/puzzles/puzzles/matching.c
     x/examples/puzzles/puzzles/midend.c
     x/examples/puzzles/puzzles/misc.c
     x/examples/puzzles/puzzles/penrose.c
-    x/examples/puzzles/puzzles/penrose-legacy.c
+    x/examples/puzzles/puzzles/pen-leg.c
     x/examples/puzzles/puzzles/ps.c
     x/examples/puzzles/puzzles/random.c
     x/examples/puzzles/puzzles/sort.c
@@ -89,7 +89,7 @@ add_executable(puzzles
 target_include_directories(puzzles PUBLIC
     x/examples/puzzles/puzzles
 )
-target_compile_definitions(puzzles PUBLIC COMBINED)
+target_compile_definitions(puzzles PUBLIC COMBINED FE98_BUILD)
 target_link_libraries(puzzles libpc98)
 if (EMSCRIPTEN)
     target_link_options(puzzles PRIVATE
