@@ -109,11 +109,8 @@ char *fe98_text_fallback(drawing *, const char *const *strings, int) {
   return dupstr(strings[0]);
 }
 
-void fe98_status_bar(drawing *dr, const char *text) {
-  // TODO
-  (void)dr;
-  (void)text;
-  FE98_UNIMPLEMENTED();
+void fe98_status_bar(drawing *, const char *text) {
+  ScreenPutString_98(text, COLOUR_GREEN, ScreenCols_98() / 8, ScreenRows_98() - 1);
 }
 
 } // namespace
@@ -417,6 +414,15 @@ void fe98_end_doc(drawing *dr) {
 // Main loop
 //
 
+void print_help() {
+  const int top_left_x = ScreenCols_98() * 9 / 16 + 2;
+  const int top_left_y = ScreenRows_98() / 4;
+  ScreenPutString_98("Controls:",                     COLOUR_GREEN, top_left_x, top_left_y);
+  ScreenPutString_98("WASD or arrows to move",        COLOUR_GREEN, top_left_x, top_left_y + 2);
+  ScreenPutString_98("Space to add a flag",           COLOUR_GREEN, top_left_x, top_left_y + 4);
+  ScreenPutString_98("Enter or E to uncover a tile",  COLOUR_GREEN, top_left_x, top_left_y + 6);
+}
+
 bool update_loop(midend *me) {
   // Deal with input.
   if (kbhit_98()) {
@@ -533,6 +539,8 @@ int main() {
   int h = GPU_HEIGHT;
   midend_size(me, &w, &h, true, 1);
   midend_force_redraw(me);
+
+  print_help();
 
 #if defined(__EMSCRIPTEN__)
   auto run_one = [&]{ update_loop(me); };
