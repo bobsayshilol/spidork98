@@ -411,19 +411,100 @@ void fe98_end_doc(drawing *dr) {
 
 
 //
-// Main loop
+// drawing_api
 //
 
-void print_help() {
-  const int top_left_x = ScreenCols_98() * 9 / 16 + 2;
-  const int top_left_y = ScreenRows_98() / 4;
-  ScreenPutString_98("Controls:",                     COLOUR_GREEN, top_left_x, top_left_y);
-  ScreenPutString_98("WASD or arrows to move",        COLOUR_GREEN, top_left_x, top_left_y + 2);
-  ScreenPutString_98("Space to add a flag",           COLOUR_GREEN, top_left_x, top_left_y + 4);
-  ScreenPutString_98("Enter or E to uncover a tile",  COLOUR_GREEN, top_left_x, top_left_y + 6);
+const drawing_api s_drapi = {
+  1,
+  fe98_draw_text,
+  fe98_draw_rect,
+  fe98_draw_line,
+  fe98_draw_polygon,
+  fe98_draw_circle,
+  NULL /* draw_update */,
+  fe98_clip,
+  fe98_unclip,
+  fe98_start_draw,
+  fe98_end_draw,
+  fe98_status_bar,
+  fe98_blitter_new,
+  fe98_blitter_free,
+  fe98_blitter_save,
+  fe98_blitter_load,
+  fe98_begin_doc,
+  fe98_begin_page,
+  fe98_begin_puzzle,
+  fe98_end_puzzle,
+  fe98_end_page,
+  fe98_end_doc,
+  fe98_line_width,
+  fe98_line_dotted,
+  fe98_text_fallback,
+  NULL /* draw_thick_line */
+};
+
+
+
+//
+// Main logic
+//
+
+void print_help(const game *ourgame) {
+  if (ourgame == &mines) {
+    const int top_left_x = ScreenCols_98() * 9 / 16 + 2;
+    const int top_left_y = ScreenRows_98() / 4;
+    ScreenPutString_98("Controls:",                     COLOUR_GREEN, top_left_x, top_left_y);
+    ScreenPutString_98("WASD or arrows to move",        COLOUR_GREEN, top_left_x, top_left_y + 2);
+    ScreenPutString_98("Space to add a flag",           COLOUR_GREEN, top_left_x, top_left_y + 4);
+    ScreenPutString_98("Enter or E to uncover a tile",  COLOUR_GREEN, top_left_x, top_left_y + 6);
+    ScreenPutString_98("R to restart",                  COLOUR_GREEN, top_left_x, top_left_y + 8);
+    ScreenPutString_98("Q to quit",                     COLOUR_GREEN, top_left_x, top_left_y + 10);
+  } else {
+    FE98_UNIMPLEMENTED();
+  }
 }
 
-bool update_loop(midend *me) {
+midend * new_game(const game *ourgame) {
+  midend *me = midend_new(NULL, ourgame, &s_drapi, NULL);
+  midend_new_game(me);
+
+  // Clear any text.
+  gpu::enable_text_layer(true);
+  Funcs98::clear_screen();
+
+  // Setup the palette.
+  {
+    int num_colours = 0;
+    float *colours = midend_colours(me, &num_colours);
+    for (int i = 0; i < num_colours; i++) {
+      u8 r = static_cast<u8>(colours[3 * i + 0] * 255);
+      u8 g = static_cast<u8>(colours[3 * i + 1] * 255);
+      u8 b = static_cast<u8>(colours[3 * i + 2] * 255);
+      gpu::set_palette_colour(i, r, g, b);
+    }
+    for (int j = num_colours; j < 32; j++) {
+      gpu::set_palette_colour(j, 0, 0, 0);
+    }
+    sfree(colours);
+  }
+
+  // Tell the game where it can draw.
+  int w = GPU_WIDTH;
+  int h = GPU_HEIGHT;
+  midend_size(me, &w, &h, true, 1);
+  midend_force_redraw(me);
+
+  // Show some help on the side.
+  print_help(ourgame);
+
+  return me;
+}
+
+void free_game(midend *me) {
+  midend_free(me);
+}
+
+bool update_loop(midend * & me) {
   // Deal with input.
   if (kbhit_98()) {
     const char ch = getch_98();
@@ -450,9 +531,11 @@ bool update_loop(midend *me) {
       case KEY_ESCAPE: case 'Q': case 'q':
         return false;
 #endif
-      case 'R': case 'r':
-        // TODO: restart game
-        break;
+      case 'R': case 'r': {
+        const game *ourgame = midend_which_game(me);
+        free_game(me);
+        me = new_game(ourgame);
+      } break;
     }
   }
 
@@ -488,59 +571,7 @@ int main() {
   }
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
-  gpu::enable_text_layer(true);
-
-  const drawing_api drapi = {
-    1,
-    fe98_draw_text,
-    fe98_draw_rect,
-    fe98_draw_line,
-    fe98_draw_polygon,
-    fe98_draw_circle,
-    NULL /* draw_update */,
-    fe98_clip,
-    fe98_unclip,
-    fe98_start_draw,
-    fe98_end_draw,
-    fe98_status_bar,
-    fe98_blitter_new,
-    fe98_blitter_free,
-    fe98_blitter_save,
-    fe98_blitter_load,
-    fe98_begin_doc,
-    fe98_begin_page,
-    fe98_begin_puzzle,
-    fe98_end_puzzle,
-    fe98_end_page,
-    fe98_end_doc,
-    fe98_line_width,
-    fe98_line_dotted,
-    fe98_text_fallback,
-    NULL /* draw_thick_line */
-  };
-
-  midend *me = midend_new(NULL, &mines, &drapi, NULL);
-  midend_new_game(me);
-
-  // Setup the palette.
-  {
-    int num_colours = 0;
-    float *colours = midend_colours(me, &num_colours);
-    for (int i = 0; i < num_colours; i++) {
-      u8 r = static_cast<u8>(colours[3 * i + 0] * 255);
-      u8 g = static_cast<u8>(colours[3 * i + 1] * 255);
-      u8 b = static_cast<u8>(colours[3 * i + 2] * 255);
-      gpu::set_palette_colour(i, r, g, b);
-    }
-    sfree(colours);
-  }
-
-  int w = GPU_WIDTH;
-  int h = GPU_HEIGHT;
-  midend_size(me, &w, &h, true, 1);
-  midend_force_redraw(me);
-
-  print_help();
+  midend *me = new_game(&mines);
 
 #if defined(__EMSCRIPTEN__)
   auto run_one = [&]{ update_loop(me); };
@@ -554,7 +585,7 @@ int main() {
   }
 #endif
 
-  midend_free(me);
+  free_game(me);
 
   return EXIT_SUCCESS;
 }
