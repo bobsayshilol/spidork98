@@ -126,17 +126,14 @@ void fe98_status_bar(drawing *dr, const char *text) {
 
 namespace {
 
-void fe98_draw_text(drawing *dr, int x, int y, int fonttype, int fontsize, int align, int colour, const char *text) {
-  // TODO
-  (void)dr;
-  (void)x;
-  (void)y;
-  (void)fonttype;
+void fe98_draw_text(drawing *, int x, int y, int fontttype, int fontsize, int align, int colour, const char *text) {
+  (void)fontttype;
   (void)fontsize;
   (void)align;
   (void)colour;
-  (void)text;
-  FE98_UNIMPLEMENTED();
+  x = (x * ScreenCols_98() + GPU_WIDTH / 2) / GPU_WIDTH;
+  y = (y * ScreenRows_98() + GPU_HEIGHT / 2) / GPU_HEIGHT;
+  ScreenPutString_98(text, COLOUR_RED, x, y);
 }
 
 void fe98_draw_rect(drawing *, int x, int y, int w, int h, int colour) {
@@ -485,6 +482,7 @@ int main() {
   }
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
+  gpu::enable_text_layer(true);
 
   const drawing_api drapi = {
     1,
