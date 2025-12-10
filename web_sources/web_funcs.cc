@@ -81,7 +81,13 @@ int getch_98() {
   IF_WAS_PRESSED(Q, 'q');
   IF_WAS_PRESSED(W, 'w');
   IF_WAS_PRESSED(E, 'e');
+  IF_WAS_PRESSED(R, 'r');
   IF_WAS_PRESSED(T, 't');
+  IF_WAS_PRESSED(Y, 'y');
+  IF_WAS_PRESSED(U, 'u');
+  IF_WAS_PRESSED(I, 'i');
+  IF_WAS_PRESSED(O, 'o');
+  IF_WAS_PRESSED(P, 'p');
   IF_WAS_PRESSED(A, 'a');
   IF_WAS_PRESSED(S, 's');
   IF_WAS_PRESSED(D, 'd');
