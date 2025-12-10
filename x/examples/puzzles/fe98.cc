@@ -5,6 +5,7 @@ extern "C" {
 
 #include "funcs.h"
 #include "gpuscrn.h"
+#include "keyboard.h"
 #include "logs.h"
 
 #include <stdarg.h>
@@ -20,19 +21,6 @@ static void run_at_fps(int fps, Func & func) {
 }
 #endif
 
-
-// TODO: move these to a common conio wrapper
-#ifndef WEB_BUILD
-#include <conio.h>
-#define getch_98() getch()
-#endif
-#define KEY_UP 11
-#define KEY_DOWN 10
-#define KEY_LEFT 8
-#define KEY_RIGHT 12
-#define KEY_ENTER '\r'
-#define KEY_SPACE ' '
-#define KEY_ESCAPE 27
 
 #define FE98_UNIMPLEMENTED() logging::print(logging::Level::Warning, "Unimplemented: %s", __func__)
 

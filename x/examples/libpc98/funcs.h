@@ -68,10 +68,16 @@ struct Funcs64 {
 using FuncsAT = Funcs64;
 using Funcs98 = Funcs64;
 
-// conio.h
-#define kbhit_98() Funcs64::kb_hit()
-int getch_98();
-
 #endif
+
+// The colours in conio.h are lies.
+#define COLOUR_BLUE 0x1
+#define COLOUR_GREEN 0x2
+#define COLOUR_RED 0x4
+#define COLOUR_CYAN (COLOUR_BLUE | COLOUR_GREEN)
+#define COLOUR_MAGENTA (COLOUR_BLUE | COLOUR_RED)
+#define COLOUR_YELLOW (COLOUR_GREEN | COLOUR_RED)
+#define COLOUR_WHITE (COLOUR_BLUE | COLOUR_GREEN | COLOUR_RED)
+#define COLOUR_UNDERLINE 0x8
 
 #endif

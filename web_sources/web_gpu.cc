@@ -274,10 +274,10 @@ void print_text_layer(char ch, u8 col, int x, int y) {
   DEFER( SDL_Surface* , s , surface , SDL_UnlockSurface(s) );
 
   // Map the colour to one we can use.
-  const bool underline = col & 8;
-  const bool r = col & 4;
-  const bool g = col & 2;
-  const bool b = col & 1;
+  const bool underline = col & COLOUR_UNDERLINE;
+  const bool r = col & COLOUR_RED;
+  const bool g = col & COLOUR_GREEN;
+  const bool b = col & COLOUR_BLUE;
   const bool a = r | g | b;
 
   // TODO: palette would probably be better.

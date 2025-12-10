@@ -1,6 +1,10 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
+//
+// Raw keyboard
+//
+
 #ifndef WEB_BUILD
 
 #include <go32.h>
@@ -34,5 +38,37 @@ u32 read_keyboard_state();
 #define KB_STATE_UP (1 << 2)
 #define KB_STATE_LEFT (1 << 3)
 #define KB_STATE_RIGHT (1 << 4)
+
+
+
+//
+// conio.h
+//
+
+#ifndef WEB_BUILD
+
+#include <conio.h>
+#define getch_98() getch()
+
+#else
+
+#include "funcs.h"
+#define kbhit_98() Funcs64::kb_hit()
+int getch_98();
+
+#endif
+
+// Extra input keys.
+#define KEY_UP 11
+#define KEY_DOWN 10
+#define KEY_LEFT 8
+#define KEY_RIGHT 12
+#define KEY_ENTER '\r'
+#define KEY_SPACE ' '
+#define KEY_ESCAPE 27
+
+static FORCEINLINE void flush_kb_buffer() {
+  while (kbhit_98()) getch_98();
+}
 
 #endif

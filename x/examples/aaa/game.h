@@ -2,33 +2,10 @@
 #define GAME_GAME_H
 
 #include "funcs.h"
+#include "keyboard.h"
 #include "macros.h"
 #include "sound.h"
 #include "types.h"
-
-#ifndef WEB_BUILD
-#include <conio.h>
-#define getch_98() getch()
-#endif
-
-// The colours in conio.h are lies.
-#define COLOUR_BLUE 0x1
-#define COLOUR_GREEN 0x2
-#define COLOUR_RED 0x4
-#define COLOUR_CYAN (COLOUR_BLUE | COLOUR_GREEN)
-#define COLOUR_MAGENTA (COLOUR_BLUE | COLOUR_RED)
-#define COLOUR_YELLOW (COLOUR_GREEN | COLOUR_RED)
-#define COLOUR_WHITE (COLOUR_BLUE | COLOUR_GREEN | COLOUR_RED)
-#define COLOUR_UNDERLINE 0x8
-
-// Extra input keys.
-#define KEY_UP 11
-#define KEY_DOWN 10
-#define KEY_LEFT 8
-#define KEY_RIGHT 12
-#define KEY_ENTER '\r'
-#define KEY_SPACE ' '
-#define KEY_ESCAPE 27
 
 #define NUM_LEVELS 4
 
@@ -45,10 +22,6 @@ extern bool g_sound_enabled;
 extern u8 g_level_selected;
 extern u8 g_unlocked_levels;
 extern bool g_invincible;
-
-static FORCEINLINE void flush_kb_buffer() {
-  while (kbhit_98()) getch_98();
-}
 
 void toggle_audio();
 void load_menu_audio();
