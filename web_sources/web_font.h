@@ -933,6 +933,18 @@ constexpr CharData s_font_data[] = {
         0b00000000,
         0b00000000,
     },
+    { // /
+        0b00000000,
+        0b00000000,
+        0b00001000,
+        0b00001000,
+        0b00010000,
+        0b00010000,
+        0b00100000,
+        0b00100000,
+        0b00000000,
+        0b00000000,
+    },
     { // ?
         0b00000000,
         0b00111000,
@@ -984,8 +996,10 @@ const CharData &get_font_data(char ch) {
         return s_font_data[26 + 26 + 10 + 13];
     } else if (ch == '%') {
         return s_font_data[26 + 26 + 10 + 14];
+    } else if (ch == '/') {
+        return s_font_data[26 + 26 + 10 + 15];
     }
     logging::print(logging::Level::Warning, "Missing char: 0x%x\n", ch);
-    return s_font_data[26 + 26 + 10 + 15]; // ?
-    static_assert(std::size(s_font_data) == 26 + 26 + 10 + 16);
+    return s_font_data[26 + 26 + 10 + 16]; // ?
+    static_assert(std::size(s_font_data) == 26 + 26 + 10 + 17);
 }
