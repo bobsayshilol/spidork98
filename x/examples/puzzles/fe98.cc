@@ -28,6 +28,8 @@ static void run_at_fps(int fps, Func & func) {
 
 #define LOG_FILE "puzlog.txt"
 
+#define GAME_SQUARE_SIZE GPU_HEIGHT
+
 // Available games.
 extern "C" const game mines;
 
@@ -494,9 +496,10 @@ midend * new_game(const game *ourgame) {
   }
 
   // Tell the game where it can draw.
-  int w = GPU_WIDTH;
-  int h = GPU_HEIGHT;
+  int w = GAME_SQUARE_SIZE;
+  int h = GAME_SQUARE_SIZE;
   midend_size(me, &w, &h, true, 1);
+  logging::print(logging::Level::Info, "Using screen size %i x %i", w, h);
   midend_force_redraw(me);
 
   // Show some help on the side.
