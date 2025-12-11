@@ -461,7 +461,9 @@ void print_help(const game *ourgame) {
     ScreenPutString_98("Space to add a flag",           COLOUR_GREEN, top_left_x, top_left_y + 4);
     ScreenPutString_98("Enter or E to uncover a tile",  COLOUR_GREEN, top_left_x, top_left_y + 6);
     ScreenPutString_98("R to restart",                  COLOUR_GREEN, top_left_x, top_left_y + 8);
+#ifndef __EMSCRIPTEN__
     ScreenPutString_98("Q to quit",                     COLOUR_GREEN, top_left_x, top_left_y + 10);
+#endif
   } else {
     FE98_UNIMPLEMENTED();
   }
