@@ -56,7 +56,8 @@ PUZZLE_COMMON_OBJS = \
 	puzzles/version.o
 
 PUZZLE_GAME_OBJS = \
-	puzzles/mines.o
+	puzzles/mines.o \
+	puzzles/flood.o
 
 
 # What we're building

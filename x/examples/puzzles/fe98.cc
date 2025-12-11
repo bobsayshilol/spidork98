@@ -32,6 +32,7 @@ static void run_at_fps(int fps, Func & func) {
 
 // Available games.
 extern "C" const game mines;
+extern "C" const game flood;
 
 
 
