@@ -1,0 +1,178 @@
+From: me <>
+Date: Thu, 11 Dec 2025 22:56:09 +0000
+Subject: [PATCH] Get flood compiling
+
+
+diff --git a/flood.c b/flood.c
+index 0ab5a3d..2c19592 100644
+--- a/flood.c
++++ b/flood.c
+@@ -28,15 +28,22 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <stdarg.h>
++#define index index_
+ #include <string.h>
++#undef index
+ #include <assert.h>
+ #include <ctype.h>
+ #include <limits.h>
++
++#define y0 y0_
++#define y1 y1_
+ #ifdef NO_TGMATH_H
+ #  include <math.h>
+ #else
+ #  include <tgmath.h>
+ #endif
++#undef y0
++#undef y1
+ 
+ #include "puzzles.h"
+ 
+@@ -115,7 +122,7 @@ static bool game_fetch_preset(int i, char **name, game_params **params)
+ {
+     game_params *ret;
+ 
+-    if (i < 0 || i >= lenof(flood_presets))
++    if (i < 0 || i >= (int)lenof(flood_presets))
+         return false;
+ 
+     ret = snew(game_params);
+@@ -217,6 +224,8 @@ static game_params *custom_params(const config_item *cfg)
+ 
+ static const char *validate_params(const game_params *params, bool full)
+ {
++    IGNOREARG(full);
++
+     if (params->w * params->h < 2)
+         return "Grid must contain at least two squares";
+     if (params->w < 1 || params->h < 1)
+@@ -561,6 +570,9 @@ static char *new_game_desc(const game_params *params, random_state *rs,
+     char *desc;
+     struct solver_scratch *scratch;
+ 
++    IGNOREARG(aux);
++    IGNOREARG(interactive);
++
+     scratch = new_scratch(w, h);
+ 
+     /*
+@@ -637,6 +649,8 @@ static game_state *new_game(midend *me, const game_params *params,
+     game_state *state = snew(game_state);
+     int i;
+ 
++    IGNOREARG(me);
++
+     state->w = w;
+     state->h = h;
+     state->colours = 0;
+@@ -711,6 +725,8 @@ static char *solve_game(const game_state *state, const game_state *currstate,
+     char buf[256];
+     struct solver_scratch *scratch;
+ 
++    IGNOREARG(aux);
++
+     if (currstate->complete) {
+         *error = "Puzzle is already solved";
+         return NULL;
+@@ -751,6 +767,7 @@ static char *solve_game(const game_state *state, const game_state *currstate,
+ 
+ static bool game_can_format_as_text_now(const game_params *params)
+ {
++    IGNOREARG(params);
+     return true;
+ }
+ 
+@@ -792,6 +809,8 @@ static game_ui *new_ui(const game_state *state)
+     ui->cx = FILLX;
+     ui->cy = FILLY;
+     return ui;
++
++    IGNOREARG(state);
+ }
+ 
+ static void free_ui(game_ui *ui)
+@@ -802,6 +821,9 @@ static void free_ui(game_ui *ui)
+ static void game_changed_state(game_ui *ui, const game_state *oldstate,
+                                const game_state *newstate)
+ {
++    IGNOREARG(ui);
++    IGNOREARG(oldstate);
++    IGNOREARG(newstate);
+ }
+ 
+ static const char *current_key_label(const game_ui *ui,
+@@ -980,6 +1002,8 @@ static void game_compute_size(const game_params *params, int tilesize,
+     struct { int tilesize; } ads, *ds = &ads;
+     ads.tilesize = tilesize;
+ 
++    IGNOREARG(ui);
++
+     *x = BORDER * 2 + TILESIZE * params->w;
+     *y = BORDER * 2 + TILESIZE * params->h;
+ }
+@@ -987,6 +1011,9 @@ static void game_compute_size(const game_params *params, int tilesize,
+ static void game_set_size(drawing *dr, game_drawstate *ds,
+                           const game_params *params, int tilesize)
+ {
++    IGNOREARG(dr);
++    IGNOREARG(params);
++
+     ds->tilesize = tilesize;
+ }
+ 
+@@ -1060,6 +1087,8 @@ static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
+     int w = state->w, h = state->h, wh = w*h;
+     int i;
+ 
++    IGNOREARG(dr);
++
+     ds->started = false;
+     ds->tilesize = 0;
+     ds->grid = snewn(wh, int);
+@@ -1071,6 +1100,8 @@ static game_drawstate *game_new_drawstate(drawing *dr, const game_state *state)
+ 
+ static void game_free_drawstate(drawing *dr, game_drawstate *ds)
+ {
++    IGNOREARG(dr);
++
+     sfree(ds->grid);
+     sfree(ds);
+ }
+@@ -1152,6 +1183,10 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
+     int x, y, flashframe, solnmove;
+     char *grid;
+ 
++    IGNOREARG(oldstate);
++    IGNOREARG(dir);
++    IGNOREARG(animtime);
++
+     /* This was entirely cloned from fifteen.c; it should probably be
+      * moved into some generic 'draw-recessed-rectangle' utility fn. */
+     if (!ds->started) {
+@@ -1296,6 +1331,10 @@ static void game_redraw(drawing *dr, game_drawstate *ds,
+ static float game_anim_length(const game_state *oldstate,
+                               const game_state *newstate, int dir, game_ui *ui)
+ {
++    IGNOREARG(oldstate);
++    IGNOREARG(newstate);
++    IGNOREARG(dir);
++    IGNOREARG(ui);
+     return 0.0F;
+ }
+ 
+@@ -1305,6 +1344,10 @@ static void game_get_cursor_location(const game_ui *ui,
+                                      const game_params *params,
+                                      int *x, int *y, int *w, int *h)
+ {
++    IGNOREARG(ds);
++    IGNOREARG(state);
++    IGNOREARG(params);
++
+     if(ui->cursor_visible)
+     {
+         *x = COORD(ui->cx);
+-- 
+2.47.1.windows.2
+
