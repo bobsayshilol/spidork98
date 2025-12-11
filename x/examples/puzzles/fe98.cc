@@ -1,12 +1,14 @@
-#include "utils.h"
 extern "C" {
 #include "puzzles.h"
+#undef min
+#undef max
 }
 
 #include "funcs.h"
 #include "gpuscrn.h"
 #include "keyboard.h"
 #include "logs.h"
+#include "utils.h"
 
 #include <stdarg.h>
 
