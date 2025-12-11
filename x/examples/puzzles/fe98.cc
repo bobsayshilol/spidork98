@@ -507,7 +507,7 @@ void free_game(midend *me) {
   midend_free(me);
 }
 
-bool update_loop(midend * & me) {
+bool update_loop(midend * & me, uclock_t & last_time) {
   // Deal with input.
   if (kbhit_98()) {
     const char ch = getch_98();
@@ -543,11 +543,12 @@ bool update_loop(midend * & me) {
   }
 
   // Tick the timer.
+  const uclock_t now = Funcs98::ticks();
   if (s_timer_active) {
-    // TODO: proper dt
-    const float dt = 0.1f;
+    const float dt = static_cast<float>(now - last_time) / Funcs98::ticks_per_sec();
     midend_timer(me, dt);
   }
+  last_time = now;
 
   // Update the UI.
   midend_redraw(me);
@@ -579,13 +580,14 @@ int main() {
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
   midend *me = new_game(&mines);
+  uclock_t last_time = Funcs98::ticks();
 
 #if defined(__EMSCRIPTEN__)
-  auto run_one = [&]{ update_loop(me); };
+  auto run_one = [&]{ update_loop(me, last_time); };
   run_at_fps(60, run_one);
 #else
   while (true) {
-    const bool finished = !update_loop(me);
+    const bool finished = !update_loop(me, last_time);
     if (finished) {
       break;
     }
