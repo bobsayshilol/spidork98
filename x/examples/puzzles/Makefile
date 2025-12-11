@@ -61,8 +61,8 @@ PUZZLE_GAME_OBJS = \
 
 
 # What we're building
-DEPS	+= $(LIBPC98) $(PUZZLE_DEPS)
-OBJS	= fe98.o $(PUZZLE_COMMON_OBJS) $(PUZZLE_GAME_OBJS)
+DEPS	+= $(LIBPC98) $(PUZZLE_DEPS) fe98.h
+OBJS	= fe98.o main.o $(PUZZLE_COMMON_OBJS) $(PUZZLE_GAME_OBJS)
 TARGET	= puzzles.exe
 
 
