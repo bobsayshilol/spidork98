@@ -50,11 +50,12 @@ void frontend_default_colour(frontend *, float *output) {
 }
 
 void get_random_seed(void **randseed, int *randseedsize) {
-  // TODO
-  char *c = snewn(1, char);
-  *c = 0;
-  *randseed = c;
-  *randseedsize = 1;
+  const int elem_size = utils::max(sizeof(int), sizeof(time_t));
+  char *data = snewn(elem_size * 2, char);
+  *reinterpret_cast<int*>(data) = rand();
+  *reinterpret_cast<time_t*>(data + elem_size) = time(NULL);
+  *randseed = data;
+  *randseedsize = elem_size * 2;
 }
 
 void deactivate_timer(frontend *) {
@@ -566,6 +567,10 @@ int main() {
   }
 
   logging::init(LOG_FILE);
+
+  const unsigned seed = time(0);
+  logging::print(logging::Level::Info, "RNG seed: %u", seed);
+  srand(seed);
 
   if (!gpu::setup()) {
     logging::print(logging::Level::Error, "Failed to setup GPU\n");
