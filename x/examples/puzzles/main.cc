@@ -22,30 +22,61 @@ static void run_at_fps(int fps, Func & func) {
 
 #define GAME_SQUARE_SIZE GPU_HEIGHT
 
+// Available games.
+extern "C" const game mines;
+extern "C" const game flood;
+
 
 namespace {
 
-void print_help(const game *ourgame) {
+//
+// Gameplay menu.
+//
+
+void game_print_help(const game *ourgame) {
+  const int top_left_x = ScreenCols_98() * GAME_SQUARE_SIZE / GPU_WIDTH;
+  const int top_left_y = ScreenRows_98() / 8;
+  int cur_y = top_left_y;
+
+  ScreenPutString_98(  "Description:",                  COLOUR_GREEN, top_left_x, cur_y); cur_y += 2;
   if (ourgame == &mines) {
-    const int top_left_x = ScreenCols_98() * 9 / 16 + 2;
-    const int top_left_y = ScreenRows_98() / 4;
-    ScreenPutString_98("Controls:",                     COLOUR_GREEN, top_left_x, top_left_y);
-    ScreenPutString_98("WASD or arrows to move",        COLOUR_GREEN, top_left_x, top_left_y + 2);
-    ScreenPutString_98("Space to add a flag",           COLOUR_GREEN, top_left_x, top_left_y + 4);
-    ScreenPutString_98("Enter or E to uncover a tile",  COLOUR_GREEN, top_left_x, top_left_y + 6);
-    ScreenPutString_98("R to restart",                  COLOUR_GREEN, top_left_x, top_left_y + 8);
-#ifndef __EMSCRIPTEN__
-    ScreenPutString_98("Q to quit",                     COLOUR_GREEN, top_left_x, top_left_y + 10);
-#endif
+    ScreenPutString_98("It's minesweeper, 'nuf said.",  COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+  } else if (ourgame == &flood) {
+    ScreenPutString_98("Goal is to make every tile",    COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+    ScreenPutString_98("the same colour by repeatedly", COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+    ScreenPutString_98("flood-filling from the top",    COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+    ScreenPutString_98("left corner.",                  COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
   }
+
+  cur_y += 2;
+  ScreenPutString_98(  "Controls:",                     COLOUR_GREEN, top_left_x, cur_y); cur_y += 2;
+  if (ourgame == &mines) {
+    ScreenPutString_98("WASD or arrows to move.",       COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+    ScreenPutString_98("Space to add a flag.",          COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+    ScreenPutString_98("Enter or E to uncover a tile.", COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+  } else if (ourgame == &flood) {
+    ScreenPutString_98("WASD or arrows to move.",       COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+    ScreenPutString_98("Enter or E to use the",         COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+    ScreenPutString_98("selected tile's colour.",       COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+  }
+  ScreenPutString_98(  "R to generate a new game.",     COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+  ScreenPutString_98(  "Q or Escape to quit.",          COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
 }
 
-midend * new_game(const game *ourgame) {
+midend * game_new(const game *ourgame) {
+  // Clear any text.
+  gpu::enable_text_layer(true);
+  Funcs98::clear_screen();
+
+  // Display a loading while we wait for the game to be created.
+  const char *text = "Generating new game...";
+  ScreenPutString_98(text, COLOUR_WHITE, (ScreenCols_98() - strlen(text)) / 2, ScreenRows_98() / 2);
+
+  // Create the game.
   midend *me = midend_new(NULL, ourgame, &fe98::g_drapi, NULL);
   midend_new_game(me);
 
-  // Clear any text.
-  gpu::enable_text_layer(true);
+  // Remove the loading text.
   Funcs98::clear_screen();
 
   // Setup the palette.
@@ -72,16 +103,16 @@ midend * new_game(const game *ourgame) {
   midend_force_redraw(me);
 
   // Show some help on the side.
-  print_help(ourgame);
+  game_print_help(ourgame);
 
   return me;
 }
 
-void free_game(midend *me) {
+void game_free(midend *me) {
   midend_free(me);
 }
 
-bool update_loop(midend * & me, uclock_t & last_time) {
+bool game_update_loop(midend * & me, uclock_t dt) {
   // Deal with input.
   if (kbhit_98()) {
     const char ch = getch_98();
@@ -104,31 +135,134 @@ bool update_loop(midend * & me, uclock_t & last_time) {
       case KEY_SPACE:
         midend_process_key(me, 0, 0, CURSOR_SELECT2);
         break;
-#ifndef __EMSCRIPTEN__
       case KEY_ESCAPE: case 'Q': case 'q':
         return false;
-#endif
       case 'R': case 'r': {
         const game *ourgame = midend_which_game(me);
-        free_game(me);
-        me = new_game(ourgame);
+        game_free(me);
+        me = game_new(ourgame);
       } break;
     }
   }
 
   // Tick the timer.
-  const uclock_t now = Funcs98::ticks();
   if (fe98::g_timer_active) {
-    const float dt = static_cast<float>(now - last_time) / Funcs98::ticks_per_sec();
-    midend_timer(me, dt);
+    const float dtf = static_cast<float>(dt) / Funcs98::ticks_per_sec();
+    midend_timer(me, dtf);
   }
-  last_time = now;
 
   // Update the UI.
   midend_redraw(me);
   gpu::wait_for_vsync();
 
   return true;
+}
+
+
+
+//
+// Main menu
+//
+
+struct GameEntry {
+  const game *g;
+  const char *info;
+};
+const GameEntry s_games[] = {
+  { &mines, "Small lag on first selection. Plays fine after.", },
+  { &flood, "Lags when generating a game. Plays fine.", },
+#ifndef __EMSCRIPTEN__
+  { NULL, NULL, }, // quit
+#endif
+};
+
+int s_game_idx = 0;
+
+void main_redraw() {
+  // Clear any text.
+  gpu::enable_text_layer(true);
+  Funcs98::clear_screen();
+
+  // Clear the background too.
+  gpu::set_palette_colour(0, 0, 0, 0);
+  gpu::clear(0);
+
+  const int mid_x = ScreenCols_98() / 2;
+  const int mid_y = ScreenRows_98() / 2;
+
+  int cur_y = mid_y - 2 * COUNT_OF(s_games);
+  const char * text = "BUZZLES!!";
+  ScreenPutString_98(text, COLOUR_WHITE, mid_x - strlen(text) / 2, cur_y);
+  cur_y += 2;
+
+  // Draw the list of games.
+  for (int idx = 0; idx < (int)COUNT_OF(s_games); idx++) {
+    const GameEntry entry = s_games[idx];
+    const char *const name = entry.g ? entry.g->name : "Quit";
+    const bool selected = idx == s_game_idx;
+    ScreenPutString_98(name, selected ? COLOUR_GREEN : COLOUR_WHITE, mid_x - strlen(name) / 2, cur_y);
+    cur_y += 1;
+
+    // Display extra info about the game.
+    if (selected && entry.info) {
+      ScreenPutString_98(entry.info, COLOUR_GREEN, mid_x - strlen(entry.info) / 2, cur_y);
+      cur_y += 1;
+    }
+    cur_y += 1;
+  }
+}
+
+bool main_update_loop(midend * & me) {
+  // Deal with input.
+  if (kbhit_98()) {
+    const char ch = getch_98();
+    switch (ch) {
+      case KEY_UP: case 'W': case 'w':
+        s_game_idx = (s_game_idx - 1 + COUNT_OF(s_games)) % COUNT_OF(s_games);
+        main_redraw();
+        break;
+      case KEY_DOWN: case 'S': case 's':
+        s_game_idx = (s_game_idx + 1) % COUNT_OF(s_games);
+        main_redraw();
+        break;
+      case KEY_ENTER: case KEY_SPACE: case 'E': case 'e': {
+        const GameEntry entry = s_games[s_game_idx];
+        if (entry.g == NULL) {
+          return false;
+        }
+        me = game_new(entry.g);
+      } break;
+    }
+  }
+
+  // Update the UI.
+  gpu::wait_for_vsync();
+
+  return true;
+}
+
+
+
+//
+//
+//
+
+bool update_loop(midend * & me, uclock_t & last_time) {
+  const uclock_t now = Funcs98::ticks();
+  const uclock_t dt = (now - last_time);
+  last_time = now;
+
+  // If we have a middle end then we're in a game, otherwise we're at the main menu.
+  if (me) {
+    if (game_update_loop(me, dt)) {
+      return true;
+    }
+    // Game over, clean up.
+    game_free(me);
+    me = NULL;
+    main_redraw();
+  }
+  return main_update_loop(me);
 }
 
 } // namespace
@@ -153,8 +287,9 @@ int main() {
   }
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
-  midend *me = new_game(&mines);
+  midend *me = NULL;
   uclock_t last_time = Funcs98::ticks();
+  main_redraw();
 
 #if defined(__EMSCRIPTEN__)
   auto run_one = [&]{ update_loop(me, last_time); };
@@ -167,8 +302,6 @@ int main() {
     }
   }
 #endif
-
-  free_game(me);
 
   return EXIT_SUCCESS;
 }

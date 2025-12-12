@@ -7,10 +7,6 @@ extern "C" {
 #undef max
 }
 
-// Available games.
-extern "C" const game mines;
-extern "C" const game flood;
-
 namespace fe98 {
 
 // frontend timer
