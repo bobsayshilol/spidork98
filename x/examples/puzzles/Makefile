@@ -60,9 +60,18 @@ PUZZLE_GAME_OBJS = \
 	puzzles/flood.o
 
 
+# Too many uses of float/double, so use emulated floats.
+CFLAGS += -msoft-float -mno-fp-ret-in-387
+LDFLAGS += -msoft-float -mno-fp-ret-in-387
+
+SOFTFP_OBJS = \
+	softfp/softfp.o \
+	sf_stub.o
+
+
 # What we're building
 DEPS	+= $(LIBPC98) $(PUZZLE_DEPS) fe98.h
-OBJS	= fe98.o main.o $(PUZZLE_COMMON_OBJS) $(PUZZLE_GAME_OBJS)
+OBJS	= fe98.o main.o $(PUZZLE_COMMON_OBJS) $(PUZZLE_GAME_OBJS) $(SOFTFP_OBJS)
 TARGET	= puzzles.exe
 
 
