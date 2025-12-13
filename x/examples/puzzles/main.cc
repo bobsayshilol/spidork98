@@ -20,7 +20,7 @@ static void run_at_fps(int fps, Func & func) {
 
 #define LOG_FILE "puzlog.txt"
 
-#define GAME_SQUARE_SIZE GPU_HEIGHT
+#define GAME_SQUARE_SIZE (GPU_HEIGHT * 95 / 100) // 1 row = 1/24 ~= 4%
 
 // Available games.
 extern "C" const game mines;
@@ -28,6 +28,10 @@ extern "C" const game flood;
 
 
 namespace {
+
+struct LoopMenu { enum E { Quit, Main, Preset, Game, }; };
+void preset_enter(midend * me);
+void main_enter();
 
 //
 // Gameplay menu.
@@ -60,7 +64,6 @@ void game_print_help(const game *ourgame) {
     ScreenPutString_98("selected tile's colour.",       COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
   }
   ScreenPutString_98(  "U/R for undo/redo.",            COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
-  ScreenPutString_98(  "N to generate a new game.",     COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
   ScreenPutString_98(  "Q or Escape to quit.",          COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
 }
 
@@ -91,7 +94,7 @@ void game_force_redraw(midend *me) {
   game_print_help(midend_which_game(me));
 }
 
-midend * game_new(const game *ourgame) {
+void game_new(midend *me, game_params *params) {
   // Clear any text.
   gpu::enable_text_layer(true);
   Funcs98::clear_screen();
@@ -101,7 +104,7 @@ midend * game_new(const game *ourgame) {
   ScreenPutString_98(text, COLOUR_WHITE, (ScreenCols_98() - strlen(text)) / 2, ScreenRows_98() / 2);
 
   // Create the game.
-  midend *me = midend_new(NULL, ourgame, &fe98::g_drapi, NULL);
+  midend_set_params(me, params);
   midend_new_game(me);
 
   // Remove the loading text.
@@ -114,14 +117,9 @@ midend * game_new(const game *ourgame) {
   logging::print(logging::Level::Info, "Using screen size %i x %i", w, h);
 
   game_force_redraw(me);
-  return me;
 }
 
-void game_free(midend *me) {
-  midend_free(me);
-}
-
-bool game_update_loop(midend * & me, uclock_t dt) {
+LoopMenu::E game_update_loop(midend * me, uclock_t dt) {
   // Deal with input.
   if (kbhit_98()) {
     const char ch = getch_98();
@@ -153,12 +151,8 @@ bool game_update_loop(midend * & me, uclock_t dt) {
         midend_process_key(me, 0, 0, UI_REDO);
         break;
       case KEY_ESCAPE: case 'Q': case 'q':
-        return false;
-      case 'N': case 'n': {
-        const game *ourgame = midend_which_game(me);
-        game_free(me);
-        me = game_new(ourgame);
-      } break;
+        preset_enter(me);
+        return LoopMenu::Preset;
     }
   }
 
@@ -170,9 +164,83 @@ bool game_update_loop(midend * & me, uclock_t dt) {
 
   // Update the UI.
   midend_redraw(me);
-  gpu::wait_for_vsync();
 
-  return true;
+  return LoopMenu::Game;
+}
+
+
+
+//
+// Preset menu
+//
+
+int s_preset_idx;
+preset_menu *s_preset_menu;
+#define NUM_PRESETS (s_preset_menu->n_entries)
+#define PRESET_LIST (s_preset_menu->entries)
+
+void preset_redraw() {
+  // Clear any text.
+  gpu::enable_text_layer(true);
+  Funcs98::clear_screen();
+
+  // Clear the background too.
+  gpu::set_palette_colour(0, 0, 0, 0);
+  gpu::clear(0);
+
+  const int mid_x = ScreenCols_98() / 2;
+  const int mid_y = ScreenRows_98() / 2;
+
+  int cur_y = mid_y - NUM_PRESETS;
+  const char * text = "Pick a preset:";
+  ScreenPutString_98(text, COLOUR_WHITE, mid_x - strlen(text) / 2, cur_y);
+  cur_y += 2;
+
+  // Draw the list of games.
+  for (u8 idx = 0; idx < NUM_PRESETS + 1; idx++) {
+    const char *const title = idx == NUM_PRESETS ? "Back" : PRESET_LIST[idx].title;
+    const bool selected = idx == s_preset_idx;
+    ScreenPutString_98(title, selected ? COLOUR_GREEN : COLOUR_WHITE, mid_x - strlen(title) / 2, cur_y);
+    cur_y += 2;
+  }
+}
+
+void preset_enter(midend * me) {
+  // Determine preset options.
+  int id_limit;
+  s_preset_menu = midend_get_presets(me, &id_limit);
+  s_preset_idx = 0;
+
+  preset_redraw();
+}
+
+LoopMenu::E preset_update_loop(midend * & me) {
+  // Deal with input.
+  if (kbhit_98()) {
+    const char ch = getch_98();
+    switch (ch) {
+      case KEY_UP: case 'W': case 'w':
+        s_preset_idx = (s_preset_idx - 1 + (NUM_PRESETS + 1)) % (NUM_PRESETS + 1);
+        preset_redraw();
+        break;
+      case KEY_DOWN: case 'S': case 's':
+        s_preset_idx = (s_preset_idx + 1) % (NUM_PRESETS + 1);
+        preset_redraw();
+        break;
+      case KEY_ENTER: case KEY_SPACE: case 'E': case 'e':
+        if (s_preset_idx == NUM_PRESETS) {
+          midend_free(me);
+          me = NULL;
+          main_enter();
+          return LoopMenu::Main;
+        } else {
+          game_new(me, PRESET_LIST[s_preset_idx].params);
+          return LoopMenu::Game;
+        }
+    }
+  }
+
+  return LoopMenu::Preset;
 }
 
 
@@ -192,8 +260,7 @@ const GameEntry s_games[] = {
   { NULL, NULL, }, // quit
 #endif
 };
-
-int s_game_idx = 0;
+u8 s_game_idx = 0;
 
 void main_redraw() {
   // Clear any text.
@@ -213,7 +280,7 @@ void main_redraw() {
   cur_y += 2;
 
   // Draw the list of games.
-  for (int idx = 0; idx < (int)COUNT_OF(s_games); idx++) {
+  for (u8 idx = 0; idx < COUNT_OF(s_games); idx++) {
     const GameEntry entry = s_games[idx];
     const char *const name = entry.g ? entry.g->name : "Quit";
     const bool selected = idx == s_game_idx;
@@ -229,7 +296,11 @@ void main_redraw() {
   }
 }
 
-bool main_update_loop(midend * & me) {
+void main_enter() {
+  main_redraw();
+}
+
+LoopMenu::E main_update_loop(midend * & me) {
   // Deal with input.
   if (kbhit_98()) {
     const char ch = getch_98();
@@ -245,17 +316,18 @@ bool main_update_loop(midend * & me) {
       case KEY_ENTER: case KEY_SPACE: case 'E': case 'e': {
         const GameEntry entry = s_games[s_game_idx];
         if (entry.g == NULL) {
-          return false;
+          return LoopMenu::Quit;
+        } else {
+          // Make a new midend and move to selecting a preset for it.
+          me = midend_new(NULL, entry.g, &fe98::g_drapi, NULL);
+          preset_enter(me);
+          return LoopMenu::Preset;
         }
-        me = game_new(entry.g);
       } break;
     }
   }
 
-  // Update the UI.
-  gpu::wait_for_vsync();
-
-  return true;
+  return LoopMenu::Main;
 }
 
 
@@ -264,22 +336,37 @@ bool main_update_loop(midend * & me) {
 //
 //
 
-bool update_loop(midend * & me, uclock_t & last_time) {
-  const uclock_t now = Funcs98::ticks();
-  const uclock_t dt = (now - last_time);
-  last_time = now;
+struct LoopState {
+  uclock_t last_time;
+  midend *me;
+  LoopMenu::E menu;
 
-  // If we have a middle end then we're in a game, otherwise we're at the main menu.
-  if (me) {
-    if (game_update_loop(me, dt)) {
-      return true;
-    }
-    // Game over, clean up.
-    game_free(me);
-    me = NULL;
-    main_redraw();
+  LoopState() : last_time(), me(NULL), menu(LoopMenu::Main) {}
+};
+
+bool update_loop(LoopState & state) {
+  const uclock_t now = Funcs98::ticks();
+  const uclock_t dt = (now - state.last_time);
+  state.last_time = now;
+
+  // Handle state changes.
+  switch (state.menu) {
+    case LoopMenu::Quit:
+      return false;
+    case LoopMenu::Main:
+      state.menu = main_update_loop(state.me);
+      break;
+    case LoopMenu::Preset:
+      state.menu = preset_update_loop(state.me);
+      break;
+    case LoopMenu::Game:
+      state.menu = game_update_loop(state.me, dt);
+      break;
   }
-  return main_update_loop(me);
+
+  gpu::wait_for_vsync();
+
+  return true;
 }
 
 } // namespace
@@ -304,16 +391,15 @@ int main() {
   }
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
-  midend *me = NULL;
-  uclock_t last_time = Funcs98::ticks();
+  LoopState state = {};
   main_redraw();
 
 #if defined(__EMSCRIPTEN__)
-  auto run_one = [&]{ update_loop(me, last_time); };
+  auto run_one = [&]{ update_loop(state); };
   run_at_fps(60, run_one);
 #else
   while (true) {
-    const bool finished = !update_loop(me, last_time);
+    const bool finished = !update_loop(state);
     if (finished) {
       break;
     }
