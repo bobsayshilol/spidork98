@@ -93,7 +93,16 @@ char *fe98_text_fallback(drawing *, const char *const *strings, int) {
 }
 
 void fe98_status_bar(drawing *, const char *text) {
-  ScreenPutString_98(text, COLOUR_GREEN, ScreenCols_98() / 8, ScreenRows_98() - 1);
+  const int cols = ScreenCols_98();
+  const int y = ScreenRows_98() - 1;
+  const int padding = 5;
+  const int x = utils::max(0, cols - static_cast<int>(strlen(text)) - padding);
+
+  // Clear the old status bar first.
+  for (int i = 0; i < cols; i++) {
+    ScreenPutChar_98(' ', COLOUR_GREEN, i, y);
+  }
+  ScreenPutString_98(text, COLOUR_GREEN, x, y);
 }
 
 } // namespace
