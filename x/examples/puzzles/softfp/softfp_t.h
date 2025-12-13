@@ -212,6 +212,9 @@ static F_UINT normalize2_sf(uint32_t a_sign, int a_exp, F_UINT a_mant1, F_UINT a
     return round_pack_sf(a_sign, a_exp, a_mant1, rm, pfflags);
 }
 
+#ifdef FE98_BUILD
+static
+#endif
 BOOL issignan_sf(F_UINT a)
 {
     uint32_t a_exp1;
@@ -221,6 +224,9 @@ BOOL issignan_sf(F_UINT a)
     return (a_exp1 == (2 * EXP_MASK) && a_mant != 0);
 }
 
+#ifdef FE98_BUILD
+static
+#endif
 BOOL isnan_sf(F_UINT a)
 {
     uint32_t a_exp;
