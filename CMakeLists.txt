@@ -82,9 +82,11 @@ add_executable(puzzles
 
     # Games
     x/examples/puzzles/puzzles/mines.c
+    x/examples/puzzles/puzzles/flood.c
 
     # Frontend
     x/examples/puzzles/fe98.cc
+    x/examples/puzzles/main.cc
 )
 target_include_directories(puzzles PUBLIC
     x/examples/puzzles/puzzles
