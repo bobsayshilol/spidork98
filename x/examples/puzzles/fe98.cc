@@ -9,7 +9,11 @@
 #include <stdarg.h>
 
 
+#if 0
 #define FE98_UNIMPLEMENTED() logging::print(logging::Level::Warning, "Unimplemented: %s", __func__)
+#else
+#define FE98_UNIMPLEMENTED()
+#endif
 
 
 
