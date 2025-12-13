@@ -24,10 +24,26 @@
 #ifndef CUTILS_H
 #define CUTILS_H
 
+#ifdef FE98_BUILD
+typedef unsigned char uint8_t;
+typedef signed char int8_t;
+typedef unsigned short uint16_t;
+typedef signed short int16_t;
+typedef unsigned uint32_t;
+typedef signed int32_t;
+typedef unsigned long long uint64_t;
+typedef signed long long int64_t;
+#else
 #include <inttypes.h>
+#endif
 
+#ifdef FE98_BUILD
+#define likely(x)       (x)
+#define unlikely(x)     (x)
+#else
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
+#endif
 #define force_inline inline __attribute__((always_inline))
 #define no_inline __attribute__((noinline))
 #define __maybe_unused __attribute__((unused))
@@ -84,7 +100,7 @@ static inline int min_int(int a, int b)
 
 void *mallocz(size_t size);
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(FE98_BUILD)
 static inline uint32_t bswap_32(uint32_t v)
 {
     return ((v & 0xff000000) >> 24) | ((v & 0x00ff0000) >>  8) |

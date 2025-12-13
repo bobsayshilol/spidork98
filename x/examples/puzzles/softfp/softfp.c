@@ -29,6 +29,29 @@
 #include "cutils.h"
 #include "softfp.h"
 
+#ifdef FE98_BUILD
+static __inline__ int __builtin_clz(uint32_t a) {
+  int r = 0;
+  __asm__ __volatile__ (
+    "bsr %1, %0\n"
+    "xor $31, %0\n"
+    : "=r" (r)
+    : "rm" (a)
+  );
+  return r;
+}
+
+static __inline__ int __builtin_clzll(uint64_t a) {
+  int r = 0;
+  uint32_t bits = a >> 32;
+  if (bits == 0) {
+    bits = a;
+    r = 32;
+  }
+  return r + __builtin_clz(bits);
+}
+#endif
+
 static inline int clz32(uint32_t a)
 {
     int r;
@@ -73,10 +96,18 @@ static inline int clz128(uint128_t a)
 #endif
 
 #define F_SIZE 32
+#ifdef FE98_BUILD
+#include "softfp_t.h"
+#else
 #include "softfp_template.h"
+#endif
 
 #define F_SIZE 64
+#ifdef FE98_BUILD
+#include "softfp_t.h"
+#else
 #include "softfp_template.h"
+#endif
 
 #ifdef HAVE_INT128
 

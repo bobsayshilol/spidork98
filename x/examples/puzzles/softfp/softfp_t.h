@@ -1081,10 +1081,18 @@ uint64_t glue(glue(cvt_sf, F_SIZE), _sf64)(F_UINT a, RoundingModeEnum rm,
 #undef clz
 
 #define ICVT_SIZE 32
+#ifdef FE98_BUILD
+#include "softfp_i.h"
+#else
 #include "softfp_template_icvt.h"
+#endif
 
 #define ICVT_SIZE 64
+#ifdef FE98_BUILD
+#include "softfp_i.h"
+#else
 #include "softfp_template_icvt.h"
+#endif
 
 #ifdef HAVE_INT128
 #define ICVT_SIZE 128

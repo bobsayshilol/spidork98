@@ -24,7 +24,9 @@
 #ifndef SOFTFP_H
 #define SOFTFP_H
 
+#ifndef FE98_BUILD
 #include <inttypes.h>
+#endif
 #include "cutils.h"
 
 typedef enum {
@@ -75,6 +77,10 @@ int eq_quiet_sf32(sfloat32 a, sfloat32 b, uint32_t *pfflags);
 int le_sf32(sfloat32 a, sfloat32 b, uint32_t *pfflags);
 int lt_sf32(sfloat32 a, sfloat32 b, uint32_t *pfflags);
 uint32_t fclass_sf32(sfloat32 a);
+#ifdef FE98_BUILD
+int issignan_sf32(sfloat32);
+int isnan_sf32(sfloat32);
+#endif
 
 sfloat64 cvt_sf32_sf64(sfloat32 a, uint32_t *pfflags);
 sfloat32 cvt_sf64_sf32(sfloat64 a, RoundingModeEnum rm, uint32_t *pfflags);
@@ -112,6 +118,10 @@ int eq_quiet_sf64(sfloat64 a, sfloat64 b, uint32_t *pfflags);
 int le_sf64(sfloat64 a, sfloat64 b, uint32_t *pfflags);
 int lt_sf64(sfloat64 a, sfloat64 b, uint32_t *pfflags);
 uint32_t fclass_sf64(sfloat64 a);
+#ifdef FE98_BUILD
+int issignan_sf64(sfloat64);
+int isnan_sf64(sfloat64);
+#endif
 
 sfloat64 cvt_sf32_sf64(sfloat32 a, uint32_t *pfflags);
 sfloat32 cvt_sf64_sf32(sfloat64 a, RoundingModeEnum rm, uint32_t *pfflags);
