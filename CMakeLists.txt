@@ -91,7 +91,7 @@ add_executable(puzzles
 target_include_directories(puzzles PUBLIC
     x/examples/puzzles/puzzles
 )
-target_compile_definitions(puzzles PUBLIC COMBINED FE98_BUILD)
+target_compile_definitions(puzzles PUBLIC COMBINED FE98_BUILD SMALL_SCREEN)
 target_link_libraries(puzzles libpc98)
 if (EMSCRIPTEN)
     target_link_options(puzzles PRIVATE
