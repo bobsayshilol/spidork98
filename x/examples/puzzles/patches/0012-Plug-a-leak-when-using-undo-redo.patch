@@ -1,0 +1,44 @@
+From: me <>
+Date: Sat, 13 Dec 2025 22:30:26 +0000
+Subject: [PATCH] Plug a leak when using undo/redo
+
+
+diff --git a/midend.c b/midend.c
+index 324a03e..1058578 100644
+--- a/midend.c
++++ b/midend.c
+@@ -701,6 +701,7 @@ static const char *newgame_undo_deserialise_check(
+     struct newgame_undo_deserialise_check_ctx *ctx =
+         (struct newgame_undo_deserialise_check_ctx *)vctx;
+     char *old, *new;
++    int cmp;
+ 
+     /*
+      * Undoing a New Game operation is only permitted if it doesn't
+@@ -727,7 +728,10 @@ static const char *newgame_undo_deserialise_check(
+ 
+     old = encode_params(me, me->params, true);
+     new = encode_params(me, data->params, true);
+-    if (strcmp(old, new)) {
++    cmp = strcmp(old, new);
++    sfree(old);
++    sfree(new);
++    if (cmp) {
+         /* Set a flag to distinguish this deserialise failure
+          * from one due to faulty decoding */
+         ctx->refused = true;
+@@ -736,7 +740,10 @@ static const char *newgame_undo_deserialise_check(
+ 
+     old = encode_params(me, me->curparams, true);
+     new = encode_params(me, data->cparams, true);
+-    if (strcmp(old, new)) {
++    cmp = strcmp(old, new);
++    sfree(old);
++    sfree(new);
++    if (cmp) {
+         ctx->refused = true;
+         return "Undoing this new-game operation would change params";
+     }
+-- 
+2.52.0
+

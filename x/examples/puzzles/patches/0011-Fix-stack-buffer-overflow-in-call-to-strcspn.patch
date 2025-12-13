@@ -1,0 +1,53 @@
+From: me <>
+Date: Tue, 26 Sep 2023 21:05:48 +0100
+Subject: [PATCH] Fix stack-buffer-overflow in call to strcspn()
+
+strcspn() requires its argument to be NUL terminated but we can't
+guarantee this since we're only reading 9 bytes and expecting all of
+them to be non-NUL. To fix this we simply increase the buffer size and
+manually insert the NUL terminator.
+---
+ midend.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/midend.c b/midend.c
+index 30fdf1b..cc31504 100644
+--- a/midend.c
++++ b/midend.c
+@@ -2353,7 +2353,7 @@ static const char *midend_deserialise_internal(
+      */
+     while (data.nstates <= 0 || data.statepos < 0 ||
+            gotstates < data.nstates-1) {
+-        char key[9], c;
++        char key[10], c;
+         int len;
+ 
+         do {
+@@ -2373,6 +2373,7 @@ static const char *midend_deserialise_internal(
+                 ret = "Data was incorrectly formatted for a saved game file";
+ 	    goto cleanup;
+         }
++        key[9] = '\0';
+         len = strcspn(key, ": ");
+         assert(len <= 8);
+         key[len] = '\0';
+@@ -2762,7 +2763,7 @@ const char *identify_game(char **name,
+      * the serialised stream, until we've found the game name.
+      */
+     while (nstates <= 0 || statepos < 0 || gotstates < nstates-1) {
+-        char key[9], c;
++        char key[10], c;
+         int len;
+ 
+         do {
+@@ -2782,6 +2783,7 @@ const char *identify_game(char **name,
+                 ret = "Data was incorrectly formatted for a saved game file";
+ 	    goto cleanup;
+         }
++        key[9] = '\0';
+         len = strcspn(key, ": ");
+         assert(len <= 8);
+         key[len] = '\0';
+-- 
+2.51.0
+
