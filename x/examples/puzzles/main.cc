@@ -59,24 +59,13 @@ void game_print_help(const game *ourgame) {
     ScreenPutString_98("Enter or E to use the",         COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
     ScreenPutString_98("selected tile's colour.",       COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
   }
-  ScreenPutString_98(  "R to generate a new game.",     COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+  ScreenPutString_98(  "U/R for undo/redo.",            COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
+  ScreenPutString_98(  "N to generate a new game.",     COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
   ScreenPutString_98(  "Q or Escape to quit.",          COLOUR_GREEN, top_left_x, cur_y); cur_y += 1;
 }
 
-midend * game_new(const game *ourgame) {
+void game_force_redraw(midend *me) {
   // Clear any text.
-  gpu::enable_text_layer(true);
-  Funcs98::clear_screen();
-
-  // Display a loading while we wait for the game to be created.
-  const char *text = "Generating new game...";
-  ScreenPutString_98(text, COLOUR_WHITE, (ScreenCols_98() - strlen(text)) / 2, ScreenRows_98() / 2);
-
-  // Create the game.
-  midend *me = midend_new(NULL, ourgame, &fe98::g_drapi, NULL);
-  midend_new_game(me);
-
-  // Remove the loading text.
   Funcs98::clear_screen();
 
   // Setup the palette.
@@ -95,16 +84,36 @@ midend * game_new(const game *ourgame) {
     sfree(colours);
   }
 
+  // Draw the game.
+  midend_force_redraw(me);
+
+  // Show some help on the side.
+  game_print_help(midend_which_game(me));
+}
+
+midend * game_new(const game *ourgame) {
+  // Clear any text.
+  gpu::enable_text_layer(true);
+  Funcs98::clear_screen();
+
+  // Display a loading while we wait for the game to be created.
+  const char *text = "Generating new game...";
+  ScreenPutString_98(text, COLOUR_WHITE, (ScreenCols_98() - strlen(text)) / 2, ScreenRows_98() / 2);
+
+  // Create the game.
+  midend *me = midend_new(NULL, ourgame, &fe98::g_drapi, NULL);
+  midend_new_game(me);
+
+  // Remove the loading text.
+  Funcs98::clear_screen();
+
   // Tell the game where it can draw.
   int w = GAME_SQUARE_SIZE;
   int h = GAME_SQUARE_SIZE;
   midend_size(me, &w, &h, true, 1);
   logging::print(logging::Level::Info, "Using screen size %i x %i", w, h);
-  midend_force_redraw(me);
 
-  // Show some help on the side.
-  game_print_help(ourgame);
-
+  game_force_redraw(me);
   return me;
 }
 
@@ -135,9 +144,17 @@ bool game_update_loop(midend * & me, uclock_t dt) {
       case KEY_SPACE:
         midend_process_key(me, 0, 0, CURSOR_SELECT2);
         break;
+      case 'U': case 'u':
+        midend_process_key(me, 0, 0, UI_UNDO);
+        // Force a redraw of everything since text won't be cleared in mines.
+        game_force_redraw(me);
+        break;
+      case 'R': case 'r':
+        midend_process_key(me, 0, 0, UI_REDO);
+        break;
       case KEY_ESCAPE: case 'Q': case 'q':
         return false;
-      case 'R': case 'r': {
+      case 'N': case 'n': {
         const game *ourgame = midend_which_game(me);
         game_free(me);
         me = game_new(ourgame);

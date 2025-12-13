@@ -102,6 +102,9 @@ int getch_98() {
   IF_WAS_PRESSED(RIGHT, 12);
   IF_WAS_PRESSED(ESCAPE, 27);
 
+  // Not in read_keyboard_state().
+  IF_WAS_PRESSED(N, 'n');
+
   return 0;
 }
 
