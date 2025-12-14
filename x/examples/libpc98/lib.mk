@@ -11,7 +11,7 @@ $(TARGET): $(OBJS) $(DEPS)
 
 # Cleanup
 .PHONY: clean
-clean:
+clean::
 	del *.o
 	del *.exe
 	del $(TARGET)

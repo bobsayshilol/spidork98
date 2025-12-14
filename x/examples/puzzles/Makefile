@@ -77,3 +77,9 @@ TARGET	= puzzles.exe
 
 # Build it
 include ..\\libpc98\\exe.mk
+
+
+# Extend clean to the third party code
+clean::
+	del softfp\\*.o
+	del puzzles\\*.o
