@@ -391,7 +391,7 @@ int main() {
   }
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
-  LoopState state = {};
+  LoopState state;
   main_redraw();
 
 #if defined(__EMSCRIPTEN__)
