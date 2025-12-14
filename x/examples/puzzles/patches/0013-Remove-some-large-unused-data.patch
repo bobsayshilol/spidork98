@@ -1,0 +1,28 @@
+From: me <>
+Date: Sun, 14 Dec 2025 01:21:03 +0000
+Subject: [PATCH] Remove some large unused data
+
+No plan to use it atm, and this saves ~70KB in the final binary.
+
+diff --git a/hat.c b/hat.c
+index 7ee3ed1..4ac902b 100644
+--- a/hat.c
++++ b/hat.c
+@@ -53,6 +53,8 @@ void hat_kiteenum_first(KiteEnum *s, int w, int h)
+     s->y = 0;
+ }
+ 
++#ifndef FE98_BUILD
++
+ bool hat_kiteenum_next(KiteEnum *s)
+ {
+     unsigned lastbut1 = s->last_index;
+@@ -907,3 +909,5 @@ void hat_tiling_generate(const struct HatPatchParams *hp, int w, int h,
+     for (i = 0; i < lenof(coords); i++)
+         hat_coords_free(coords[i]);
+ }
++
++#endif
+-- 
+2.47.1.windows.2
+
