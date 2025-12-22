@@ -998,8 +998,11 @@ const CharData &get_font_data(char ch) {
         return s_font_data[26 + 26 + 10 + 14];
     } else if (ch == '/') {
         return s_font_data[26 + 26 + 10 + 15];
+    } else if (ch == '?') {
+        return s_font_data[26 + 26 + 10 + 16];
     }
-    logging::print(logging::Level::Warning, "Missing char: 0x%x\n", ch);
-    return s_font_data[26 + 26 + 10 + 16]; // ?
     static_assert(std::size(s_font_data) == 26 + 26 + 10 + 17);
+
+    logging::print(logging::Level::Warning, "Missing char: 0x%x\n", ch);
+    return get_font_data('?');
 }
