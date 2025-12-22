@@ -10,6 +10,7 @@ extern "C" {
 namespace fe98 {
 
 // Configurable options.
+extern bool g_render_polygons_with_fallback;
 extern float g_background_colour[3];
 
 // frontend timer

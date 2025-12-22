@@ -23,6 +23,7 @@
 
 namespace fe98 {
 
+bool g_render_polygons_with_fallback;
 float g_background_colour[3];
 
 bool g_timer_active;
@@ -238,7 +239,12 @@ void fe98_draw_triangle(Point (&pts)[3], int fillcolour, int outlinecolour) {
   }
 }
 
-void fe98_draw_polygon(drawing *,const int *coords, int npoints, int fillcolour, int outlinecolour) {
+void fe98_draw_polygon(drawing *dr, const int *coords, int npoints, int fillcolour, int outlinecolour) {
+  if (fe98::g_render_polygons_with_fallback) {
+    draw_polygon_fallback(dr, coords, npoints, fillcolour, outlinecolour);
+    return;
+  }
+
   // Decompose into tris because lazy.
   // This is wrong: polygon isn't necessarily concave...
   Point pts[3];

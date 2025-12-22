@@ -395,6 +395,7 @@ int main() {
   fe98::g_background_colour[0] = 0.2f;
   fe98::g_background_colour[1] = 0.2f;
   fe98::g_background_colour[2] = 0.2f;
+  fe98::g_render_polygons_with_fallback = true;
 
   LoopState state;
   main_redraw();
