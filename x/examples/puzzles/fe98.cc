@@ -23,14 +23,16 @@
 
 namespace fe98 {
 
-bool g_timer_active = false;
+float g_background_colour[3];
+
+bool g_timer_active;
 
 } // namespace fe98
 
 void frontend_default_colour(frontend *, float *output) {
-  output[0] = 0;
-  output[1] = 0;
-  output[2] = 0;
+  output[0] = fe98::g_background_colour[0];
+  output[1] = fe98::g_background_colour[1];
+  output[2] = fe98::g_background_colour[2];
 }
 
 void get_random_seed(void **randseed, int *randseedsize) {

@@ -391,6 +391,11 @@ int main() {
   }
   DEFER(void*, p, NULL, (gpu::shutdown()));
 
+  fe98::g_timer_active = false;
+  fe98::g_background_colour[0] = 0.2f;
+  fe98::g_background_colour[1] = 0.2f;
+  fe98::g_background_colour[2] = 0.2f;
+
   LoopState state;
   main_redraw();
 

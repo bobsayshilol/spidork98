@@ -9,6 +9,9 @@ extern "C" {
 
 namespace fe98 {
 
+// Configurable options.
+extern float g_background_colour[3];
+
 // frontend timer
 extern bool g_timer_active;
 
