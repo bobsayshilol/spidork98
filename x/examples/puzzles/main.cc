@@ -149,6 +149,8 @@ LoopMenu::E game_update_loop(midend * me, uclock_t dt) {
         break;
       case 'R': case 'r':
         midend_process_key(me, 0, 0, UI_REDO);
+        // Similar to undo.
+        game_force_redraw(me);
         break;
       case KEY_ESCAPE: case 'Q': case 'q':
         preset_enter(me);
