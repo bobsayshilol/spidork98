@@ -191,7 +191,7 @@ void preset_redraw() {
   const int mid_x = ScreenCols_98() / 2;
   const int mid_y = ScreenRows_98() / 2;
 
-  int cur_y = mid_y - NUM_PRESETS;
+  int cur_y = mid_y - NUM_PRESETS - 1;
   const char * text = "Pick a preset:";
   ScreenPutString_98(text, COLOUR_WHITE, mid_x - strlen(text) / 2, cur_y);
   cur_y += 2;
@@ -274,7 +274,7 @@ void main_redraw() {
   const int mid_x = ScreenCols_98() / 2;
   const int mid_y = ScreenRows_98() / 2;
 
-  int cur_y = mid_y - 2 * COUNT_OF(s_games);
+  int cur_y = mid_y - COUNT_OF(s_games) - 1;
   const char * text = "BUZZLES!!";
   ScreenPutString_98(text, COLOUR_WHITE, mid_x - strlen(text) / 2, cur_y);
   cur_y += 2;
