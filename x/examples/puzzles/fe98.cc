@@ -133,15 +133,14 @@ void fe98_draw_rect(drawing *, int x, int y, int w, int h, int colour) {
   gpu::draw_quad(x, y, x + w, y + h, colour);
 }
 
-void fe98_draw_line(drawing *dr, int x1, int y1, int x2, int y2, int colour) {
-  // TODO
-  (void)dr;
-  (void)x1;
-  (void)y1;
-  (void)x2;
-  (void)y2;
-  (void)colour;
-  FE98_UNIMPLEMENTED();
+void fe98_draw_line(drawing *, int x1, int y1, int x2, int y2, int colour) {
+  if (y1 == y2 || x1 == x2) {
+    // TODO: why are we inclusive on x but not y...
+    gpu::draw_quad(x1, y1, x2, y2 + 1, colour);
+  } else {
+    // TODO
+    FE98_UNIMPLEMENTED();
+  }
 }
 
 #define FE98_DRAW_SHIFT 8
