@@ -31,6 +31,14 @@ target_include_directories(libpc98 PUBLIC
 )
 target_link_libraries(libpc98 PRIVATE SDL3::SDL3-static)
 
+# Utilities
+if (NOT EMSCRIPTEN)
+    add_executable(img_conv x/examples/libpc98/img_conv.cc)
+    target_link_libraries(img_conv libpc98)
+    add_executable(snd_conv x/examples/libpc98/snd_conv.cc)
+    target_link_libraries(snd_conv libpc98)
+endif()
+
 
 # AAA game
 add_executable(aaa
