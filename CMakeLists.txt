@@ -31,6 +31,8 @@ target_include_directories(libpc98 PUBLIC
 )
 target_link_libraries(libpc98 PRIVATE SDL3::SDL3-static)
 
+
+# AAA game
 add_executable(aaa
     x/examples/aaa/loading.cc
     x/examples/aaa/main.cc
@@ -45,6 +47,19 @@ target_link_libraries(aaa libpc98)
 if (EMSCRIPTEN)
     target_link_options(aaa PRIVATE
         --embed-file "${CMAKE_SOURCE_DIR}/aaa@/aaa"
+        --shell-file "${CMAKE_SOURCE_DIR}/web_sources/shell_minimal.html"
+    )
+endif()
+
+
+# palcyc demo
+add_executable(palcyc
+    x/examples/palcyc/main.cc
+)
+target_link_libraries(palcyc libpc98)
+if (EMSCRIPTEN)
+    target_link_options(palcyc PRIVATE
+        --embed-file "${CMAKE_SOURCE_DIR}/palcyc@/palcyc"
         --shell-file "${CMAKE_SOURCE_DIR}/web_sources/shell_minimal.html"
     )
 endif()
