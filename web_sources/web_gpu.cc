@@ -112,8 +112,7 @@ FASTCALL bool setup() {
     return false;
   }
 
-  SDL_Surface * window_surface = SDL_GetWindowSurface(s_window.get());
-  for (auto *surface : { window_surface, s_front_buffer.get(), s_back_buffer.get()}) {
+  for (auto *surface : {s_front_buffer.get(), s_back_buffer.get()}) {
     if (!SDL_SetSurfacePalette(surface, s_palette.get())) {
       logging::print(logging::Level::Error, "Failed to set palette on a surface: %s", SDL_GetError());
       return false;
