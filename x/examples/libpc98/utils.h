@@ -36,6 +36,21 @@ static void randomise(T * p, int n) {
   }
 }
 
+template <int N, typename T>
+static void rotate_left(T * start, T * end) {
+  T tmp[N];
+  for (int i = 0; i < N; i++) {
+    tmp[i] = start[i];
+  }
+  T * mid = start + N;
+  while (mid != end) {
+    *start++ = *mid++;
+  }
+  for (int i = 0; i < N; i++) {
+    *start++ = tmp[i];
+  }
+}
+
 } // namespace utils
 
 #endif
