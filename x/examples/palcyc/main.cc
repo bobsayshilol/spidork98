@@ -6,12 +6,17 @@
 #include "keyboard.h"
 #include "maths.h"
 
-#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
 #define LOG_FILE "palcyc.txt"
+
+// TODO: move into common header
+#ifndef WEB_BUILD
+#include <conio.h>
+#define getch_98() getch()
+#endif
 
 // TODO: move into common header
 #if defined(__EMSCRIPTEN__)
@@ -99,7 +104,7 @@ void quad_rotate_y(bool up) {
 #define TEX_CROSS_PAL_START 13 // 6 of the colours are for scrolling
 #define TEX_CROSS_PAL_SIZE 19
 STATIC_ASSERT(TEX_CROSS_PAL_SIZE == PAL_SKY);
-const u8 s_fah_palette_data[] {
+const u8 s_fah_palette_data[] = {
 #if 1 // Taken from fire demo.
   0xc3, 0x72, 0xf5,
   0xaf, 0x44, 0xf2,
@@ -126,7 +131,7 @@ const u8 s_fah_palette_data[] {
 #endif
 };
 
-const u8 s_neon_palette_data[8 * 8 * 3] {
+const u8 s_neon_palette_data[8 * 8 * 3] = {
   #define W 0xFF, 0xFF, 0xFF,
   #define P 0xFF, 0x00, 0xFF,
   #define E 0x00, 0x00, 0x00,
@@ -160,10 +165,11 @@ void set_quad(u8 tex) {
     case TEX_CROSS: {
       // White background, purple foreground.
       quad_clear(0xFF);
-      for (int i = 0; i < QUAD_SIZE; i++) {
+      int i;
+      for (i = 0; i < QUAD_SIZE; i++) {
         set_quad_pix(i, i, 0xC8, 0xC8, 0xFF);
       }
-      for (int i = 1; i < QUAD_SIZE; i++) {
+      for (i = 1; i < QUAD_SIZE; i++) {
         set_quad_pix(QUAD_SIZE - i, i, 0xC8, 0xC8, 0xFF);
       }
     } break;
@@ -171,16 +177,17 @@ void set_quad(u8 tex) {
     case TEX_WATER_NE: {
       // https://www.color-hex.com/color-palette/2738
       // Blue background.
+      int i;
       for (int j = 0; j < QUAD_SIZE; j++) {
-        for (int i = 0; i < QUAD_SIZE; i++) {
+        for (i = 0; i < QUAD_SIZE; i++) {
           set_quad_pix(i, j, 0x23, 0x89, 0xDA);
         }
       }
       // Wave direction.
-      for (int i = 0; i < QUAD_SIZE; i++) {
+      for (i = 0; i < QUAD_SIZE; i++) {
         set_quad_pix(i, i, 0x74, 0xCF, 0xF4);
       }
-      for (int i = 0; i < QUAD_SIZE; i++) {
+      for (i = 0; i < QUAD_SIZE; i++) {
         set_quad_pix(i % QUAD_SIZE, (i + 1) % QUAD_SIZE, 0x5A, 0xBC, 0xD8); // leading
         set_quad_pix((i + 1) % QUAD_SIZE , i % QUAD_SIZE, 0x1C, 0xA3, 0xEC); // trailing
       }
@@ -203,13 +210,14 @@ void draw_background(u8 tex, bool face, bool mode7, u16 horizon) {
 
       // Clear out everything beyond the horizon.
       memset(data, PAL_SKY, sizeof(data));
-      for (u16 y = 0; y < horizon; ++y) {
+      u16 y;
+      for (y = 0; y < horizon; ++y) {
         for (u16 part = 0; part < GPU_WIDTH / SCANLINE_PART_WIDTH_32; ++part) {
           gpu::write_scanline_part_32(y, part, data);
         }
       }
 
-      for (u16 y = horizon + 1; y < GPU_HEIGHT; ++y) {
+      for (y = horizon + 1; y < GPU_HEIGHT; ++y) {
         // Perspective divide.
         // d = (y - horizon) / GPU_HEIGHT
         // z = 1 / d
@@ -288,13 +296,14 @@ void quad_rot_set(u8 ticker) {
 
   // Rotate around center point.
   u8 col = 0xC0;
-  for (int i = -QUAD_SIZE/2; i < 0; i++) {
+  int i;
+  for (i = -QUAD_SIZE/2; i < 0; i++) {
     const u8 x = (cx + s * i) >> 7;
     const u8 y = (cy + c * i) >> 7;
     set_quad_pix(x, y, col, col, col);
     col -= 0xC0 / ((QUAD_SIZE + 1)/2);
   }
-  for (int i = 0; i <= QUAD_SIZE/2; i++) {
+  for (i = 0; i <= QUAD_SIZE/2; i++) {
     const u8 x = (cx + s * i) >> 7;
     const u8 y = (cy + c * i) >> 7;
     set_quad_pix(x, y, col, col, col);
@@ -400,7 +409,7 @@ void play() {
     printf("  t - single s[t]ep (for debuggin)\n");
     printf("Press any key to continue\n");
 #ifndef WEB_BUILD // TODO
-    getch();
+    getch_98();
 #endif
   }
 
