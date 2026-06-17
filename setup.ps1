@@ -1,6 +1,6 @@
 "Downloading zips"
-#Invoke-WebRequest "https://www.target-earth.net/wiki/lib/exe/fetch.php?media=blog:pc-9801_gcc-v2.95.2_djgpp-v2.03.zip" -OutFile djgpp.zip
-#Invoke-WebRequest "https://github.com/joncampbell123/dosbox-x/releases/download/dosbox-x-v2025.05.03/dosbox-x-mingw-win32-lowend9x-20250503164337.zip" -OutFile dosbox-x.zip
+Invoke-WebRequest "https://www.target-earth.net/wiki/lib/exe/fetch.php?media=blog:pc-9801_gcc-v2.95.2_djgpp-v2.03.zip" -OutFile djgpp.zip
+Invoke-WebRequest "https://github.com/joncampbell123/dosbox-x/releases/download/dosbox-x-v2025.05.03/dosbox-x-mingw-win32-lowend9x-20250503164337.zip" -OutFile dosbox-x.zip
 
 "Extracting zips"
 # Emulator
