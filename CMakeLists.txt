@@ -67,7 +67,7 @@ add_executable(palcyc
 target_link_libraries(palcyc libpc98)
 if (EMSCRIPTEN)
     target_link_options(palcyc PRIVATE
-        --embed-file "${CMAKE_SOURCE_DIR}/palcyc@/palcyc"
+        --embed-file "${CMAKE_SOURCE_DIR}/palcyc@/"
         --shell-file "${CMAKE_SOURCE_DIR}/web_sources/shell_minimal.html"
     )
 endif()

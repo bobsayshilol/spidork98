@@ -397,10 +397,14 @@ void play() {
   gpu::enable_text_layer(true);
   {
     printf("Controls:\n");
+#ifndef __EMSCRIPTEN__
     printf("  q - [q]uit\n");
+#endif
     printf("  e/r - n[e]xt/p[r]evious screen\n");
     printf("  space - pause\n");
+#ifndef __EMSCRIPTEN__
     printf("  y - toggle vsync\n");
+#endif
     printf("  arrow keys/wasd - movement (on grid screen)\n");
     printf("  u - face on/off\n");
     printf("  i - mode change\n");
@@ -450,7 +454,9 @@ void play() {
     if (buttons && !pressed) {
       bool update = false;
       if (buttons & KB_STATE_Q) { // q = quit
+#ifndef __EMSCRIPTEN__
         break;
+#endif
       } else if (buttons & KB_STATE_SPACE) { // space = pause
         adjust = !adjust;
         step = false;
@@ -470,7 +476,9 @@ void play() {
         mode7 = !mode7;
         update = true;
       } else if (buttons & KB_STATE_Y) { // y = vsync
+#ifndef __EMSCRIPTEN__
         vsync = !vsync;
+#endif
       } else if (buttons & KB_STATE_O) { // o = sky colour
         sky_col++;
         update = true;
