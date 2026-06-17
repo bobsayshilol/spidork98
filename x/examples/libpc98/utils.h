@@ -51,6 +51,21 @@ static void rotate_left(T * start, T * end) {
   }
 }
 
+template <int N, typename T>
+static void rotate_right(T * start, T * end) {
+  T tmp[N];
+  T * mid = end - N;
+  for (int i = 0; i < N; i++) {
+    tmp[i] = mid[i];
+  }
+  while (mid != start) {
+    *--end = *--mid;
+  }
+  for (int i = 0; i < N; i++) {
+    *start++ = tmp[i];
+  }
+}
+
 } // namespace utils
 
 #endif
