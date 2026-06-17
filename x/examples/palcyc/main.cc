@@ -39,38 +39,92 @@ namespace {
 bool g_had_error;
 images::Palette s_palette;
 
-#define QUAD_START (18 + 1) // reserve some colours
-#define QUAD_SIZE 7 // 7x7 tile - 49 colours
+// Image gets the first 19 entries, one for sky, rest for quad.
+#define PAL_SKY 19
+#define QUAD_START (PAL_SKY + 1)
+#define QUAD_SIZE 8 // 8x8 tile - 64 colours
 STATIC_ASSERT(QUAD_START + QUAD_SIZE * QUAD_SIZE < IMAGES_MAX_PALETTE_SIZE);
+
+void set_sky_col(u8 idx) {
+  images::Palette const & pal = images::default_palette_16;
+  idx = idx % pal.num_colours;
+  const u8 * col = pal.rgb + idx * 3;
+  u8 * rgb = s_palette.rgb + PAL_SKY * 3;
+  for (int i = 0; i < 3; i++) {
+    *rgb++ = *col++;
+  }
+}
 
 void set_quad_pix(u8 x, u8 y, u8 r, u8 g, u8 b) {
   u8 p = QUAD_START + QUAD_SIZE * y + x;
-  s_palette.rgb[3 * p + 0] = r;
-  s_palette.rgb[3 * p + 1] = g;
-  s_palette.rgb[3 * p + 2] = b;
+  u8 p3 = p + (p << 1);
+  u8 * rgb = s_palette.rgb + p3;
+  *rgb++ = r;
+  *rgb++ = g;
+  *rgb++ = b;
 }
 
 void quad_clear(u8 col) {
   memset(s_palette.rgb + QUAD_START * 3, col, QUAD_SIZE * QUAD_SIZE * 3);
 }
 
-void quad_rotate_x() {
+void quad_rotate_x(bool left) {
+  u8 * rgb = s_palette.rgb + QUAD_START * 3;
   for (int line = 0; line < QUAD_SIZE; line++) {
-    u8 * line_start = s_palette.rgb + QUAD_START * 3 + line * QUAD_SIZE * 3;
-    utils::rotate_left<3>(line_start, line_start + QUAD_SIZE * 3);
+    if (left) {
+      utils::rotate_left<3>(rgb, rgb + QUAD_SIZE * 3);
+    } else {
+      utils::rotate_right<3>(rgb, rgb + QUAD_SIZE * 3);
+    }
+    rgb += QUAD_SIZE * 3;
   }
 }
 
-void quad_rotate_y() {
+void quad_rotate_y(bool up) {
   u8 * rgb = s_palette.rgb + QUAD_START * 3;
-  utils::rotate_left<3 * QUAD_SIZE>(rgb, rgb + QUAD_SIZE * QUAD_SIZE * 3);
+  if (up) {
+    utils::rotate_left<3 * QUAD_SIZE>(rgb, rgb + QUAD_SIZE * QUAD_SIZE * 3);
+  } else {
+    utils::rotate_right<3 * QUAD_SIZE>(rgb, rgb + QUAD_SIZE * QUAD_SIZE * 3);
+  }
 }
 
 #define TEX_GRID 0
 #define TEX_GRID_ROT 1
 #define TEX_CROSS 2
-#define TEX_WATER_NE 3
-#define TEX_MAX 4
+#define TEX_NEON 3
+#define TEX_WATER_NE 4
+#define TEX_MAX 5
+
+#define TEX_CROSS_PAL_START 13 // 6 of the colours are for scrolling
+#define TEX_CROSS_PAL_SIZE 19
+STATIC_ASSERT(TEX_CROSS_PAL_SIZE == PAL_SKY);
+const u8 s_fah_palette_data[] {
+  0xFF, 0x00, 0x00, // red
+  0xFF, 0x7F, 0x00, // orange
+  //0xFF, 0xFF, 0x00, // yellow
+  //0x00, 0xFF, 0x00, // green
+  0x00, 0x00, 0xFF, // blue
+  0x4B, 0x00, 0x82, // indigo
+  0x94, 0x00, 0xD3, // violet
+  0xFF, 0x14, 0x93, // pink
+};
+
+const u8 s_neon_palette_data[8 * 8 * 3] {
+  #define W 0xFF, 0xFF, 0xFF,
+  #define P 0xFF, 0x00, 0xFF,
+  #define E 0x00, 0x00, 0x00,
+  #define B 0xA0, 0x30, 0xB0,
+  P P P P P P P P
+  P W W W W W W W
+  P W B W W W B W
+  P W W B B B W W
+  P W B E B E B W
+  P W W B B B W W
+  P W B W W W B W
+  P W W W W W W W
+};
+STATIC_ASSERT(sizeof(s_neon_palette_data) == QUAD_SIZE * QUAD_SIZE * 3);
 
 void set_quad(u8 tex) {
   switch (tex) {
@@ -115,41 +169,88 @@ void set_quad(u8 tex) {
         set_quad_pix((i + 1) % QUAD_SIZE , i % QUAD_SIZE, 0x1C, 0xA3, 0xEC); // trailing
       }
     } break;
+
+    case TEX_NEON: {
+      memcpy(s_palette.rgb + QUAD_START * 3, s_neon_palette_data, sizeof(s_neon_palette_data));
+    } break;
   }
 }
 
-void draw_background(u8 tex) {
-  u8 data[SCANLINE_PART_WIDTH_32];
-
+void draw_background(u8 tex, bool face, bool mode7, u16 horizon) {
   // All have the same base background.
   {
-    const u8 shift = (tex == TEX_GRID_ROT) ? 3 : 2;
-    for (u16 y = 0; y < GPU_HEIGHT; ++y) {
-      u16 x = 0;
-      for (u16 part = 0; part < GPU_WIDTH / SCANLINE_PART_WIDTH_32; ++part) {
-        for (u8 i = 0; i < SCANLINE_PART_WIDTH_32; i++, x++) {
-          u16 ux = x >> shift;
-          u16 uy = y >> shift;
-          data[i] = QUAD_START + (ux % QUAD_SIZE) + (uy % QUAD_SIZE) * QUAD_SIZE;
+    gpu::g_draw_to = gpu::DrawTo::Back;
+    u8 data[SCANLINE_PART_WIDTH_32];
+
+    if (mode7) {
+      horizon = utils::clamp<u16>(horizon, 1, GPU_HEIGHT - 1);
+
+      // Clear out everything beyond the horizon.
+      memset(data, PAL_SKY, sizeof(data));
+      for (u16 y = 0; y < horizon; ++y) {
+        for (u16 part = 0; part < GPU_WIDTH / SCANLINE_PART_WIDTH_32; ++part) {
+          gpu::write_scanline_part_32(y, part, data);
         }
-        gpu::write_scanline_part_32(y, part, data);
+      }
+
+      for (u16 y = horizon + 1; y < GPU_HEIGHT; ++y) {
+        // Perspective divide.
+        // d = (y - horizon) / GPU_HEIGHT
+        // z = 1 / d
+        // tx = (x - GPU_WIDTH / 2) / z
+#define Z_SHIFT 9 // 512, >GPU_HEIGHT
+        const u32 z = (GPU_HEIGHT << Z_SHIFT) / (y - horizon);
+        i32 xz = -GPU_WIDTH / 2 * z;
+        for (u16 part = 0; part < GPU_WIDTH / SCANLINE_PART_WIDTH_32; ++part) {
+          for (u8 i = 0; i < SCANLINE_PART_WIDTH_32; i++, xz += z) {
+            // Scale by 1/16 (x) and 1/4 (y).
+            const i16 tx = (xz) >> (Z_SHIFT + 4);
+            // -ve causes a seam at 0 unless power of 2
+            STATIC_ASSERT((QUAD_SIZE & (QUAD_SIZE - 1)) == 0);
+            const u16 ux = tx;
+            const u16 uy = y >> 2;
+            data[i] = QUAD_START + (ux % QUAD_SIZE) + (uy % QUAD_SIZE) * QUAD_SIZE;
+          }
+          gpu::write_scanline_part_32(y, part, data);
+        }
+      }
+    } else {
+      const u8 shift = (tex == TEX_GRID_ROT) ? 3 : 2;
+      for (u16 y = 0; y < GPU_HEIGHT; ++y) {
+        u16 x = 0;
+        for (u16 part = 0; part < GPU_WIDTH / SCANLINE_PART_WIDTH_32; ++part) {
+          for (u8 i = 0; i < SCANLINE_PART_WIDTH_32; i++, x++) {
+            u16 ux = x >> shift;
+            u16 uy = y >> shift;
+            data[i] = QUAD_START + (ux % QUAD_SIZE) + (uy % QUAD_SIZE) * QUAD_SIZE;
+          }
+          gpu::write_scanline_part_32(y, part, data);
+        }
       }
     }
+    gpu::g_draw_to = gpu::DrawTo::Front;
   }
+  // Copy from backbuffer to front buffer.
+  // There needs to be a copy of the data in the backbuffer for sprites to work.
+  gpu::undraw_quad(0, 0, GPU_WIDTH, GPU_HEIGHT);
 
-  switch(tex) {
-    case TEX_GRID_ROT:
-    case TEX_GRID: {
-      // Nothing extra.
-    } break;
+  if (face) {
+    // Draw the face over the top.
+    images::Palette pal;
+    images::ImageData img, mask;
+    if (images::load_palette(pal, "AF.PAL") && pal.num_colours == TEX_CROSS_PAL_SIZE && img.load("AF.IMG") && mask.load("AF_M.IMG")) {
+      // Copy over the image's palette and draw it.
+      memcpy(s_palette.rgb, pal.rgb, pal.num_colours * 3);
+      const u16 x = (GPU_WIDTH - img.m_width) / 2;
+      const u16 y = (GPU_HEIGHT - img.m_height) / 2;
+      images::draw_sprite(x, y, img, mask);
 
-    case TEX_CROSS: {
-      // TODO: draw face
-    } break;
-
-    case TEX_WATER_NE: {
-      // TODO: draw boats
-    } break;
+      // Replace the scrolling palette.
+      STATIC_ASSERT(sizeof(s_fah_palette_data) == (TEX_CROSS_PAL_SIZE - TEX_CROSS_PAL_START) * 3);
+      memcpy(s_palette.rgb + TEX_CROSS_PAL_START * 3, s_fah_palette_data, (TEX_CROSS_PAL_SIZE - TEX_CROSS_PAL_START) * 3);
+    } else {
+      logging::print(logging::Level::Error, "Failed to load background for cross");
+    }
   }
 }
 
@@ -191,7 +292,7 @@ void quad_rot_set(u8 ticker) {
   set_quad_pix(QUAD_SIZE - 1, QUAD_SIZE - 1, 0x00, 0xFF, 0x00);
 
   // FF dropping.
-  ticker = (ticker - 0x80 / 4) & 0x7F; // offset animation of drops
+  ticker = (ticker - 0x40 / 4) & 0x7F; // offset animation of drops
   const u8 y1 = (ticker * QUAD_SIZE) >> 7;
   set_quad_pix(1, y1, 0x50, 0x90, 0xF0);
 #else
@@ -205,11 +306,22 @@ void quad_rot_set(u8 ticker) {
 #endif
 }
 
-bool update_quad(u8 tex, u8 ticker) {
+bool update_quad(u8 tex, u8 ticker, u32 buttons) {
+  // Update scrolling palette.
+  if ((ticker & 7) == 0) {
+    utils::rotate_right<3>(s_palette.rgb + TEX_CROSS_PAL_START * 3, s_palette.rgb + TEX_CROSS_PAL_SIZE * 3);
+  }
+
+  // Update the quad.
   switch (tex) {
+    case TEX_NEON:
     case TEX_GRID: {
-      if ((ticker & 3) == 0) { quad_rotate_x(); }
-      if ((ticker & 1) == 1) quad_rotate_y();
+      if ((buttons & (KB_STATE_LEFT | KB_STATE_RIGHT | KB_STATE_A | KB_STATE_D)) ) {
+        quad_rotate_x(buttons & (KB_STATE_RIGHT | KB_STATE_D));
+      }
+      if ((buttons & (KB_STATE_UP | KB_STATE_DOWN | KB_STATE_W | KB_STATE_S)) ) {
+        quad_rotate_y(buttons & (KB_STATE_DOWN | KB_STATE_S));
+      }
       return true;
     } break;
 
@@ -220,14 +332,14 @@ bool update_quad(u8 tex, u8 ticker) {
 
     case TEX_CROSS: {
       if (ticker & 1) {
-        quad_rotate_x();
+        quad_rotate_x(true);
         return true;
       }
     } break;
 
     case TEX_WATER_NE: {
       if (ticker & 1) {
-        quad_rotate_x();
+        quad_rotate_x(true);
         return true;
       }
     } break;
@@ -256,6 +368,26 @@ void play() {
   DEFER(void *, p, NULL, (_setcursortype_98(_NORMALCURSOR)));
 #endif
 
+  // Display some help text.
+  gpu::enable_text_layer(true);
+  {
+    printf("Controls:\n");
+    printf("  q - [q]uit\n");
+    printf("  e/r - n[e]xt/p[r]evious screen\n");
+    printf("  space - pause\n");
+    printf("  y - toggle vsync\n");
+    printf("  arrow keys/wasd - movement (on grid screen)\n");
+    printf("  u - face on/off\n");
+    printf("  i - mode change\n");
+    printf("  o - sky c[o]lour\n");
+    printf("  p - horizon\n");
+    printf("  t - single s[t]ep (for debuggin)\n");
+    printf("Press any key to continue\n");
+#ifndef WEB_BUILD // TODO
+    getch();
+#endif
+  }
+
   // No text.
   gpu::enable_text_layer(false);
 
@@ -263,15 +395,21 @@ void play() {
 
   // Setup palette and background.
   u8 quad_tex = TEX_GRID;
+  u8 sky_col = 0;
+  u16 horizon = GPU_HEIGHT / 3;
+  bool face = false;
+  bool mode7 = false;
   s_palette.num_colours = QUAD_START + QUAD_SIZE * QUAD_SIZE;
   memset(s_palette.rgb, 0, sizeof(s_palette.rgb));
   set_quad(quad_tex);
+  set_sky_col(sky_col);
+  draw_background(quad_tex, face, mode7, horizon);
   images::set_palette(s_palette);
-  draw_background(quad_tex);
 
   bool adjust = true;
   bool step = false;
   bool vsync = true;
+  bool pressed = false;
 
   u8 quad_tick = 0;
 
@@ -283,25 +421,47 @@ void play() {
   while (!g_had_error)
 #endif
   {
-    if (kbhit_98()) {
-      const int ch = getch_98();
-      if (ch == 'q' || ch == 'Q' || ch == KEY_ESCAPE) {
+    const u32 buttons = read_keyboard_state();
+    if (buttons && !pressed) {
+      bool update = false;
+      if (buttons & KB_STATE_Q) { // q = quit
         break;
-      } else if (ch == KEY_SPACE) {
+      } else if (buttons & KB_STATE_SPACE) { // space = pause
         adjust = !adjust;
         step = false;
-      } else if (ch == 't' || ch == 't') {
+      } else if (buttons & KB_STATE_T) { // t = single step
         adjust = true;
         step = true;
-      } else if (ch == 'e' || ch == 'E') {
+      } else if (buttons & KB_STATE_E) { // e = next
         quad_tex = (quad_tex + 1) % TEX_MAX;
-        set_quad(quad_tex);
-        images::set_palette(s_palette);
-        draw_background(quad_tex);
-      } else if (ch == 'v' || ch == 'V') {
+        update = true;
+      } else if (buttons & KB_STATE_R) { // r = prev
+        quad_tex = (quad_tex + TEX_MAX - 1) % TEX_MAX;
+        update = true;
+      } else if (buttons & KB_STATE_U) { // u = face
+        face = !face;
+        update = true;
+      } else if (buttons & KB_STATE_I) { // i = mode7
+        mode7 = !mode7;
+        update = true;
+      } else if (buttons & KB_STATE_Y) { // y = vsync
         vsync = !vsync;
+      } else if (buttons & KB_STATE_O) { // o = sky colour
+        sky_col++;
+        update = true;
+      } else if (buttons & KB_STATE_P) { // p = horizon
+        horizon = (horizon + GPU_HEIGHT / 8) % GPU_HEIGHT;
+        update = true;
+      }
+
+      if (update) {
+        set_quad(quad_tex);
+        set_sky_col(sky_col);
+        draw_background(quad_tex, face, mode7, horizon);
+        images::set_palette(s_palette);
       }
     }
+    pressed = buttons;
 
     // Adjust palette.
     if (adjust) {
@@ -313,7 +473,7 @@ void play() {
 
       // Update quad.
       quad_tick++;
-      const bool changed = update_quad(quad_tex, quad_tick);
+      const bool changed = update_quad(quad_tex, quad_tick, buttons);
 
       // Update the palette if it changed.
       if (changed) {
