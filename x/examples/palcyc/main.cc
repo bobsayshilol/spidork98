@@ -221,19 +221,21 @@ void draw_background(u8 tex, bool face, bool mode7, u16 horizon) {
         // Perspective divide.
         // d = (y - horizon) / GPU_HEIGHT
         // z = 1 / d
-        // tx = (x - GPU_WIDTH / 2) / z
+        // tx = (x - GPU_WIDTH / 2) * z
 #define Z_SHIFT 9 // 512, >GPU_HEIGHT
         const u32 z = (GPU_HEIGHT << Z_SHIFT) / (y - horizon);
+        // Scale y by 1/16.
+        const u16 uy = QUAD_SIZE - ((y * z) >> (Z_SHIFT + 4));
+        const u16 uyq = QUAD_START + (uy % QUAD_SIZE) * QUAD_SIZE; // q + uy
         i32 xz = -GPU_WIDTH / 2 * z;
         for (u16 part = 0; part < GPU_WIDTH / SCANLINE_PART_WIDTH_32; ++part) {
           for (u8 i = 0; i < SCANLINE_PART_WIDTH_32; i++, xz += z) {
-            // Scale by 1/16 (x) and 1/4 (y).
-            const i16 tx = (xz) >> (Z_SHIFT + 4);
+            // Scale x by 1/16.
+            const i16 tx = xz >> (Z_SHIFT + 4);
             // -ve causes a seam at 0 unless power of 2
             STATIC_ASSERT((QUAD_SIZE & (QUAD_SIZE - 1)) == 0);
             const u16 ux = tx;
-            const u16 uy = y >> 2;
-            data[i] = QUAD_START + (ux % QUAD_SIZE) + (uy % QUAD_SIZE) * QUAD_SIZE;
+            data[i] = (ux & (QUAD_SIZE - 1)) + uyq;
           }
           gpu::write_scanline_part_32(y, part, data);
         }
