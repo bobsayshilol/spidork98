@@ -79,7 +79,13 @@ int getch_98() {
   IF_WAS_PRESSED(Q, 'q');
   IF_WAS_PRESSED(W, 'w');
   IF_WAS_PRESSED(E, 'e');
+  IF_WAS_PRESSED(R, 'r');
   IF_WAS_PRESSED(T, 't');
+  IF_WAS_PRESSED(Y, 'y');
+  IF_WAS_PRESSED(U, 'u');
+  IF_WAS_PRESSED(I, 'i');
+  IF_WAS_PRESSED(O, 'o');
+  IF_WAS_PRESSED(P, 'p');
   IF_WAS_PRESSED(A, 'a');
   IF_WAS_PRESSED(S, 's');
   IF_WAS_PRESSED(D, 'd');
@@ -114,8 +120,14 @@ u32 read_keyboard_state() {
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_Q]) bits |= KB_STATE_Q;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_W]) bits |= KB_STATE_W;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_E]) bits |= KB_STATE_E;
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_R]) bits |= KB_STATE_R;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_T]) bits |= KB_STATE_T;
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_Y]) bits |= KB_STATE_Y;
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_U]) bits |= KB_STATE_U;
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_I]) bits |= KB_STATE_I;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_A]) bits |= KB_STATE_A;
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_O]) bits |= KB_STATE_O;
+  if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_P]) bits |= KB_STATE_P;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_S]) bits |= KB_STATE_S;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_D]) bits |= KB_STATE_D;
   if (s_sdl_keys[SDL_Scancode::SDL_SCANCODE_RETURN]) bits |= KB_STATE_ENTER;
