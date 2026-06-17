@@ -343,10 +343,10 @@ bool update_quad(u8 tex, u8 ticker, u32 buttons) {
   switch (tex) {
     case TEX_NEON:
     case TEX_GRID: {
-      if ((buttons & (KB_STATE_LEFT | KB_STATE_RIGHT | KB_STATE_A | KB_STATE_D)) ) {
+      if ((buttons & (KB_STATE_LEFT | KB_STATE_RIGHT | KB_STATE_A | KB_STATE_D))) {
         quad_rotate_x(buttons & (KB_STATE_RIGHT | KB_STATE_D));
       }
-      if ((buttons & (KB_STATE_UP | KB_STATE_DOWN | KB_STATE_W | KB_STATE_S)) ) {
+      if ((buttons & (KB_STATE_UP | KB_STATE_DOWN | KB_STATE_W | KB_STATE_S)) && (ticker & 1)) {
         quad_rotate_y(buttons & (KB_STATE_DOWN | KB_STATE_S));
       }
       return true;
